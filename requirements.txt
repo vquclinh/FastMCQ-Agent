@@ -1,0 +1,7 @@
+# Phase 1 dependencies — intentionally minimal.
+# Core pipeline (data_io, labels, solver, postprocess) uses only the Python
+# standard library. PyYAML is the single runtime dependency, for config loading.
+PyYAML>=6.0
+
+# Testing (optional; tests also run standalone without pytest).
+pytest>=7.0

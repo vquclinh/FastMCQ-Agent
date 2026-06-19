@@ -1,0 +1,25 @@
+# FastMCQ-Agent default configuration.
+#
+# Phase 1 reads only `solver`. The remaining keys are placeholders documenting
+# where Phase 2 (real LLM inference) settings will live; they are ignored for now.
+
+# Which solver to use. Phase 1 ships only the format-check baseline.
+solver: always_a
+
+# Competition I/O contract (the harness mounts these paths).
+io:
+  data_dir: /data
+  output: /output/pred.csv
+
+# --- Phase 2 placeholders (not yet used) -------------------------------------
+model:
+  name: null          # e.g. a local HF model id, set in Phase 2
+  max_new_tokens: 8
+  temperature: 0.0    # deterministic decoding
+
+prompt:
+  strategy: zero_shot # zero_shot | few_shot | cot
+
+runtime:
+  batch_size: 8
+  seed: 42

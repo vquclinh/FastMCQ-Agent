@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Test / tooling caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Local prediction outputs (keep the dir via .gitkeep, ignore generated files)
+outputs/*
+!outputs/.gitkeep
+
+# Data dropped in by the harness at runtime (keep the dir, ignore contents)
+data/*
+!data/.gitkeep
+
+# OS / editor cruft
+.DS_Store
+.idea/
+.vscode/
+*.swp
