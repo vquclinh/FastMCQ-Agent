@@ -63,6 +63,7 @@ class AdaptiveAgentSolver(BaseSolver):
     def __init__(self, model_path: str, *, device: str = "auto",
                  trust_remote_code: bool = False, max_input_tokens: int = 4096,
                  max_new_tokens: int = 8, temperature: float = 0.0,
+                 quantization: dict | None = None,
                  config: AdaptiveConfig | None = None, logger=None):
         self.cfg = config or AdaptiveConfig()
         self.logger = logger
@@ -82,7 +83,7 @@ class AdaptiveAgentSolver(BaseSolver):
         self.scorer = HFOptionScoreSolver(
             model_path, device=device, trust_remote_code=trust_remote_code,
             max_input_tokens=max_input_tokens, score_mode=self.cfg.primary_score_mode,
-            save_raw=False, logger=None,
+            quantization=quantization, save_raw=False, logger=None,
         )
         self.generate_fallback = None
         if self.cfg.enable_generation_fallback:

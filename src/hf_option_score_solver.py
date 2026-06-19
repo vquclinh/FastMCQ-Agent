@@ -59,8 +59,8 @@ class HFOptionScoreSolver(BaseSolver):
 
     def __init__(self, model_path: str, *, device: str = "auto",
                  trust_remote_code: bool = False, max_input_tokens: int = 4096,
-                 score_mode: str = DEFAULT_SCORE_MODE, save_raw: bool = False,
-                 logger=None, loaded=None, generate_fallback=None):
+                 score_mode: str = DEFAULT_SCORE_MODE, quantization: dict | None = None,
+                 save_raw: bool = False, logger=None, loaded=None, generate_fallback=None):
         if score_mode not in SCORE_MODES:
             raise ValueError(
                 f"unknown score_mode {score_mode!r}; choose one of {', '.join(SCORE_MODES)}"
@@ -71,7 +71,8 @@ class HFOptionScoreSolver(BaseSolver):
         self.logger = logger
         self.generate_fallback = generate_fallback
         self._loaded = loaded or load_model(
-            model_path, device=device, trust_remote_code=trust_remote_code
+            model_path, device=device, trust_remote_code=trust_remote_code,
+            quantization=quantization,
         )
 
     @property

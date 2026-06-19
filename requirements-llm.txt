@@ -17,3 +17,8 @@ transformers>=4.40    # tokenizer + AutoModelForCausalLM loading (local_files_on
 accelerate>=0.27      # device placement / efficient loading helpers
 sentencepiece>=0.1.99 # tokenizer backend used by Qwen / Gemma family tokenizers
 safetensors>=0.4      # safe, fast weight format used by modern local checkpoints
+
+# Optional for 4-bit / 8-bit quantized loading on supported CUDA/Linux setups
+# (needed only when hf.quantization.mode is "4bit"/"8bit"; not required for the
+# baseline, tests, or unquantized fp16/fp32 loading):
+# bitsandbytes>=0.43

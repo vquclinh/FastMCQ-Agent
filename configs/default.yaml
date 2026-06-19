@@ -24,6 +24,16 @@ hf:
   max_input_tokens: 4096      # prompt budget; questions are head-tail truncated
   trust_remote_code: false    # opt-in only; keep false unless the model needs it
   device: auto                # auto => CUDA if available, else CPU
+
+  # Optional quantized loading (bitsandbytes) so a 7B-class model fits a small
+  # GPU (e.g. 7.6 GB). Default mode=null keeps the fp16/fp32 path unchanged and
+  # never imports bitsandbytes. Requires CUDA + bitsandbytes when enabled.
+  quantization:
+    mode: null                # null | "4bit" | "8bit"
+    compute_dtype: null       # null | "float16" | "bfloat16" | "float32"
+    double_quant: true        # 4-bit: nested (double) quantization
+    quant_type: "nf4"         # 4-bit: "nf4" | "fp4"
+
   save_raw: false             # log raw generations / option scores to the debug log
   log_path: outputs/run_debug.jsonl   # per-sample debug JSONL (never pred.csv)
 

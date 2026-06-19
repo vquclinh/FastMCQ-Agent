@@ -26,6 +26,7 @@ class HFGenerateSolver(BaseSolver):
     def __init__(self, model_path: str, *, device: str = "auto",
                  trust_remote_code: bool = False, max_new_tokens: int = 8,
                  temperature: float = 0.0, max_input_tokens: int = 4096,
+                 quantization: dict | None = None,
                  save_raw: bool = False, logger=None, loaded=None):
         self.max_new_tokens = max_new_tokens
         self.temperature = temperature
@@ -34,7 +35,8 @@ class HFGenerateSolver(BaseSolver):
         self.logger = logger
         # Allow a pre-loaded model to be injected (e.g. reused as a fallback).
         self._loaded = loaded or load_model(
-            model_path, device=device, trust_remote_code=trust_remote_code
+            model_path, device=device, trust_remote_code=trust_remote_code,
+            quantization=quantization,
         )
 
     @property

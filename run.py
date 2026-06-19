@@ -68,6 +68,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--temperature", type=float, default=None, help="sampling temperature (0 = deterministic)")
     parser.add_argument("--max-input-tokens", type=int, default=None, help="prompt token budget (question truncation)")
     parser.add_argument("--score-mode", default=None, choices=["label_only", "label_plus_choice", "choice_only"], help="option-scoring continuation style (hf_option_score)")
+    parser.add_argument("--quantization-mode", default=None, choices=["4bit", "8bit"], help="optional bitsandbytes quantized loading (requires CUDA + bitsandbytes)")
+    parser.add_argument("--quantization-compute-dtype", default=None, choices=["float16", "bfloat16", "float32"], help="compute dtype for 4-bit quantization")
     parser.add_argument("--trust-remote-code", action="store_true", default=None, help="allow trust_remote_code on model load")
     parser.add_argument("--device", default=None, help="device: auto | cpu | cuda")
     parser.add_argument("--limit", type=int, default=None, help="only run the first N samples (smoke testing)")
@@ -105,6 +107,12 @@ def main(argv: list[str] | None = None) -> int:
     adaptive_config = dict(hf_cfg.get("adaptive", {}) or {})
     if args.score_mode is not None:
         adaptive_config["primary_score_mode"] = args.score_mode
+    # Quantization: config (hf.quantization) with optional CLI overrides.
+    quantization = dict(hf_cfg.get("quantization", {}) or {})
+    if args.quantization_mode is not None:
+        quantization["mode"] = args.quantization_mode
+    if args.quantization_compute_dtype is not None:
+        quantization["compute_dtype"] = args.quantization_compute_dtype
     trust_remote_code = bool(_resolve(args.trust_remote_code, hf_cfg.get("trust_remote_code"), False))
     device = _resolve(args.device, hf_cfg.get("device"), "auto")
     save_raw = bool(_resolve(args.save_raw, hf_cfg.get("save_raw"), False))
@@ -145,7 +153,7 @@ def main(argv: list[str] | None = None) -> int:
                 trust_remote_code=trust_remote_code, max_new_tokens=max_new_tokens,
                 temperature=temperature, max_input_tokens=max_input_tokens,
                 score_mode=score_mode, adaptive_config=adaptive_config,
-                save_raw=save_raw, logger=run_logger,
+                quantization=quantization, save_raw=save_raw, logger=run_logger,
             )
         except (ValueError, HFDependencyError) as exc:
             # Configuration / dependency problems: report cleanly, no traceback.

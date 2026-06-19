@@ -55,6 +55,20 @@ def check_transformers() -> bool:
     return True
 
 
+def check_bitsandbytes() -> bool:
+    """Report whether the optional bitsandbytes package is importable (no import)."""
+    if not _installed("bitsandbytes"):
+        print("bitsandbytes  : NOT installed  (optional; only for 4bit/8bit quantization)")
+        return False
+    # Report version without importing the heavy CUDA extension if avoidable.
+    try:
+        from importlib.metadata import version
+        print(f"bitsandbytes  : {version('bitsandbytes')}")
+    except Exception:  # pragma: no cover
+        print("bitsandbytes  : installed (version unknown)")
+    return True
+
+
 def check_model_path(model_path: str | None) -> Path | None:
     if not model_path:
         print("model-path    : (not provided; pass --model-path to validate one)")
@@ -109,6 +123,7 @@ def main(argv: list[str] | None = None) -> int:
     print("=" * 56)
     has_torch = check_torch()
     has_transformers = check_transformers()
+    check_bitsandbytes()
     path = check_model_path(args.model_path)
 
     if args.load_tokenizer or args.load_model:
