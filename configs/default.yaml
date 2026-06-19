@@ -1,0 +1,35 @@
+# FastMCQ-Agent default configuration.
+#
+# CLI flags always override these values (CLI > config > built-in default).
+# The default solver is the dependency-free baseline so the container always
+# produces a valid submission out of the box.
+
+# Which solver to use: always_a | hf_generate | hf_option_score
+solver: always_a
+
+# Competition I/O contract (the harness mounts these paths).
+io:
+  data_dir: /data
+  output: /output/pred.csv
+
+# --- Local LLM solver settings (Phase 2B/C) ----------------------------------
+# Used only when `solver` (or --solver) is hf_generate / hf_option_score.
+# NOTHING is downloaded: `model_path` must point at a LOCAL model directory.
+hf:
+  model_path:                 # e.g. /models/my-local-model  (required for hf_*)
+  solver: hf_option_score     # preferred LLM solver when one is selected
+  max_new_tokens: 8           # generation solver: short answer only
+  temperature: 0.0            # 0.0 => deterministic (do_sample=False)
+  max_input_tokens: 4096      # prompt budget; questions are head-tail truncated
+  trust_remote_code: false    # opt-in only; keep false unless the model needs it
+  device: auto                # auto => CUDA if available, else CPU
+  save_raw: false             # log raw generations / option scores to the debug log
+  log_path: outputs/run_debug.jsonl   # per-sample debug JSONL (never pred.csv)
+
+# --- Prompt / runtime placeholders (informational) ---------------------------
+prompt:
+  strategy: zero_shot         # zero_shot | few_shot | cot
+
+runtime:
+  batch_size: 8
+  seed: 42
