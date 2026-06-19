@@ -116,19 +116,51 @@ optional raw output/scores, fallback reason) go to `--log-path`
 summary record and prints totals; `scripts/benchmark_runtime.py` reports
 p50/p90/p95 and a per-shape breakdown.
 
-## Future improvements (Phase 2D+)
+## Future improvements (Phases 2I–2J)
 
-- **Batching** prompts/continuations for throughput.
-- **Quantization** (8-bit/4-bit) to fit larger models in the time/memory budget.
-- **Faster backends:** vLLM or llama.cpp for higher tokens/sec.
-- **Adaptive routing:** pick generation vs. scoring (or a stronger model) by
-  question shape.
-- **Prompt ensembles / self-consistency** with majority vote over labels.
-- **Math-specific verification** for calculation items (e.g. re-derive or
-  sanity-check numeric answers).
+These are **not** part of the Minimal Viable Agent v1 (Phases 2F–2G); they are
+deferred and adopted only on leaderboard evidence (see `docs/ARCHITECTURE.md`
+§14 for the explicit v1 exclusion list):
+
+- **Batching** prompts/continuations for throughput (2I).
+- **Quantization** (8-bit/4-bit) to fit larger models in the time/memory budget (2I).
+- **Faster backends:** vLLM or llama.cpp for higher tokens/sec (2I).
+- **Adaptive routing:** pick strategy/score-mode by question shape (2F/2G core;
+  extended routing later).
+- **Prompt ensembles / self-consistency** with majority vote over labels (2J).
+- **PAL-lite math verification** for calculation items (2J).
 
 ## Ablation *(planned)*
 
 - Compare prompt strategies, scoring methods, and model sizes on the public
   test; record accuracy vs. latency trade-offs in
   `experiments/leaderboard_log.csv`.
+
+## Adaptive multi-agent core *(implemented — Phase 2F/G)*
+
+The core of the target architecture is now implemented as the **`adaptive_agent`**
+solver (opt-in via `--solver adaptive_agent`; default stays `always_a`). It
+composes five new modules — `question_profiler`, `question_router`,
+`passage_compressor`, `confidence`, and `adaptive_agent_solver` — around the
+existing `hf_option_score` backbone, with deterministic profiling/routing/
+compression, margin-based confidence, and a simple alternate-score-mode →
+generation fallback. Advanced methods (self-consistency, PAL-lite, debate,
+ToT-lite) are **gated off**; enabling one raises `NotImplementedError` rather than
+acting silently. Each sample emits a rich JSONL trace (route, profile, budget
+tier, strategy, scores, margin, confidence, fallback, compression stats). **No
+real LLM inference has been run** for this solver yet — it requires a compliant
+local `MODEL_PATH` (Phase 2H).
+
+## Target architecture — FastMCQ-Agent++ *(design)*
+
+The planned end-state is a **budget-aware multi-agent** system (full design in
+[`docs/ARCHITECTURE.md`](ARCHITECTURE.md)): a sample is profiled with cheap
+deterministic features, routed to a specialist strategy, answered by
+likelihood-based option scoring, verified by a confidence check, and escalated to
+**selective, more expensive reasoning only for low-confidence/high-value cases**
+under an explicit compute budget (Tier 0 cheap → Tier 1 moderate → Tier 2
+expensive). Research methods are mapped to **lightweight, gated** modules — CoT as
+an internal reasoning prompt (label-only output), RAG as in-question passage
+selection, self-consistency / PAL-lite / debate-lite / ToT-lite as rationed
+fallbacks — never always-on. The default solver stays `always_a`; the adaptive
+solver is opt-in and adopted only on leaderboard evidence.

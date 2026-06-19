@@ -259,73 +259,46 @@ Priority order: **1 → 2 → 3 → 4 → 5 → 6**, then optimise (8/9) as time
 
 ## I. Recommended next phases
 
-### Phase 2C.1 — Option-scoring hardening + optional LLM requirements
-- **Objective:** make a real run *possible and safe* without touching the baseline.
-- **Why:** removes the dependency blocker; keeps the light image intact.
-- **Files:** `requirements-llm.txt` (new), README note; possibly small robustness tweaks in `hf_*` (no behaviour change to baseline).
-- **Validation:** `python3 -m pytest -q` (or standalone) still 33/33; baseline run + validate PASS.
-- **Success:** `pip install -r requirements-llm.txt` enables `hf_*`; baseline unaffected.
-- **Stop when:** deps install cleanly and tests pass.
+> **Canonical roadmap.** This supersedes earlier draft phase numbering in this
+> document. The authoritative phase definitions live in
+> [`docs/ARCHITECTURE.md`](ARCHITECTURE.md) §11; the same names are used across
+> all docs.
 
-### Phase 2D — Real local-model smoke test + first leaderboard submission
-- **Objective:** first real inference; first actual score.
-- **Why:** converts unproven code into evidence; establishes a real baseline-above-random.
-- **Files:** none required (uses scripts); update `experiments/leaderboard_log.csv`.
-- **Validation:** `bash scripts/run_llm_smoke.sh /path/to/model` → `validate_submission.py` PASS; then full run + validate.
-- **Success:** valid `pred.csv` from a real model; score recorded.
-- **Stop when:** one full validated submission exists and is logged.
+| Phase | Title | Status |
+|---|---|---|
+| 2C.1 | Model compliance + optional LLM requirements + score-mode hardening | **done** |
+| 2D.1 | Local venv + LLM dependency readiness | **done** (env LLM-ready, GPU 7.6 GB) |
+| 2E | Research-grounded multi-agent architecture | **done** (`docs/ARCHITECTURE.md`) |
+| 2E.1 | Architecture hardening before implementation | **done** (this pass) |
+| 2F | Lightweight agent modules (profiler, router, compressor, confidence) | **done** (with tests) |
+| 2G | AdaptiveAgentSolver v1 | **done** (`adaptive_agent`, opt-in; gated advanced methods off) |
+| 2H | Real model ablation and leaderboard logging | planned (needs `MODEL_PATH`) |
+| 2I | Runtime optimization / quantization / batching | planned |
+| 2J | Selective advanced reasoning (self-consistency / PAL-lite / debate-lite / ToT-lite) | planned, evidence-gated |
+| 3 | Final packaging and report | planned |
 
-### Phase 2E — Compare score modes & prompts
-- **Objective:** pick `hf_generate` vs `hf_option_score` and the best prompt variant.
-- **Why:** accuracy is the dominant criterion; cheap wins likely here.
-- **Files:** `src/prompting.py` (prompt variants), log rows.
-- **Validation:** run both on the public set; compare logged scores.
-- **Success:** a clear winner chosen with evidence.
-- **Stop when:** marginal prompt changes stop moving the score.
-
-### Phase 2F — Speed optimization / quantization
-- **Objective:** fit the time budget; improve the speed criterion.
-- **Why:** option scoring is multi-pass; latency may be the binding constraint.
-- **Files:** `src/hf_*` (batching), `hf_common` (quantization/device).
-- **Validation:** `scripts/benchmark_runtime.py`; full run within budget.
-- **Success:** target latency met with accuracy retained.
-- **Stop when:** within budget with no accuracy regression.
-
-### Phase 2G — Adaptive routing / passage compression / math helper (only if justified)
-- **Objective:** targeted accuracy gains on identified sub-populations.
-- **Why:** the 10-choice numeric cluster and long-context items are distinctive.
-- **Files:** `src/solver_factory.py`, `src/prompting.py`, possibly a new helper.
-- **Validation:** A/B logged scores vs. Phase 2E winner.
-- **Success:** measurable, verified gain over the simpler pipeline.
-- **Stop when:** added complexity stops paying off.
-
-### Phase 3 — Final Docker packaging + method report
-- **Objective:** submission-ready image and write-up.
-- **Why:** required deliverables; reproducibility and the "explanation" criterion.
-- **Files:** `Dockerfile` (model-bearing variant if required), method report from these docs.
-- **Validation:** clean clone → build → run on mounted `/data` → validated `pred.csv`.
-- **Success:** reproducible image + polished report.
-- **Stop when:** a fresh environment reproduces the submission.
+Per-phase objectives, files touched, validation commands, success criteria, and
+stop conditions are specified in `docs/ARCHITECTURE.md` §11. The **Minimal Viable
+Agent v1** scope (exactly five modules; no PAL/debate/ToT/GoT/self-consistency) is
+in `docs/ARCHITECTURE.md` §14.
 
 ---
 
 ## J. Immediate next action
 
-**Do Phase 2C.1 first: add an optional `requirements-llm.txt` and obtain/confirm
-a local model — but before spending any model time, resolve the two blockers that
-make all model work moot if ignored:** (1) publish the work to the branch graders
-will actually clone, and (2) confirm the real MCQA scoring rubric, time budget,
-and submission/packaging format (the repo PDF only covers the general rules).
+**Implement Phase 2F — the lightweight agent modules** (`question_profiler`,
+`question_router`, `passage_compressor`, `confidence`). They are pure Python, need
+no model, are fully testable now, and unblock the AdaptiveAgentSolver (2G). This
+is the highest-value work available without a `MODEL_PATH`.
 
-**Why this is the best use of time.** Every accuracy/speed improvement is wasted
-if the graded branch is empty or the deliverable format is wrong. These checks
-are cheap and unblock everything. Once cleared, a smoke test on a small
-Vietnamese-capable model (Phase 2D) turns the untested LLM framework into a real,
-logged score — the first piece of actual evidence this project has.
+**In parallel (non-code blockers):** confirm with BTC the MCQA scoring rubric,
+time budget, and whether the Docker image must bundle weights; and standardise the
+submission branch on `main` (now up to date — the earlier "main empty" blocker is
+resolved). The first real leaderboard score (Phase 2H) remains blocked until a
+compliant local model is provided.
 
 **Suggested next prompt to request:**
-> "Phase 2C.1 + 2D: add an optional `requirements-llm.txt`, then run a smoke test
-> of `hf_option_score` against this local model path `<PATH>`, validate the
-> output, do a full public run, and record both scores in the leaderboard log.
-> If no model path is available, just complete 2C.1 and report that 2D is blocked
-> on a model."
+> "Phase 2F: implement the lightweight agent modules (`src/question_profiler.py`,
+> `src/question_router.py`, `src/passage_compressor.py`, `src/confidence.py`) per
+> `docs/ARCHITECTURE.md` §14, with tests, keeping the baseline default and adding
+> no torch dependency."

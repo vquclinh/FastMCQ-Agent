@@ -62,7 +62,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--input", default=None, help="input JSON/CSV file (default: auto-detect in /data)")
     parser.add_argument("--output", default=None, help="output CSV path (default: /output/pred.csv)")
     parser.add_argument("--config", default="configs/default.yaml", help="YAML config path")
-    parser.add_argument("--solver", default=None, help="solver name: always_a | hf_generate | hf_option_score")
+    parser.add_argument("--solver", default=None, help="solver name: always_a | hf_generate | hf_option_score | adaptive_agent")
     parser.add_argument("--model-path", default=None, help="LOCAL model directory (required for hf_* solvers)")
     parser.add_argument("--max-new-tokens", type=int, default=None, help="max new tokens for generation solver")
     parser.add_argument("--temperature", type=float, default=None, help="sampling temperature (0 = deterministic)")
@@ -100,6 +100,11 @@ def main(argv: list[str] | None = None) -> int:
     temperature = _resolve(args.temperature, hf_cfg.get("temperature"), 0.0)
     max_input_tokens = _resolve(args.max_input_tokens, hf_cfg.get("max_input_tokens"), 4096)
     score_mode = _resolve(args.score_mode, hf_cfg.get("score_mode"), "label_plus_choice")
+    # Adaptive-agent settings come from config (hf.adaptive); CLI --score-mode,
+    # when given, overrides the adaptive primary score mode too.
+    adaptive_config = dict(hf_cfg.get("adaptive", {}) or {})
+    if args.score_mode is not None:
+        adaptive_config["primary_score_mode"] = args.score_mode
     trust_remote_code = bool(_resolve(args.trust_remote_code, hf_cfg.get("trust_remote_code"), False))
     device = _resolve(args.device, hf_cfg.get("device"), "auto")
     save_raw = bool(_resolve(args.save_raw, hf_cfg.get("save_raw"), False))
@@ -139,7 +144,8 @@ def main(argv: list[str] | None = None) -> int:
                 solver_name, model_path=model_path, device=device,
                 trust_remote_code=trust_remote_code, max_new_tokens=max_new_tokens,
                 temperature=temperature, max_input_tokens=max_input_tokens,
-                score_mode=score_mode, save_raw=save_raw, logger=run_logger,
+                score_mode=score_mode, adaptive_config=adaptive_config,
+                save_raw=save_raw, logger=run_logger,
             )
         except (ValueError, HFDependencyError) as exc:
             # Configuration / dependency problems: report cleanly, no traceback.

@@ -27,6 +27,26 @@ hf:
   save_raw: false             # log raw generations / option scores to the debug log
   log_path: outputs/run_debug.jsonl   # per-sample debug JSONL (never pred.csv)
 
+  # --- adaptive_agent settings (used only when solver = adaptive_agent) ------
+  # Minimal Viable Agent v1: deterministic profile/route/compress + option-score
+  # backbone + margin confidence + simple fallback. Advanced methods are GATED
+  # OFF; turning one on raises NotImplementedError (see docs/ARCHITECTURE.md §14).
+  adaptive:
+    primary_score_mode: label_plus_choice     # backbone score mode
+    alternate_score_modes: [label_only, choice_only]   # fallback score modes
+    enable_generation_fallback: true
+    enable_self_consistency: false   # gated (not implemented this phase)
+    enable_pal_lite: false           # gated
+    enable_debate: false             # gated
+    enable_tot_lite: false           # gated
+    max_fallbacks_per_sample: 1      # cost cap: at most N fallback attempts
+    high_margin: 0.30                # >= => accept (conservative, not tuned)
+    medium_margin: 0.10              # >= => accept unless flagged
+    max_context_chars: 3000          # long-context compression budget
+    compress_long_context: true
+    log_agent_trace: true            # write the rich per-sample JSONL trace
+    allow_tier2_ambiguous: false     # keep Tier 2 off by default
+
 # --- Prompt / runtime placeholders (informational) ---------------------------
 prompt:
   strategy: zero_shot         # zero_shot | few_shot | cot

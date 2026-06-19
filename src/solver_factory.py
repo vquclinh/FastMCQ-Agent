@@ -6,9 +6,11 @@ Supported names:
   * ``always_a``        — :class:`AlwaysASolver` (Phase 1 baseline, no deps).
   * ``hf_generate``     — :class:`HFGenerateSolver` (local HF generation).
   * ``hf_option_score`` — :class:`HFOptionScoreSolver` (local HF option scoring).
+  * ``adaptive_agent``  — :class:`AdaptiveAgentSolver` (budget-aware multi-agent).
 
-The ``hf_*`` solvers are imported lazily so that ``always_a`` never pulls in
-torch/transformers. Unknown names and missing ``model_path`` raise clear errors.
+The ``hf_*`` / ``adaptive_agent`` solvers are imported lazily so that
+``always_a`` never pulls in torch/transformers. Unknown names and missing
+``model_path`` raise clear errors.
 """
 
 from __future__ import annotations
@@ -16,13 +18,14 @@ from __future__ import annotations
 from .baseline_solver import AlwaysASolver
 from .solver_base import BaseSolver
 
-SOLVER_NAMES = ("always_a", "hf_generate", "hf_option_score")
+SOLVER_NAMES = ("always_a", "hf_generate", "hf_option_score", "adaptive_agent")
 
 
 def build_solver(name: str, *, model_path: str | None = None,
                  device: str = "auto", trust_remote_code: bool = False,
                  max_new_tokens: int = 8, temperature: float = 0.0,
                  max_input_tokens: int = 4096, score_mode: str = "label_plus_choice",
+                 adaptive_config: dict | None = None,
                  save_raw: bool = False, logger=None) -> BaseSolver:
     """Construct a solver by name. See module docstring for supported names."""
     if name == "always_a":
@@ -46,6 +49,17 @@ def build_solver(name: str, *, model_path: str | None = None,
             model_path, device=device, trust_remote_code=trust_remote_code,
             max_new_tokens=max_new_tokens, temperature=temperature,
             max_input_tokens=max_input_tokens, save_raw=save_raw, logger=logger,
+        )
+
+    if name == "adaptive_agent":
+        from .adaptive_agent_solver import AdaptiveAgentSolver, AdaptiveConfig
+        # Build the config from known keys only (ignore unrelated config noise).
+        cfg_kwargs = {k: v for k, v in (adaptive_config or {}).items()
+                      if k in AdaptiveConfig.__dataclass_fields__}
+        return AdaptiveAgentSolver(
+            model_path, device=device, trust_remote_code=trust_remote_code,
+            max_input_tokens=max_input_tokens, max_new_tokens=max_new_tokens,
+            temperature=temperature, config=AdaptiveConfig(**cfg_kwargs), logger=logger,
         )
 
     # hf_option_score: reuse the loaded model for a generation fallback so we do

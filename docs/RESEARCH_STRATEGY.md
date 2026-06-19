@@ -116,11 +116,19 @@ never dropping the answer choices (`truncate_question`).
 
 ## 9. What is planned
 
-- First real local-model run + leaderboard score (Phase 2D).
-- Score-mode and prompt comparison to pick the backbone configuration (2E).
-- Speed work: batching, quantization, faster backend (2F).
-- Selective self-consistency, PAL-lite for numerics, passage compression (2G) —
-  each adopted only if measured gains justify the added cost.
+Phase names follow the canonical roadmap (`docs/ARCHITECTURE.md` §11):
+
+- **Phase 2F** — lightweight, deterministic agent modules (profiler, router,
+  passage compressor, confidence), no model needed. **(implemented, tested)**
+- **Phase 2G** — AdaptiveAgentSolver v1 wiring those modules around the existing
+  option-scoring backbone (Minimal Viable Agent v1; see `ARCHITECTURE.md` §14).
+  **(implemented as `adaptive_agent`; advanced methods gated off; not yet run on a
+  real model)**
+- **Phase 2H** — first real local-model run + score-mode/prompt comparison,
+  logged to the leaderboard.
+- **Phase 2I** — speed work: batching, quantization, token/compute budgets.
+- **Phase 2J** — selective self-consistency, PAL-lite for numerics, and other
+  advanced reasoning — each adopted only if measured gains justify the cost.
 
 ## 10. What is intentionally avoided (runtime / deadline)
 
@@ -140,3 +148,26 @@ applications. This demonstrates optimisation thinking (cost-aware, leaderboard-
 driven decisions) and creativity (problem-specific methods for the numeric and
 long-context sub-populations) while keeping the system reproducible and within
 budget.
+
+## 12. Multi-agent architecture (FastMCQ-Agent++)
+
+The strategy above is realised as a **budget-aware multi-agent pipeline**, fully
+specified in [`docs/ARCHITECTURE.md`](ARCHITECTURE.md):
+
+`normalize → dynamic labels → profile → budget → route → specialist agent →
+evidence build → option scoring → verify/confidence → selective fallback →
+final answer`.
+
+Key principles:
+- **Cheap by default:** a deterministic profiler/router (no LLM call) sends most
+  questions through a single option-scoring pass (Tier 0).
+- **Specialists, not one prompt:** distinct handling for short-knowledge,
+  long-context, calculation, law/admin, safety/ethics, and ambiguous routes.
+- **Research mapped to lightweight modules:** CoT (internal, label-only),
+  RAG (in-question passage selection), Lost-in-the-Middle (evidence placement),
+  ReAct (module separation), Self-Consistency / PAL-lite / Self-Refine /
+  debate-lite / ToT-lite as **rationed Tier-2 fallbacks** triggered by the
+  confidence margin and the budget controller.
+- **Evidence over complexity:** every advanced technique is adopted only if a
+  leaderboard ablation shows a real gain at acceptable runtime; the default solver
+  remains the safe baseline.

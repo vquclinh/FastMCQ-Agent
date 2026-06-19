@@ -50,6 +50,17 @@ class RunLogger:
         self._write(record)
         self.count += 1
 
+    def record_event(self, record: dict) -> None:
+        """Append an arbitrary per-sample record dict (no-op if disabled).
+
+        Used by solvers (e.g. the adaptive agent) that emit a richer schema than
+        :meth:`record`'s fixed fields. Writes the dict as-is.
+        """
+        if self._fh is None:
+            return
+        self._write(record)
+        self.count += 1
+
     def record_summary(self, summary: dict) -> None:
         """Append a final summary record (tagged so it is easy to filter out)."""
         if self._fh is None:
