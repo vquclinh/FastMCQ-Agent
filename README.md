@@ -5,11 +5,12 @@ A multiple-choice QA (MCQ) inference system for **HackAIthon 2026 — Board C / 
 Given a set of questions, each with a list of choices, the system predicts one
 answer label (`A`, `B`, `C`, ...) per question and writes a submission CSV.
 
-> **Phase 1 status: baseline infrastructure only.**
-> The current solver (`AlwaysASolver`) predicts `A` for every question. It is a
-> **format-check baseline** that exercises the full pipeline (load → solve →
-> validate → write) and guarantees a structurally valid submission. Real LLM
-> inference arrives in Phase 2 — see [docs/METHOD.md](docs/METHOD.md).
+> **Status:** the default solver is still the dependency-free `AlwaysASolver`
+> **format-check baseline** (predicts `A`), so the container always produces a
+> valid submission out of the box. Phase 2B/C adds **local-LLM solvers**
+> (`hf_generate`, `hf_option_score`) behind the same interface — opt in with
+> `--solver` + a **local** model path. No model is bundled or downloaded.
+> See [docs/METHOD.md](docs/METHOD.md).
 
 ## Competition I/O contract
 
@@ -114,6 +115,61 @@ docker run --rm -v /path/to/data:/data -v /path/to/out:/output \
   fastmcq-agent python run.py --output /output/pred.csv
 ```
 
+## Local LLM solver (Phase 2B/C)
+
+The baseline above always works with **no extra dependencies**. To run a real
+model, install `torch` + `transformers` locally and point the solver at a
+**local** model directory. **Nothing is downloaded** and no external API is
+called — `--model-path` must already exist on disk.
+
+Two solvers are available:
+
+- **`hf_generate`** — prompts the model and parses a single answer label out of
+  its short generated reply. Simple; quality depends on the model following the
+  "output only the label" instruction.
+- **`hf_option_score`** *(preferred)* — scores every candidate answer as a
+  continuation (`A. <text>`, `B. <text>`, ...) and picks the highest
+  length-normalised log-probability. More stable than generation, and it handles
+  any number of choices (2, 3, 4, 10, 11). Falls back to generation, then `A`.
+
+Both return a **dynamic label** sized to the question's actual choice count and
+keep the same valid-or-fallback-to-`A` guarantee via `postprocess.py`.
+
+```bash
+# 1) Smoke test on the first 10 samples (confirms the model loads + parses)
+bash scripts/run_llm_smoke.sh /path/to/local/model
+#    -> outputs/pred_llm_smoke.csv  + validation
+
+# 2) Full public inference with the option-scoring solver
+bash scripts/run_llm_full.sh /path/to/local/model
+#    -> outputs/pred_llm.csv  + validation + reminder to upload & log the score
+
+# Equivalent explicit command:
+python run.py --solver hf_option_score --model-path /path/to/local/model \
+  --input public-test_1780368312.json --output outputs/pred_llm.csv \
+  --log-path outputs/run_debug.jsonl
+
+# 3) Validate any submission
+python scripts/validate_submission.py \
+  --input public-test_1780368312.json --submission outputs/pred_llm.csv
+
+# 4) Benchmark runtime from the debug log
+python scripts/benchmark_runtime.py --log-path outputs/run_debug.jsonl
+```
+
+Useful flags: `--limit N` (first N samples), `--resume FILE` (skip qids already
+predicted), `--save-raw` (log raw outputs/scores), `--max-input-tokens`,
+`--max-new-tokens`, `--temperature`, `--device`, `--trust-remote-code`. CLI flags
+override `configs/default.yaml` (see its `hf:` section).
+
+### Recommended workflow
+
+1. `run_llm_smoke.sh` — sanity-check the model on 10 samples.
+2. `run_llm_full.sh` — full run + validate.
+3. Validate the submission CSV.
+4. Upload `outputs/pred_llm.csv` to the leaderboard.
+5. Record the score in [`experiments/leaderboard_log.csv`](experiments/leaderboard_log.csv).
+
 ## Tests
 
 ```bash
@@ -123,12 +179,20 @@ pytest -q
 # Or standalone, without pytest installed
 python tests/test_labels.py
 python tests/test_data_io.py
+python tests/test_prompting.py
+python tests/test_output_parser.py
+python tests/test_solver_factory.py
 ```
+
+HF-solver tests skip the heavy model-loading paths gracefully when
+torch/transformers are not installed.
 
 ## Roadmap
 
-- **Phase 1 (this commit):** repo skeleton, data contract, baseline solver,
-  validation, Docker, docs. ✅
-- **Phase 2:** real LLM inference — swap `AlwaysASolver` for an LLM-backed
-  solver behind the same `BaseSolver` interface. See
-  [docs/METHOD.md](docs/METHOD.md).
+- **Phase 1 / 1.1:** repo skeleton, data contract, baseline solver, validation,
+  hardened Docker. ✅
+- **Phase 2A:** dataset profiling + experiment tracking. ✅
+- **Phase 2B/C:** local-LLM solvers (`hf_generate`, `hf_option_score`) behind the
+  `BaseSolver` interface, with prompting, output parsing, runtime logging. ✅
+- **Phase 2D (next):** batching, quantization, faster backends (vLLM/llama.cpp),
+  adaptive routing, prompt ensembles. See [docs/METHOD.md](docs/METHOD.md).
