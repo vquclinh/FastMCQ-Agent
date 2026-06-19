@@ -22,8 +22,8 @@ SOLVER_NAMES = ("always_a", "hf_generate", "hf_option_score")
 def build_solver(name: str, *, model_path: str | None = None,
                  device: str = "auto", trust_remote_code: bool = False,
                  max_new_tokens: int = 8, temperature: float = 0.0,
-                 max_input_tokens: int = 4096, save_raw: bool = False,
-                 logger=None) -> BaseSolver:
+                 max_input_tokens: int = 4096, score_mode: str = "label_plus_choice",
+                 save_raw: bool = False, logger=None) -> BaseSolver:
     """Construct a solver by name. See module docstring for supported names."""
     if name == "always_a":
         return AlwaysASolver()
@@ -54,7 +54,8 @@ def build_solver(name: str, *, model_path: str | None = None,
     from .hf_option_score_solver import HFOptionScoreSolver
     scorer = HFOptionScoreSolver(
         model_path, device=device, trust_remote_code=trust_remote_code,
-        max_input_tokens=max_input_tokens, save_raw=save_raw, logger=logger,
+        max_input_tokens=max_input_tokens, score_mode=score_mode,
+        save_raw=save_raw, logger=logger,
     )
     scorer.generate_fallback = HFGenerateSolver(
         model_path, max_new_tokens=max_new_tokens, temperature=temperature,

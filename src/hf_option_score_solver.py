@@ -8,16 +8,20 @@ handles any number of choices (2, 3, 4, 10, 11, ...).
 Scoring method
 --------------
 The prompt ends with ``"Đáp án đúng là:"``. For each label we build a
-continuation ``" A. <choice text>"`` and compute the model's **average
-log-probability per continuation token** (length-normalised, so options with
-longer text are not unfairly penalised). The label with the highest average
-log-probability wins.
+continuation and compute the model's **average log-probability per continuation
+token** (length-normalised, so longer options are not unfairly penalised). The
+label with the highest average log-probability wins.
 
-Why score the full ``" A. <text>"`` continuation rather than just the bare
-label token? Single-label-token scoring is brittle: tokenizers split " A",
-"A", "A." inconsistently, and a lone letter carries little signal. Scoring the
-label *plus its answer text* is robust across tokenizers and is the method we
-use here.
+The continuation depends on ``score_mode``:
+  * ``label_only``        -> ``" A"``                 (bare label token)
+  * ``label_plus_choice`` -> ``" A. <choice text>"``  (default; most robust)
+  * ``choice_only``       -> ``" <choice text>"``     (label-free)
+
+``label_plus_choice`` is the default: bare-label scoring (``label_only``) is
+brittle because tokenizers split " A" / "A" / "A." inconsistently and a lone
+letter carries little signal, while ``choice_only`` ignores the label binding.
+Which mode wins on the leaderboard is an empirical question — hence all three
+are selectable (see docs/RESEARCH_STRATEGY.md).
 
 Robustness: all tensor work is under ``torch.no_grad()``. If scoring raises for
 any reason, we fall back to a generation solver (if one was provided) and then
@@ -35,15 +39,34 @@ from .solver_base import BaseSolver
 
 _FALLBACK = index_to_label(0)  # "A"
 
+SCORE_MODES = ("label_only", "label_plus_choice", "choice_only")
+DEFAULT_SCORE_MODE = "label_plus_choice"
+
+
+def _continuation(mode: str, label: str, choice: str) -> str:
+    """Build the scored continuation string for a given score mode."""
+    choice = str(choice).strip()
+    if mode == "label_only":
+        return f" {label}"
+    if mode == "choice_only":
+        return f" {choice}"
+    # default: label_plus_choice
+    return f" {label}. {choice}"
+
 
 class HFOptionScoreSolver(BaseSolver):
     """Predict by scoring each candidate answer continuation."""
 
     def __init__(self, model_path: str, *, device: str = "auto",
                  trust_remote_code: bool = False, max_input_tokens: int = 4096,
-                 save_raw: bool = False, logger=None, loaded=None,
-                 generate_fallback=None):
+                 score_mode: str = DEFAULT_SCORE_MODE, save_raw: bool = False,
+                 logger=None, loaded=None, generate_fallback=None):
+        if score_mode not in SCORE_MODES:
+            raise ValueError(
+                f"unknown score_mode {score_mode!r}; choose one of {', '.join(SCORE_MODES)}"
+            )
         self.max_input_tokens = max_input_tokens
+        self.score_mode = score_mode
         self.save_raw = save_raw
         self.logger = logger
         self.generate_fallback = generate_fallback
@@ -76,10 +99,11 @@ class HFOptionScoreSolver(BaseSolver):
 
         try:
             scores = self._score_options(prompt, labels, choices)
-            best_idx = max(range(len(scores)), key=lambda i: scores[i])
+            ranked = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)
+            best_idx = ranked[0]
             label = labels[best_idx]
-            score_map = {labels[i]: round(scores[i], 4) for i in range(len(labels))}
-            self._log(sample, label, shape, len(choices), start, score_map, None)
+            detail = self._score_detail(labels, scores, ranked)
+            self._log(sample, label, shape, len(choices), start, detail, None)
             return label
         except Exception as exc:
             reason = f"scoring_error: {type(exc).__name__}: {exc}"
@@ -108,7 +132,7 @@ class HFOptionScoreSolver(BaseSolver):
         scores: list[float] = []
         with torch.no_grad():
             for label, choice in zip(labels, choices):
-                continuation = f" {label}. {str(choice).strip()}"
+                continuation = _continuation(self.score_mode, label, choice)
                 cont_ids = self.tokenizer.encode(continuation, add_special_tokens=False)
                 if not cont_ids:
                     scores.append(float("-inf"))
@@ -128,12 +152,29 @@ class HFOptionScoreSolver(BaseSolver):
                 scores.append(total / len(cont_ids))  # length-normalised
         return scores
 
-    def _log(self, sample, label, shape, num_choices, start, score_map, reason):
+    def _score_detail(self, labels, scores, ranked) -> dict:
+        """Structured scoring metadata for the debug log."""
+        best_label = labels[ranked[0]]
+        second_label = labels[ranked[1]] if len(ranked) > 1 else None
+        best_score = scores[ranked[0]]
+        second_score = scores[ranked[1]] if len(ranked) > 1 else None
+        margin = (round(best_score - second_score, 4)
+                  if second_score is not None else None)
+        return {
+            "score_mode": self.score_mode,
+            "labels": labels,
+            "scores": {labels[i]: round(scores[i], 4) for i in range(len(labels))},
+            "best_label": best_label,
+            "second_label": second_label,
+            "margin": margin,
+        }
+
+    def _log(self, sample, label, shape, num_choices, start, detail, reason):
         if self.logger is not None:
             self.logger.record(
                 qid=sample.get("qid", ""), answer=label, solver="hf_option_score",
                 shape=shape, num_choices=num_choices,
                 elapsed_s=time.perf_counter() - start,
-                option_scores=score_map if self.save_raw else None,
+                option_scores=detail if self.save_raw else None,
                 fallback_reason=reason,
             )

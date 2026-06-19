@@ -18,6 +18,7 @@ io:
 hf:
   model_path:                 # e.g. /models/my-local-model  (required for hf_*)
   solver: hf_option_score     # preferred LLM solver when one is selected
+  score_mode: label_plus_choice   # option scoring: label_only | label_plus_choice | choice_only
   max_new_tokens: 8           # generation solver: short answer only
   temperature: 0.0            # 0.0 => deterministic (do_sample=False)
   max_input_tokens: 4096      # prompt budget; questions are head-tail truncated

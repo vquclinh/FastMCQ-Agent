@@ -1,0 +1,19 @@
+# Optional dependencies for LOCAL LLM inference (Phase 2B/C solvers).
+#
+# This file is OPTIONAL. The baseline solver (`always_a`), the validation
+# scripts, the test suite, and the Docker baseline image do NOT need anything
+# here — they run on the Python standard library plus PyYAML (requirements.txt).
+#
+# Install these ONLY when you want to run the local LLM solvers
+# (`hf_generate`, `hf_option_score`):
+#
+#     pip install -r requirements-llm.txt
+#
+# Nothing here downloads a model. You still provide a LOCAL model directory via
+# --model-path; see docs/MODEL_COMPLIANCE.md for which model families are allowed.
+
+torch>=2.1            # tensors + inference; install the build matching your CUDA/CPU
+transformers>=4.40    # tokenizer + AutoModelForCausalLM loading (local_files_only)
+accelerate>=0.27      # device placement / efficient loading helpers
+sentencepiece>=0.1.99 # tokenizer backend used by Qwen / Gemma family tokenizers
+safetensors>=0.4      # safe, fast weight format used by modern local checkpoints

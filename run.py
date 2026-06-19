@@ -67,6 +67,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--max-new-tokens", type=int, default=None, help="max new tokens for generation solver")
     parser.add_argument("--temperature", type=float, default=None, help="sampling temperature (0 = deterministic)")
     parser.add_argument("--max-input-tokens", type=int, default=None, help="prompt token budget (question truncation)")
+    parser.add_argument("--score-mode", default=None, choices=["label_only", "label_plus_choice", "choice_only"], help="option-scoring continuation style (hf_option_score)")
     parser.add_argument("--trust-remote-code", action="store_true", default=None, help="allow trust_remote_code on model load")
     parser.add_argument("--device", default=None, help="device: auto | cpu | cuda")
     parser.add_argument("--limit", type=int, default=None, help="only run the first N samples (smoke testing)")
@@ -98,6 +99,7 @@ def main(argv: list[str] | None = None) -> int:
     max_new_tokens = _resolve(args.max_new_tokens, hf_cfg.get("max_new_tokens"), 8)
     temperature = _resolve(args.temperature, hf_cfg.get("temperature"), 0.0)
     max_input_tokens = _resolve(args.max_input_tokens, hf_cfg.get("max_input_tokens"), 4096)
+    score_mode = _resolve(args.score_mode, hf_cfg.get("score_mode"), "label_plus_choice")
     trust_remote_code = bool(_resolve(args.trust_remote_code, hf_cfg.get("trust_remote_code"), False))
     device = _resolve(args.device, hf_cfg.get("device"), "auto")
     save_raw = bool(_resolve(args.save_raw, hf_cfg.get("save_raw"), False))
@@ -137,7 +139,7 @@ def main(argv: list[str] | None = None) -> int:
                 solver_name, model_path=model_path, device=device,
                 trust_remote_code=trust_remote_code, max_new_tokens=max_new_tokens,
                 temperature=temperature, max_input_tokens=max_input_tokens,
-                save_raw=save_raw, logger=run_logger,
+                score_mode=score_mode, save_raw=save_raw, logger=run_logger,
             )
         except (ValueError, HFDependencyError) as exc:
             # Configuration / dependency problems: report cleanly, no traceback.

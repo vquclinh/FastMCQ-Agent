@@ -1,0 +1,45 @@
+# Allowed / expected local model families for FastMCQ-Agent.
+#
+# This is a GUARDRAIL, not an authority: it encodes our current *safe
+# interpretation* of the competition model constraints. The organizer's exact
+# list still needs confirmation — see docs/MODEL_COMPLIANCE.md.
+#
+# Patterns are matched case-insensitively as substrings / simple regex against
+# the model name and the basename of the model path. Keep them broad enough to
+# tolerate naming variants (e.g. "Qwen3.5-7B-Instruct", "qwen3_5_7b").
+
+generation_llms:
+  - name: Qwen3.5 (<= 9B)
+    # Matches qwen3.5 / qwen3_5 / qwen35 with a size token; size is checked
+    # separately by the checker (<= 9B).
+    patterns:
+      - "qwen3[._-]?5"
+    max_params_b: 9
+  - name: Gemma-4
+    patterns:
+      - "gemma[._-]?4"
+    max_params_b: null   # no explicit size cap recorded; confirm with organizer
+
+embedding_rerank:
+  - name: BGE-m3
+    patterns:
+      - "bge[._-]?m3"
+  - name: Qwen-Rerank
+    patterns:
+      - "qwen.*rerank"
+      - "qwen[._-]?rerank"
+
+# Families we explicitly treat as NOT allowed under the safe interpretation,
+# unless the organizer confirms otherwise. Used to produce a clear FAIL/WARNING.
+disallowed_families:
+  - llama
+  - mistral
+  - mixtral
+  - deepseek
+  - phi
+  - falcon
+  - gpt
+  - gemini
+  - claude
+  - yi
+  - baichuan

@@ -118,9 +118,28 @@ docker run --rm -v /path/to/data:/data -v /path/to/out:/output \
 ## Local LLM solver (Phase 2B/C)
 
 The baseline above always works with **no extra dependencies**. To run a real
-model, install `torch` + `transformers` locally and point the solver at a
-**local** model directory. **Nothing is downloaded** and no external API is
-called — `--model-path` must already exist on disk.
+model, install the optional LLM deps and point the solver at a **local** model
+directory. **Nothing is downloaded** and no external API is called —
+`--model-path` must already exist on disk.
+
+### Optional LLM environment setup
+
+```bash
+# Optional deps (torch, transformers, accelerate, sentencepiece, safetensors)
+pip install -r requirements-llm.txt
+
+# Check the environment (torch/transformers, CUDA, GPU/VRAM) — no downloads
+python scripts/check_llm_env.py
+python scripts/check_llm_env.py --model-path /path/to/local/model --load-tokenizer
+
+# Check the model is within the allowed families BEFORE running it
+python scripts/check_model_compliance.py --model-path /path/to/local/model
+python scripts/check_model_compliance.py --model-name "Qwen3.5-7B" --strict
+```
+
+See [docs/MODEL_COMPLIANCE.md](docs/MODEL_COMPLIANCE.md) for which model families
+are allowed (provisional: Qwen3.5 ≤ 9B, Gemma-4; BGE-m3 / Qwen-Rerank for
+retrieval) and what still needs organizer confirmation.
 
 Two solvers are available:
 
@@ -128,26 +147,35 @@ Two solvers are available:
   its short generated reply. Simple; quality depends on the model following the
   "output only the label" instruction.
 - **`hf_option_score`** *(preferred)* — scores every candidate answer as a
-  continuation (`A. <text>`, `B. <text>`, ...) and picks the highest
-  length-normalised log-probability. More stable than generation, and it handles
-  any number of choices (2, 3, 4, 10, 11). Falls back to generation, then `A`.
+  continuation and picks the highest length-normalised log-probability. More
+  stable than generation, and it handles any number of choices (2, 3, 4, 10, 11).
+  Falls back to generation, then `A`.
 
-Both return a **dynamic label** sized to the question's actual choice count and
-keep the same valid-or-fallback-to-`A` guarantee via `postprocess.py`.
+**Score modes** (`--score-mode`, default `label_plus_choice`):
+
+| Mode | Scores continuation | Notes |
+|---|---|---|
+| `label_only` | `" A"` | Cleanest if the tokenizer cooperates; can be brittle. |
+| `label_plus_choice` | `" A. <choice text>"` | **Default**, most robust. |
+| `choice_only` | `" <choice text>"` | Label-free content likelihood. |
+
+Both solvers return a **dynamic label** sized to the question's actual choice
+count and keep the same valid-or-fallback-to-`A` guarantee via `postprocess.py`.
 
 ```bash
 # 1) Smoke test on the first 10 samples (confirms the model loads + parses)
-bash scripts/run_llm_smoke.sh /path/to/local/model
+bash scripts/run_llm_smoke.sh /path/to/local/model [SCORE_MODE]
 #    -> outputs/pred_llm_smoke.csv  + validation
 
 # 2) Full public inference with the option-scoring solver
-bash scripts/run_llm_full.sh /path/to/local/model
+bash scripts/run_llm_full.sh /path/to/local/model [SCORE_MODE]
 #    -> outputs/pred_llm.csv  + validation + reminder to upload & log the score
 
 # Equivalent explicit command:
 python run.py --solver hf_option_score --model-path /path/to/local/model \
+  --score-mode label_plus_choice \
   --input public-test_1780368312.json --output outputs/pred_llm.csv \
-  --log-path outputs/run_debug.jsonl
+  --save-raw --log-path outputs/run_debug.jsonl
 
 # 3) Validate any submission
 python scripts/validate_submission.py \
@@ -157,10 +185,21 @@ python scripts/validate_submission.py \
 python scripts/benchmark_runtime.py --log-path outputs/run_debug.jsonl
 ```
 
-Useful flags: `--limit N` (first N samples), `--resume FILE` (skip qids already
-predicted), `--save-raw` (log raw outputs/scores), `--max-input-tokens`,
-`--max-new-tokens`, `--temperature`, `--device`, `--trust-remote-code`. CLI flags
-override `configs/default.yaml` (see its `hf:` section).
+Useful flags: `--score-mode`, `--limit N` (first N samples), `--resume FILE`
+(skip qids already predicted), `--save-raw` (log raw outputs/scores),
+`--max-input-tokens`, `--max-new-tokens`, `--temperature`, `--device`,
+`--trust-remote-code`. CLI flags override `configs/default.yaml` (`hf:` section).
+
+### Recommended leaderboard experiment order
+
+Run these in order and record each score in `experiments/leaderboard_log.csv`:
+
+1. `hf_generate` (baseline LLM)
+2. `hf_option_score --score-mode label_only`
+3. `hf_option_score --score-mode label_plus_choice` (default)
+4. `hf_option_score --score-mode choice_only`
+
+Keep whichever scoring mode wins on the leaderboard.
 
 ### Recommended workflow
 

@@ -75,13 +75,38 @@ returns a label outside the valid set, and avoids letters embedded in words.
 
 ### Option scoring (`src/hf_option_score_solver.py`)
 
-For each label it scores the continuation `" A. <choice text>"` and computes the
-**average log-probability per continuation token** (length-normalised so longer
-options are not penalised). The best-scoring label wins. This is more stable than
-trusting free-form generation and handles any choice count. Scoring full
-`label + text` (rather than a lone label token) avoids tokenizer brittleness.
-All tensor work is under `torch.no_grad()`; on failure it falls back to
-generation, then `A`.
+For each label it scores a continuation and computes the **average log-probability
+per continuation token** (length-normalised so longer options are not penalised).
+The best-scoring label wins. This is more stable than trusting free-form
+generation and handles any choice count. All tensor work is under
+`torch.no_grad()`; on failure it falls back to generation, then `A`.
+
+#### Option-scoring variants (`--score-mode` / `hf.score_mode`)
+
+The scored continuation is selectable:
+
+| Mode | Continuation | Notes |
+|---|---|---|
+| `label_only` | `" A"` | Cleanest when the tokenizer cooperates; brittle otherwise. |
+| `label_plus_choice` *(default)* | `" A. <choice text>"` | Most robust; binds label to content. |
+| `choice_only` | `" <choice text>"` | Label-free content likelihood. |
+
+We default to `label_plus_choice`, but **the leaderboard score decides which
+scoring mode is retained** — all three are first-class and the debug log records
+the score mode, per-label scores, best/second-best labels, and the top-2 margin
+so the choice can be made on evidence (see `docs/RESEARCH_STRATEGY.md`).
+
+### Model compliance & LLM environment
+
+LLM runs are gated by an explicit compliance policy. Allowed families (provisional)
+are declared in `configs/allowed_models.yaml` and checked by
+`scripts/check_model_compliance.py` (PASS/WARNING/FAIL, with `--strict`); the full
+policy and open questions for the organizer are in `docs/MODEL_COMPLIANCE.md`.
+
+The optional LLM dependencies live in `requirements-llm.txt` (kept out of the
+baseline/Docker image). `scripts/check_llm_env.py` reports torch/transformers
+availability, CUDA, and GPU/VRAM, and can validate a local model path — all
+without downloading anything.
 
 ### Runtime logging (`src/run_logger.py`)
 
