@@ -1,0 +1,2 @@
+date,version,solver,model,prompt,decoding,runtime_notes,local_validation,leaderboard_score,upload_file,notes
+2026-06-19,phase1-baseline,AlwaysASolver,none,none,deterministic,"stdlib only; no inference",PASS,,outputs/pred.csv,Format-check baseline: predicts A for every question. Establishes a valid submission and the experiment-logging workflow.

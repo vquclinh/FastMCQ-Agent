@@ -74,6 +74,27 @@ python scripts/validate_submission.py \
   --submission outputs/pred.csv
 ```
 
+### Profile the dataset
+
+Generate a deep dataset analysis (choice-count distribution, long-context vs.
+standalone questions, rough category breakdown, template/edge-case detection,
+and sample-submission inspection). Writes a Markdown report and a JSON dump.
+
+```bash
+python scripts/profile_dataset.py \
+  --input public-test_1780368312.json \
+  --sample-submission submission_1780332147.csv
+# -> docs/DATASET_PROFILE.md  and  outputs/dataset_profile.json
+```
+
+See [docs/DATASET_PROFILE.md](docs/DATASET_PROFILE.md) for the current report.
+
+### Experiment logging
+
+Leaderboard-driven development is tracked in [experiments/](experiments/).
+Append one row per attempt to `experiments/leaderboard_log.csv` and fill in the
+score after submitting — see [experiments/README.md](experiments/README.md).
+
 ## Docker
 
 ```bash
