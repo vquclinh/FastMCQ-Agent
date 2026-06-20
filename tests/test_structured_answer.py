@@ -45,9 +45,30 @@ def test_invalid_label_rejected():
     assert not r.ok and r.answer is None and r.needs_review
 
 
-def test_label_fallback_from_plain_text():
+def test_partial_answer_key_recovery_from_truncated_json():
+    # Trailing evidence truncated (no closing brace) -> recover the explicit
+    # answer key, marked as a degraded (needs_review) success.
+    truncated = '{"answer": "C", "confidence": 1.0, "evidence": "Độ co giãn = (250-150)/150 / (3-5)/5 = 0.66'
+    r = parse_structured_answer(truncated, ABCD)
+    assert r.ok and r.answer == "C"
+    assert r.source == "partial_answer_key" and r.needs_review
+
+
+def test_no_recovery_from_standalone_letter():
+    # A bare Vietnamese declaration is NOT recovered (no JSON, no `answer:` key).
     r = parse_structured_answer("Đáp án: C chắc chắn", ABCD)
-    assert r.ok and r.answer == "C" and r.source == "label_fallback"
+    assert not r.ok and r.answer is None
+
+
+def test_no_recovery_from_letter_in_prose():
+    r = parse_structured_answer("Tôi nghĩ rằng đáp án đúng là C.", ABCD)
+    assert not r.ok and r.answer is None
+
+
+def test_answer_key_recovery_validates_label():
+    # `answer: Z` is recovered-shaped but Z is not a valid label -> failure.
+    r = parse_structured_answer('{"answer": "Z", "evidence": "trunc', ABCD)
+    assert not r.ok and r.answer is None
 
 
 def test_unparseable_returns_failure():

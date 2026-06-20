@@ -23,6 +23,10 @@ from .output_parser import parse_answer_label
 
 _FENCE_RE = re.compile(r"```(?:json)?\s*(\{.*?\})\s*```", re.DOTALL | re.IGNORECASE)
 _OBJ_RE = re.compile(r"\{.*\}", re.DOTALL)
+# Explicit answer-key recovery: matches `"answer": "C"`, `'answer': C`, `answer: C`
+# — the labelled field, NOT a random standalone letter. Used only when full JSON
+# parsing fails (e.g. the trailing evidence truncated the object).
+_ANSWER_KEY_RE = re.compile(r"""['"]?answer['"]?\s*:\s*['"]?\s*([A-Za-z])\b""", re.IGNORECASE)
 REASON_TYPES = ("lookup", "reading", "calculation", "elimination", "other")
 
 
@@ -95,8 +99,32 @@ def _normalize_label(raw, valid_labels: list[str]) -> str | None:
     return parse_answer_label(s, valid_labels)
 
 
+def _recover_answer_key(text: str, valid_labels: list[str]) -> str | None:
+    """Recover an explicit ``"answer": "X"`` label from partial/broken JSON.
+
+    Only matches the *labelled* answer field (not a random standalone letter or a
+    letter inside evidence), and validates it against ``valid_labels``.
+    """
+    valid = {l.upper(): l for l in valid_labels}
+    m = _ANSWER_KEY_RE.search(text or "")
+    if m:
+        cand = m.group(1).upper()
+        if cand in valid:
+            return valid[cand]
+    return None
+
+
 def parse_structured_answer(text: str, valid_labels: list[str]) -> StructuredAnswer:
-    """Parse model output into a validated :class:`StructuredAnswer`."""
+    """Parse model output into a validated :class:`StructuredAnswer`.
+
+    Order (success quality decreasing):
+      1-3. full JSON (strict / fenced / embedded) with a valid ``answer``
+      4.   explicit answer-key recovery from partial JSON (degraded; needs_review)
+      5.   failure (ok=False) — caller falls back to the safe default label.
+
+    We deliberately do NOT recover from the first standalone letter in free text
+    or from letters inside evidence — that is unreliable and not counted a success.
+    """
     obj, source = _extract_json(text)
 
     if obj is not None:
@@ -111,25 +139,22 @@ def parse_structured_answer(text: str, valid_labels: list[str]) -> StructuredAns
                 needs_review=bool(obj.get("needs_review", False)),
                 ok=True, source=source, error=None,
             )
-        # JSON parsed but answer label invalid/missing → try whole-text fallback.
-        fallback = parse_answer_label(text, valid_labels)
-        if fallback is not None:
-            return StructuredAnswer(answer=fallback, confidence=0.0, evidence="",
-                                    reason_type="other", needs_review=True,
-                                    ok=True, source="label_fallback",
-                                    error="json_answer_invalid")
-        return StructuredAnswer(answer=None, ok=False, source=source,
-                                needs_review=True, error="json_answer_invalid")
 
-    # No JSON at all → last-ditch single-label parse over the raw text.
-    fallback = parse_answer_label(text, valid_labels)
-    if fallback is not None:
-        return StructuredAnswer(answer=fallback, confidence=0.0, evidence="",
-                                reason_type="other", needs_review=True,
-                                ok=True, source="label_fallback",
-                                error="no_json")
-    return StructuredAnswer(answer=None, ok=False, source="none",
-                            needs_review=True, error="unparseable")
+    # 4) Explicit answer-key recovery (partial JSON / truncated evidence).
+    recovered = _recover_answer_key(text, valid_labels)
+    if recovered is not None:
+        return StructuredAnswer(
+            answer=recovered, confidence=0.0, evidence="",
+            reason_type="other", needs_review=True, ok=True,
+            source="partial_answer_key",
+            error=("json_answer_invalid" if obj is not None else "no_json"),
+        )
+
+    # 5) No reliable answer → failure; the graph falls back to the safe default.
+    return StructuredAnswer(answer=None, ok=False,
+                            source=(source if obj is not None else "none"),
+                            needs_review=True,
+                            error=("json_answer_invalid" if obj is not None else "unparseable"))
 
 
 # JSON schema usable as an OpenRouter response_format (json_schema) hint.
@@ -142,11 +167,17 @@ def response_format_schema() -> dict:
             "schema": {
                 "type": "object",
                 "properties": {
-                    "answer": {"type": "string"},
+                    # answer first + short; evidence capped so verbose derivations
+                    # cannot truncate the JSON (Phase 2K.2 correctness fix).
+                    "answer": {"type": "string", "maxLength": 4},
                     "confidence": {"type": "number"},
-                    "evidence": {"type": "string"},
                     "reason_type": {"type": "string"},
                     "needs_review": {"type": "boolean"},
+                    "evidence": {
+                        "type": "array",
+                        "items": {"type": "string", "maxLength": 120},
+                        "maxItems": 2,
+                    },
                 },
                 "required": ["answer"],
             },

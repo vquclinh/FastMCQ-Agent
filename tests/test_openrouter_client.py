@@ -94,10 +94,40 @@ def test_payload_disables_stream_by_default():
     assert p.get("stream") is False
 
 
-def test_payload_omits_reasoning_by_default():
+def test_payload_disables_reasoning_by_default():
+    # Correctness-first: default explicitly sends {"enabled": false} so the
+    # reasoning model does not eat the output budget (omitting it returns empty
+    # content). Verified empirically in Phase 2K.2.
     c = _client()
     p = c.build_payload([{"role": "user", "content": "x"}], None, 0.0, 256)
-    assert "reasoning" not in p
+    assert p["reasoning"] == {"enabled": False}
+
+
+def test_payload_reasoning_enabled_includes_exclude():
+    c = _client(reasoning_enabled=True)  # reasoning_exclude defaults True
+    p = c.build_payload([{"role": "user", "content": "x"}], None, 0.0, 1024)
+    assert p["reasoning"]["enabled"] is True
+    assert p["reasoning"]["exclude"] is True
+
+
+def test_payload_reasoning_max_tokens_included_when_set():
+    c = _client(reasoning_enabled=True, reasoning_max_tokens=512)
+    p = c.build_payload([{"role": "user", "content": "x"}], None, 0.0, 2048)
+    assert p["reasoning"]["max_tokens"] == 512
+    assert p["reasoning"]["exclude"] is True
+
+
+def test_payload_reasoning_effort_included_when_set():
+    c = _client(reasoning_enabled=True, reasoning_effort="low")
+    p = c.build_payload([{"role": "user", "content": "x"}], None, 0.0, 1024)
+    assert p["reasoning"]["effort"] == "low"
+
+
+def test_payload_reasoning_disabled_ignores_other_fields():
+    # When disabled, only {"enabled": false} is sent — no effort/max_tokens leak.
+    c = _client(reasoning_enabled=False, reasoning_max_tokens=64, reasoning_effort="low")
+    p = c.build_payload([{"role": "user", "content": "x"}], None, 0.0, 256)
+    assert p["reasoning"] == {"enabled": False}
 
 
 def test_payload_includes_response_format_when_structured():

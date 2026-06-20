@@ -69,11 +69,37 @@ The client targets OpenRouter's OpenAI-compatible chat endpoint:
   `response_format` (JSON schema) is included **only** when `structured_output`
   is enabled.
 - **Streaming: OFF by default** — batch CSV generation reads the full response.
-- **Reasoning tokens: OFF by default** — the `reasoning` field is never sent, for
-  speed and to avoid storing private chain-of-thought. `reasoning_details` are not
-  logged.
+- **Reasoning: explicitly DISABLED by default** — we send `reasoning: {"enabled":
+  false}`. (See the Phase 2K.1/2K.2 note below: `qwen/qwen3.5-9b` reasons by
+  default, so *omitting* the key returns empty content; explicitly disabling is
+  required.) `reasoning_details` are never logged.
 - **Target: one API call per sample** (a second call only when a repair is truly
   required; self-consistency is off by default).
+
+## Phase 2K.1/2K.2 — reasoning-model blocker and the fix (correctness-first)
+
+**Blocker (2K.1):** `qwen/qwen3.5-9b` is a reasoning model. With a normal
+`max_tokens` it spent the whole completion budget on hidden reasoning and returned
+**empty `content`** → unparseable → fallback `A` for every sample.
+
+**What did NOT work (2K.2 experiments, limit-3 live):**
+- *Omitting* the `reasoning` key (model default) → still reasons heavily → empty (0/3).
+- Enabling reasoning with a `reasoning.max_tokens` cap → the provider **ignores the
+  cap**; on long passages it still exhausted even `max_tokens=2048` → `test_0001`
+  empty (2/3).
+- `reasoning.effort: low` + `max_tokens=2048` → 2/3 and very slow (~75 s/sample).
+
+**What works (chosen config):** send **`reasoning: {"enabled": false}`** (truly
+off) + a **minimal-output prompt** (answer first, evidence ≤2 short items, JSON
+only, no derivation) + a **parser that recovers an explicit `"answer": "X"`** from
+truncated JSON. Result on live smokes:
+- limit-3: **3/3 full-JSON parse**, 1 call/sample, ~3.8 s/sample (answers A, C, B).
+- limit-20: **20/20 parseable** (19 full JSON, 1 answer-key recovery), all
+  `api_calls=1`, no repairs, mean **~3.3 s/sample**, diverse answers (A=8,B=7,C=5).
+
+**Chosen Round-1 config:** `--openrouter-max-tokens 1024` with reasoning disabled
+(the default), temperature 0. Do **not** run full public generation unless the
+smoke shows real (non-fallback) parseable answers — which it now does.
 
 ## Setting `OPENROUTER_API_KEY`
 

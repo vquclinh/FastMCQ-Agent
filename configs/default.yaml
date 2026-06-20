@@ -69,6 +69,16 @@ openrouter:
   timeout_sec: 60
   max_retries: 3
   structured_output: true
+  # Reasoning controls for reasoning-capable models. qwen3.5-9b reasons BY
+  # DEFAULT; omitting the reasoning key makes it eat the whole budget and return
+  # EMPTY content (Phase 2K.1/2K.2, verified). CORRECTNESS-FIRST fix: we send
+  # reasoning.enabled EXPLICITLY. Default false => {"enabled": false} => reasoning
+  # OFF => non-empty valid JSON for every sample, fast. Set true only with a LARGE
+  # max_tokens (the provider ignores reasoning.max_tokens). See docs/OPENROUTER_ROUND1_STRATEGY.md.
+  reasoning_enabled: false         # false => send {"enabled": false} (reasoning OFF)
+  reasoning_effort: null           # null | "low" | "medium" | "high" (when enabled)
+  reasoning_max_tokens: null       # cap reasoning tokens (when enabled; provider may ignore)
+  reasoning_exclude: true          # drop reasoning text from the response (when enabled)
   enable_verifier: true            # deterministic/structural check (NOT an extra API call)
   enable_repair: true              # one extra call ONLY when needed (see below)
   repair_only_on_invalid: true     # default fast path: repair only if no valid label

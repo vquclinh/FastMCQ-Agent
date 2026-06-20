@@ -21,15 +21,21 @@ ROUTE_FAMILIES = (
     "law_admin", "safety_ethics", "ambiguous",
 )
 
-# JSON contract appended to every system prompt.
+# JSON contract appended to every system prompt. Minimal-output by design:
+# answer FIRST, evidence very short, JSON only, no chain-of-thought. This keeps
+# the JSON from being truncated by long derivations (Phase 2K.2 correctness fix).
 _JSON_CONTRACT = (
-    "Chỉ trả về MỘT đối tượng JSON hợp lệ, không kèm văn bản nào khác, theo schema:\n"
-    '{{"answer": "<NHÃN>", "confidence": <0..1>, "evidence": "<bằng chứng ngắn>", '
+    "Chỉ in ra MỘT đối tượng JSON hợp lệ, KHÔNG kèm markdown hay bất kỳ văn bản nào khác. "
+    "Trường \"answer\" PHẢI đứng ĐẦU TIÊN, theo đúng thứ tự khóa:\n"
+    '{{"answer": "<NHÃN>", "confidence": <0..1>, '
     '"reason_type": "<lookup|reading|calculation|elimination|other>", '
-    '"needs_review": <true|false>}}\n'
-    'Trong đó "answer" PHẢI là đúng một trong các nhãn: {labels}. '
-    "Không được tạo thêm lựa chọn mới. Nếu hai lựa chọn trùng nội dung, hãy chọn theo nhãn. "
-    "Không viết giải thích dài, chỉ điền evidence ngắn gọn."
+    '"needs_review": <true|false>, "evidence": ["<manh mối ngắn>"]}}\n'
+    '"answer" PHẢI là đúng một trong các nhãn: {labels}. Không tạo thêm lựa chọn mới; '
+    "nếu hai lựa chọn trùng nội dung thì chọn theo nhãn.\n"
+    "QUY TẮC NGẮN GỌN: KHÔNG suy luận từng bước, KHÔNG giải thích dài. "
+    "\"evidence\" tối đa 2 mục, mỗi mục tối đa ~80 ký tự (chỉ manh mối/kết quả, không phải lời giải). "
+    "Với câu tính toán: chỉ ghi kết quả ngắn, không ghi cả quá trình tính. "
+    "Nếu không chắc, vẫn chọn nhãn tốt nhất và đặt confidence thấp."
 )
 
 _ROUTE_GUIDANCE = {

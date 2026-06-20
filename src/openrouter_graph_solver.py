@@ -53,6 +53,11 @@ class OpenRouterConfig:
     timeout_sec: float = 60.0
     max_retries: int = 3
     structured_output: bool = True
+    # Reasoning controls (for reasoning-capable models). Default OFF.
+    reasoning_enabled: bool = False
+    reasoning_effort: str | None = None
+    reasoning_max_tokens: int | None = None
+    reasoning_exclude: bool = True
     enable_verifier: bool = True
     enable_repair: bool = True
     # Speed policy: by default the verifier triggers a repair (2nd call) ONLY when
@@ -83,6 +88,10 @@ class OpenRouterGraphSolver(BaseSolver):
             model=self.cfg.model, temperature=self.cfg.temperature,
             top_p=self.cfg.top_p, max_tokens=self.cfg.max_tokens,
             timeout_sec=self.cfg.timeout_sec, max_retries=self.cfg.max_retries,
+            reasoning_enabled=self.cfg.reasoning_enabled,
+            reasoning_effort=self.cfg.reasoning_effort,
+            reasoning_max_tokens=self.cfg.reasoning_max_tokens,
+            reasoning_exclude=self.cfg.reasoning_exclude,
         )
 
     # -- BaseSolver entry -----------------------------------------------------

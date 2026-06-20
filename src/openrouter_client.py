@@ -87,7 +87,9 @@ class OpenRouterClient(ChatProvider):
     def __init__(self, *, model: str = DEFAULT_MODEL, api_key: str | None = None,
                  base_url: str = DEFAULT_BASE_URL, timeout_sec: float = 60.0,
                  max_retries: int = 3, temperature: float = 0.0, top_p: float = 1.0,
-                 max_tokens: int = 512, mock: bool = False, responder=None):
+                 max_tokens: int = 512, reasoning_enabled: bool = False,
+                 reasoning_effort: str | None = None, reasoning_max_tokens: int | None = None,
+                 reasoning_exclude: bool = True, mock: bool = False, responder=None):
         self.model = model
         self.base_url = base_url
         self.timeout_sec = timeout_sec
@@ -95,6 +97,13 @@ class OpenRouterClient(ChatProvider):
         self.temperature = temperature
         self.top_p = top_p
         self.max_tokens = max_tokens
+        # Reasoning controls for reasoning-capable models (e.g. qwen3.5-9b). By
+        # default OFF (no ``reasoning`` key) — the model decides. When enabled we
+        # send a small, capped reasoning budget and exclude reasoning from output.
+        self.reasoning_enabled = reasoning_enabled
+        self.reasoning_effort = reasoning_effort
+        self.reasoning_max_tokens = reasoning_max_tokens
+        self.reasoning_exclude = reasoning_exclude
         self.mock = mock or (responder is not None)
         # ``responder(messages, **kw) -> str | dict`` lets tests script replies.
         self._responder = responder
@@ -151,9 +160,27 @@ class OpenRouterClient(ChatProvider):
             "max_tokens": max_tokens,
             "stream": False,           # explicit: non-streaming for batch CSV
         }
-        # NOTE: we intentionally do NOT set "reasoning" (off by default).
         if response_format is not None:
             payload["response_format"] = response_format
+        # Reasoning control (correctness-first; evidence-based — Phase 2K.2).
+        # `qwen/qwen3.5-9b` reasons BY DEFAULT: if the `reasoning` key is omitted,
+        # it spends the whole completion budget on hidden reasoning and returns
+        # EMPTY content (verified: omitting => 0/3 parseable; even enabling with a
+        # max_tokens cap fails because the cap is ignored by the provider). The
+        # only reliable fix is to send `reasoning.enabled` EXPLICITLY:
+        #   * reasoning_enabled False (default) -> {"enabled": false}  => reasoning
+        #     truly OFF -> non-empty content for every sample, fast, ~1 call.
+        #   * reasoning_enabled True -> {"enabled": true, ...} plus configured
+        #     exclude/max_tokens/effort (use a LARGE max_tokens so the answer fits).
+        reasoning: dict = {"enabled": bool(self.reasoning_enabled)}
+        if self.reasoning_enabled:
+            if self.reasoning_exclude is not None:
+                reasoning["exclude"] = bool(self.reasoning_exclude)
+            if self.reasoning_max_tokens is not None:
+                reasoning["max_tokens"] = int(self.reasoning_max_tokens)
+            if self.reasoning_effort is not None:
+                reasoning["effort"] = self.reasoning_effort
+        payload["reasoning"] = reasoning
         return payload
 
     def build_headers(self) -> dict:

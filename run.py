@@ -75,6 +75,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--openrouter-max-tokens", type=int, default=None, help="OpenRouter max output tokens")
     parser.add_argument("--openrouter-timeout-sec", type=float, default=None, help="OpenRouter request timeout (seconds)")
     parser.add_argument("--openrouter-self-consistency", action="store_true", default=None, help="enable gated self-consistency for low-confidence samples")
+    parser.add_argument("--openrouter-reasoning-enabled", action="store_true", default=None, help="send a reasoning control map (for reasoning-capable models)")
+    parser.add_argument("--openrouter-reasoning-effort", default=None, choices=["low", "medium", "high"], help="reasoning effort (when reasoning enabled)")
+    parser.add_argument("--openrouter-reasoning-max-tokens", type=int, default=None, help="cap reasoning tokens (when reasoning enabled)")
+    parser.add_argument("--openrouter-reasoning-exclude", action="store_true", default=None, help="exclude reasoning from the response body (when reasoning enabled)")
     parser.add_argument("--trust-remote-code", action="store_true", default=None, help="allow trust_remote_code on model load")
     parser.add_argument("--device", default=None, help="device: auto | cpu | cuda")
     parser.add_argument("--limit", type=int, default=None, help="only run the first N samples (smoke testing)")
@@ -131,6 +135,14 @@ def main(argv: list[str] | None = None) -> int:
         openrouter_config["timeout_sec"] = args.openrouter_timeout_sec
     if args.openrouter_self_consistency:
         openrouter_config["enable_self_consistency"] = True
+    if args.openrouter_reasoning_enabled:
+        openrouter_config["reasoning_enabled"] = True
+    if args.openrouter_reasoning_effort is not None:
+        openrouter_config["reasoning_effort"] = args.openrouter_reasoning_effort
+    if args.openrouter_reasoning_max_tokens is not None:
+        openrouter_config["reasoning_max_tokens"] = args.openrouter_reasoning_max_tokens
+    if args.openrouter_reasoning_exclude:
+        openrouter_config["reasoning_exclude"] = True
     trust_remote_code = bool(_resolve(args.trust_remote_code, hf_cfg.get("trust_remote_code"), False))
     device = _resolve(args.device, hf_cfg.get("device"), "auto")
     save_raw = bool(_resolve(args.save_raw, hf_cfg.get("save_raw"), False))
