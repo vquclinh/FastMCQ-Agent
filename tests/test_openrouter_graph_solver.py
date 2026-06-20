@@ -272,6 +272,59 @@ def test_evidence_reranker_only_long_context():
     assert logger.events[0]["evidence_reranker_enabled"] is False
 
 
+# --- MCQ verifier integration (default off; selective) -----------------------
+
+_VERIFIER_OVERRIDE = ('{"original_answer_supported": false, "best_answer": "C", '
+                      '"should_override": true, "confidence": 0.95, '
+                      '"option_assessments": [], "rationale": "C đúng hơn"}')
+
+
+def test_verifier_disabled_by_default_no_extra_call():
+    client = FakeClient([_LOW_CONF := '{"answer": "A", "confidence": 0.2}'])
+    solver = OpenRouterGraphSolver(config=OpenRouterConfig(), client=client)
+    solver.predict_one(_long_context_sample())
+    assert client.calls == 1  # answer only; verifier off by default
+
+
+def test_verifier_triggered_low_confidence_long_context():
+    # answer (low conf) then verifier override response.
+    client = FakeClient(['{"answer": "A", "confidence": 0.2}', _VERIFIER_OVERRIDE])
+    cfg = OpenRouterConfig(mcq_verifier_enabled=True, mcq_verifier_min_confidence_to_override=0.8)
+    logger = CaptureLogger()
+    solver = OpenRouterGraphSolver(config=cfg, client=client, logger=logger)
+    out = solver.predict_one(_long_context_sample())
+    assert out == "C" and client.calls == 2          # override applied
+    rec = logger.events[0]
+    assert rec["verifier_triggered"] and rec["verifier_override_applied"]
+    assert rec["verifier_original_answer"] == "A"
+
+
+def test_verifier_low_confidence_override_rejected():
+    weak = ('{"best_answer": "C", "should_override": true, "confidence": 0.5}')  # < 0.8
+    client = FakeClient(['{"answer": "A", "confidence": 0.2}', weak])
+    cfg = OpenRouterConfig(mcq_verifier_enabled=True, mcq_verifier_min_confidence_to_override=0.8)
+    solver = OpenRouterGraphSolver(config=cfg, client=client, logger=(lg := CaptureLogger()))
+    out = solver.predict_one(_long_context_sample())
+    assert out == "A"                                # kept original
+    assert lg.events[0]["verifier_override_applied"] is False
+
+
+def test_verifier_invalid_output_keeps_original():
+    client = FakeClient(['{"answer": "A", "confidence": 0.2}', "not json at all"])
+    cfg = OpenRouterConfig(mcq_verifier_enabled=True)
+    solver = OpenRouterGraphSolver(config=cfg, client=client)
+    assert solver.predict_one(_long_context_sample()) == "A"
+
+
+def test_verifier_not_run_for_calc_override():
+    # Calculation safe override answers first and skips LLM + verifier entirely.
+    client = FakeClient([_VERIFIER_OVERRIDE])  # must not be consumed
+    cfg = OpenRouterConfig(mcq_verifier_enabled=True)
+    solver = OpenRouterGraphSolver(config=cfg, client=client)
+    out = solver.predict_one(_cylinder_sample())
+    assert out == "C" and client.calls == 0          # calc override, no LLM, no verifier
+
+
 def test_factory_registers_openrouter_graph():
     assert "openrouter_graph" in SOLVER_NAMES
 

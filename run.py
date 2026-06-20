@@ -83,6 +83,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--no-calculation-solver", dest="calculation_solver", action="store_false", help="disable the deterministic calculation helper")
     parser.add_argument("--evidence-reranker", dest="evidence_reranker", action="store_true", default=None, help="enable in-question evidence reranking (long_context route)")
     parser.add_argument("--no-evidence-reranker", dest="evidence_reranker", action="store_false", help="disable in-question evidence reranking")
+    parser.add_argument("--mcq-verifier", dest="mcq_verifier", action="store_true", default=None, help="enable the selective second-pass MCQ verifier")
+    parser.add_argument("--no-mcq-verifier", dest="mcq_verifier", action="store_false", help="disable the MCQ verifier")
+    parser.add_argument("--mcq-verifier-threshold", type=float, default=None, help="min verifier confidence to override the original answer")
     parser.add_argument("--trust-remote-code", action="store_true", default=None, help="allow trust_remote_code on model load")
     parser.add_argument("--device", default=None, help="device: auto | cpu | cuda")
     parser.add_argument("--limit", type=int, default=None, help="only run the first N samples (smoke testing)")
@@ -162,6 +165,22 @@ def main(argv: list[str] | None = None) -> int:
             openrouter_config[flat] = er_cfg[k]
     if args.evidence_reranker is not None:
         openrouter_config["evidence_reranker_enabled"] = args.evidence_reranker
+    # Flatten the nested mcq_verifier config block into flat solver fields.
+    mv_cfg = openrouter_config.pop("mcq_verifier", {}) or {}
+    _mv_map = {"enabled": "mcq_verifier_enabled", "apply_routes": "mcq_verifier_apply_routes",
+               "min_confidence_to_override": "mcq_verifier_min_confidence_to_override",
+               "trigger_below_confidence": "mcq_verifier_trigger_below_confidence",
+               "trigger_on_partial_parse": "mcq_verifier_trigger_on_partial_parse",
+               "trigger_on_repair": "mcq_verifier_trigger_on_repair",
+               "trigger_on_reranked_long_context": "mcq_verifier_trigger_on_reranked_long_context",
+               "max_extra_calls_per_sample": "mcq_verifier_max_extra_calls"}
+    for k, flat in _mv_map.items():
+        if mv_cfg.get(k) is not None:
+            openrouter_config[flat] = mv_cfg[k]
+    if args.mcq_verifier is not None:
+        openrouter_config["mcq_verifier_enabled"] = args.mcq_verifier
+    if args.mcq_verifier_threshold is not None:
+        openrouter_config["mcq_verifier_min_confidence_to_override"] = args.mcq_verifier_threshold
     trust_remote_code = bool(_resolve(args.trust_remote_code, hf_cfg.get("trust_remote_code"), False))
     device = _resolve(args.device, hf_cfg.get("device"), "auto")
     save_raw = bool(_resolve(args.save_raw, hf_cfg.get("save_raw"), False))

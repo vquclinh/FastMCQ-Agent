@@ -88,6 +88,17 @@ class OpenRouterConfig:
     evidence_reranker_global_context_chars: int = 800
     evidence_embedding_model: str | None = None
     evidence_reranker_model: str | None = None
+    # Selective second-pass MCQ verifier (off by default). One extra call, only on
+    # hard/uncertain cases; never overrides a deterministic calculation answer.
+    mcq_verifier_enabled: bool = False
+    mcq_verifier_apply_routes: list = field(
+        default_factory=lambda: ["long_context", "ambiguous", "law_admin", "safety_ethics"])
+    mcq_verifier_min_confidence_to_override: float = 0.80
+    mcq_verifier_trigger_below_confidence: float = 0.70
+    mcq_verifier_trigger_on_partial_parse: bool = True
+    mcq_verifier_trigger_on_repair: bool = True
+    mcq_verifier_trigger_on_reranked_long_context: bool = True
+    mcq_verifier_max_extra_calls: int = 1
 
 
 class OpenRouterGraphSolver(BaseSolver):
@@ -130,6 +141,7 @@ class OpenRouterGraphSolver(BaseSolver):
                 self._repair_node(state)
             if self._should_self_consist(state):
                 self._self_consistency_node(state)
+            self._verifier_node(state)
             self._finalize_node(state)
         except Exception as exc:  # never let one sample crash the run
             state["errors"].append(f"{type(exc).__name__}: {exc}")
@@ -275,6 +287,47 @@ class OpenRouterGraphSolver(BaseSolver):
         # Keep labels referenced for clarity (no-op guard).
         s["_labels"] = labels
 
+    def _verifier_node(self, s):
+        """Selective second-pass verifier (one extra call; off by default)."""
+        from .mcq_verifier import (build_verifier_messages, parse_verification,
+                                   should_run_verifier, verifier_response_format_schema)
+        run, reason = should_run_verifier(s, self.cfg)
+        s["verifier_enabled"] = self.cfg.mcq_verifier_enabled
+        s["verifier_triggered"] = run
+        s["verifier_trigger_reason"] = reason
+        if not run or s["api_calls"] >= 1 + self.cfg.mcq_verifier_max_extra_calls:
+            return
+        sample = s["_sample"]
+        labels = labels_for(len(sample.get("choices", []) or []))
+        original = s.get("final_answer")
+        s["verifier_original_answer"] = original
+        qtext = s.get("compressed_question") or sample.get("question", "")
+        messages = build_verifier_messages(
+            s["route"], qtext, sample.get("choices", []) or [], original,
+            calc_meta={"method": s.get("calculation_method")},
+            evidence_diag=s.get("compressed_context_stats"))
+        s["api_calls"] = s.get("api_calls", 0) + 1
+        try:
+            result = self.client.chat(messages,
+                                      response_format=verifier_response_format_schema())
+            vr = parse_verification(result.content, labels, original)
+        except Exception as exc:
+            s["verifier_error"] = f"{type(exc).__name__}: {exc}"
+            return
+        s["verifier_answer"] = vr.verified_answer
+        s["verifier_confidence"] = vr.confidence
+        s["verifier_should_override"] = vr.should_override
+        s["verifier_parse_source"] = vr.method
+        if (vr.should_override and vr.verified_answer in labels
+                and vr.verified_answer != original
+                and vr.confidence >= self.cfg.mcq_verifier_min_confidence_to_override):
+            s["final_answer"] = vr.verified_answer
+            s["confidence"] = vr.confidence
+            s["verifier_override_applied"] = True
+            s["strategy"] = (s.get("strategy") or "") + "+verifier_override"
+        else:
+            s["verifier_override_applied"] = False
+
     def _finalize_node(self, s):
         label = s.get("final_answer")
         if label is None or not is_valid_label(label, s["_sample"]):
@@ -339,6 +392,16 @@ class OpenRouterGraphSolver(BaseSolver):
             "calculation_confidence": None,
             "calculation_safe_to_override": False,
             "calculation_rationale": None,
+            "verifier_enabled": False,
+            "verifier_triggered": False,
+            "verifier_trigger_reason": None,
+            "verifier_original_answer": None,
+            "verifier_answer": None,
+            "verifier_confidence": None,
+            "verifier_should_override": None,
+            "verifier_override_applied": False,
+            "verifier_parse_source": None,
+            "verifier_error": None,
             "final_answer": None,
             "confidence": None,
             "errors": [],

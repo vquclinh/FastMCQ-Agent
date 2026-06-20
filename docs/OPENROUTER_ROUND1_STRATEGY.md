@@ -111,6 +111,9 @@ v1 leaderboard score before adoption:
 - **In-question evidence reranking** for the `long_context` route — reranks the
   embedded passage (no web retrieval) to fight lost-in-the-middle
   (see `docs/EVIDENCE_RERANKER.md`).
+- **Selective MCQ verifier** (v3/v4; **off by default**) — a one-call second-pass
+  option-elimination check on hard/uncertain cases that overrides only on confident
+  disagreement; never touches a calculation override (see `docs/MCQ_VERIFIER.md`).
 
 ## Setting `OPENROUTER_API_KEY`
 
