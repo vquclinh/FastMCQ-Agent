@@ -134,25 +134,46 @@ class OpenRouterClient(ChatProvider):
         return ChatResult(content="{}", model=self.model, response_id="mock",
                           usage=None, raw={"mock": True})
 
-    # -- real HTTP path -------------------------------------------------------
-    def _http_chat(self, messages, response_format, temperature, max_tokens) -> ChatResult:
-        import httpx  # lazy: only needed for real calls
+    # -- request construction (pure; unit-testable without a network call) ----
+    def build_payload(self, messages, response_format, temperature, max_tokens) -> dict:
+        """Build the /chat/completions JSON body.
 
+        Round-1 batch defaults: ``stream=False`` (non-streaming) and **no**
+        ``reasoning`` field (reasoning tokens off — faster, and avoids storing
+        private chain-of-thought). ``response_format`` is included only when
+        structured output is requested.
+        """
         payload = {
             "model": self.model,
             "messages": messages,
             "temperature": temperature,
             "top_p": self.top_p,
             "max_tokens": max_tokens,
+            "stream": False,           # explicit: non-streaming for batch CSV
         }
+        # NOTE: we intentionally do NOT set "reasoning" (off by default).
         if response_format is not None:
             payload["response_format"] = response_format
+        return payload
+
+    def build_headers(self) -> dict:
+        """Build request headers. The API key is read here and never logged."""
         headers = {
             "Authorization": f"Bearer {self._api_key}",
             "Content-Type": "application/json",
-            # Optional attribution headers per OpenRouter docs (no PII).
-            "X-Title": "FastMCQ-Agent",
+            "X-Title": "FastMCQ-Agent",  # optional attribution (no PII)
         }
+        referer = os.environ.get("OPENROUTER_REFERER")
+        if referer:  # optional HTTP-Referer if the user configures one
+            headers["HTTP-Referer"] = referer
+        return headers
+
+    # -- real HTTP path -------------------------------------------------------
+    def _http_chat(self, messages, response_format, temperature, max_tokens) -> ChatResult:
+        import httpx  # lazy: only needed for real calls
+
+        payload = self.build_payload(messages, response_format, temperature, max_tokens)
+        headers = self.build_headers()
 
         last_err = None
         for attempt in range(self.max_retries + 1):

@@ -134,7 +134,10 @@ Phase names follow the canonical roadmap (`docs/ARCHITECTURE.md` §11):
 
 - Always-on self-consistency or large ensembles before knowing the time budget.
 - Unapproved or oversized models (see `docs/MODEL_COMPLIANCE.md`).
-- External retrieval / external APIs (out of scope and likely disallowed).
+- **External *retrieval*** (web / outside corpus) — always avoided. Note the
+  **Round-1 `openrouter_graph` mode does use the OpenRouter API** (allowed for the
+  CSV-upload round); the offline Mode B uses **no external API**. See
+  `docs/OPENROUTER_ROUND1_STRATEGY.md`.
 - Heavy refactors near the deadline; the baseline must always produce a valid
   submission.
 

@@ -1,12 +1,28 @@
 # FastMCQ-Agent++: A Budget-Aware Multi-Agent Reasoning System for Vietnamese MCQA
 
-_Design document. Describes the target architecture; the current code implements
-a subset (baseline + two HF solvers). No solver code is changed by this document.
-No accuracy is claimed before leaderboard runs._
+_Design document. No accuracy is claimed before leaderboard runs._
 
-## 1. Executive summary
+> ## Two operating modes
+>
+> The project runs in **two complementary modes** (both implemented):
+>
+> - **Mode A — Round 1 (leaderboard / CSV upload):** the **`openrouter_graph`**
+>   solver calls the **OpenRouter API** (default model `qwen/qwen3.5-9b`) with
+>   structured-JSON output and a fast graph runner. This is **not** the offline
+>   mode — it uses an external API by design, for speed of iteration in Round 1.
+>   See `docs/OPENROUTER_ROUND1_STRATEGY.md`.
+> - **Mode B — later Docker / local reproducibility:** the **offline, local-LLM**
+>   solvers (`hf_option_score`, `adaptive_agent`) run a local quantized model with
+>   **no external API**. This is the system described in detail below.
+>
+> The two modes **share** the same deterministic profiler, router, passage
+> compressor, dynamic-label handling, validation, and `qid,answer` contract.
+> "Offline / no external API" statements in this and the other design docs refer
+> to **Mode B**; Mode A intentionally uses OpenRouter.
 
-FastMCQ-Agent++ is an **offline, local-LLM, multi-agent** inference system for
+## 1. Executive summary (Mode B — offline local system)
+
+FastMCQ-Agent++ (Mode B) is an **offline, local-LLM, multi-agent** inference system for
 Vietnamese multiple-choice QA. It is deliberately **not** a single-prompt "ask
 the LLM and read the letter" pipeline. Instead it:
 

@@ -55,6 +55,26 @@ wheels and to keep tests dependency-free. It can be swapped in later.
 No private chain-of-thought is logged — only concise evidence and the structural
 trace.
 
+## API request contract (compatibility)
+
+The client targets OpenRouter's OpenAI-compatible chat endpoint:
+
+- **Endpoint:** `POST https://openrouter.ai/api/v1/chat/completions`
+  (never `/responses` or `/messages`; no OpenAI/Gemini/Claude direct APIs).
+- **Headers:** `Authorization: Bearer $OPENROUTER_API_KEY`,
+  `Content-Type: application/json`, `X-Title` (attribution), and optional
+  `HTTP-Referer` (only if `OPENROUTER_REFERER` is set). The key is **never logged**.
+- **Body:** `model` (default **`qwen/qwen3.5-9b`**), `messages`, `temperature`
+  (default 0.0), `top_p`, `max_tokens` (default 512), and **`stream: false`**.
+  `response_format` (JSON schema) is included **only** when `structured_output`
+  is enabled.
+- **Streaming: OFF by default** — batch CSV generation reads the full response.
+- **Reasoning tokens: OFF by default** — the `reasoning` field is never sent, for
+  speed and to avoid storing private chain-of-thought. `reasoning_details` are not
+  logged.
+- **Target: one API call per sample** (a second call only when a repair is truly
+  required; self-consistency is off by default).
+
 ## Setting `OPENROUTER_API_KEY`
 
 ```bash

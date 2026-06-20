@@ -27,12 +27,21 @@ Key design choices:
   back to `A` for anything invalid.
 - **Determinism.** No randomness anywhere in Phase 1.
 
-## Phase 2B/C — Local LLM solver (implemented)
+## Operating modes
+
+The system has two modes (both implemented). **Mode A (Round 1):** the
+`openrouter_graph` solver uses the **OpenRouter API** (default `qwen/qwen3.5-9b`)
+to generate the leaderboard CSV — see `docs/OPENROUTER_ROUND1_STRATEGY.md`.
+**Mode B (later Docker/offline):** the local `hf_*` / `adaptive_agent` solvers
+run a local model with **no external API**. The "local / no external API"
+statements below describe **Mode B**.
+
+## Phase 2B/C — Local LLM solver (implemented, Mode B)
 
 Phase 2B/C adds a modular **local-LLM** inference framework behind the existing
-`BaseSolver` interface. The default solver stays `always_a`; LLM solvers are
-opt-in via `--solver` / config and require a **local** model path. Nothing is
-downloaded, and no external API is used.
+`BaseSolver` interface. The default solver stays `always_a`; the local LLM
+solvers are opt-in via `--solver` / config and require a **local** model path.
+Nothing is downloaded, and no external API is used **in this (Mode B) path**.
 
 ### Solver selection
 

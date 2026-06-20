@@ -55,10 +55,18 @@ class OpenRouterConfig:
     structured_output: bool = True
     enable_verifier: bool = True
     enable_repair: bool = True
+    # Speed policy: by default the verifier triggers a repair (2nd call) ONLY when
+    # the first response yields no valid label. The model's own ``needs_review``
+    # flag / a label-fallback recovery do NOT cost an extra call. Set False for a
+    # more thorough (slower) pass that also repairs flagged/fallback answers.
+    repair_only_on_invalid: bool = True
     enable_self_consistency: bool = False
     self_consistency_k: int = 3
     self_consistency_temperature: float = 0.7
     low_confidence_threshold: float = 0.5
+    # API-call budget per sample (for transparency + a hard cap on the normal path).
+    max_api_calls_per_sample_default: int = 1
+    max_api_calls_per_sample_with_repair: int = 2
     max_context_chars: int = 3000
     compress_long_context: bool = True
 
@@ -87,7 +95,8 @@ class OpenRouterGraphSolver(BaseSolver):
             self._route_node(state)
             self._answer_node(state)
             self._verify_node(state)
-            if state["verifier_result"].get("needs_repair") and self.cfg.enable_repair:
+            if (state["verifier_result"].get("needs_repair") and self.cfg.enable_repair
+                    and state["api_calls"] < self.cfg.max_api_calls_per_sample_with_repair):
                 self._repair_node(state)
             if self._should_self_consist(state):
                 self._self_consistency_node(state)
@@ -131,14 +140,19 @@ class OpenRouterGraphSolver(BaseSolver):
         parsed = s["parsed_answer"]
         label = parsed.get("answer")
         valid = bool(parsed.get("ok")) and label is not None and is_valid_label(label, s["_sample"])
-        needs_repair = (not valid) or bool(parsed.get("needs_review")) or \
-            (parsed.get("source") == "label_fallback")
-        s["verifier_result"] = {
-            "valid": valid,
-            "needs_repair": needs_repair,
-            "reason": ("invalid_label" if not valid else
-                       ("flagged_needs_review" if needs_repair else "ok")),
-        }
+        # Default (repair_only_on_invalid): repair ONLY when there is no valid
+        # label — so a valid answer is one call even if the model self-flagged
+        # needs_review or we recovered the label via fallback. The thorough mode
+        # additionally repairs flagged / fallback answers.
+        if self.cfg.repair_only_on_invalid:
+            needs_repair = not valid
+            reason = "invalid_label" if not valid else "ok"
+        else:
+            flagged = bool(parsed.get("needs_review")) or parsed.get("source") == "label_fallback"
+            needs_repair = (not valid) or flagged
+            reason = ("invalid_label" if not valid else
+                      ("flagged_needs_review" if needs_repair else "ok"))
+        s["verifier_result"] = {"valid": valid, "needs_repair": needs_repair, "reason": reason}
 
     def _repair_node(self, s):
         s["repair_used"] = True
@@ -187,6 +201,7 @@ class OpenRouterGraphSolver(BaseSolver):
         else:
             messages = build_messages(s["route"], sample, question_text=qtext)
         response_format = response_format_schema() if self.cfg.structured_output else None
+        s["api_calls"] = s.get("api_calls", 0) + 1  # count every LLM/API call
         result = self.client.chat(messages, response_format=response_format,
                                    temperature=temperature)
         valid_labels = labels_for(len(sample.get("choices", []) or []))
@@ -219,6 +234,7 @@ class OpenRouterGraphSolver(BaseSolver):
             "verifier_result": {},
             "repair_used": False,
             "self_consistency_used": False,
+            "api_calls": 0,
             "final_answer": None,
             "confidence": None,
             "errors": [],

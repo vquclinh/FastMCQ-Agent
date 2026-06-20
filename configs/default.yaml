@@ -69,10 +69,14 @@ openrouter:
   timeout_sec: 60
   max_retries: 3
   structured_output: true
-  enable_verifier: true
-  enable_repair: true
+  enable_verifier: true            # deterministic/structural check (NOT an extra API call)
+  enable_repair: true              # one extra call ONLY when needed (see below)
+  repair_only_on_invalid: true     # default fast path: repair only if no valid label
   enable_self_consistency: false   # gated: only low-confidence samples, off by default
   self_consistency_k: 3
+  # API-call budget per sample (speed): normal path = 1 call; with a repair = 2.
+  max_api_calls_per_sample_default: 1
+  max_api_calls_per_sample_with_repair: 2
   max_samples_for_smoke: 3
 
 # --- Prompt / runtime placeholders (informational) ---------------------------

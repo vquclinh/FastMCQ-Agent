@@ -111,12 +111,82 @@ def test_logging_excludes_sample_and_has_trace():
     assert rec["final_answer"] == "B"
 
 
+def test_speed_normal_path_one_call():
+    # A valid first answer must cost exactly ONE API call (speed policy).
+    client = FakeClient(['{"answer": "B", "confidence": 0.95}'])
+    solver = OpenRouterGraphSolver(config=OpenRouterConfig(), client=client)
+    solver.predict_one(_sample())
+    assert client.calls == 1
+
+
+def test_speed_needs_review_does_not_force_repair_by_default():
+    # Model self-flags needs_review but the label is valid -> still ONE call,
+    # because repair_only_on_invalid is the default.
+    client = FakeClient(['{"answer": "B", "confidence": 0.4, "needs_review": true}'])
+    solver = OpenRouterGraphSolver(config=OpenRouterConfig(), client=client)
+    assert solver.predict_one(_sample()) == "B"
+    assert client.calls == 1
+
+
+def test_speed_repair_path_at_most_two_calls():
+    client = FakeClient(['not json', '{"answer": "C"}'])
+    solver = OpenRouterGraphSolver(config=OpenRouterConfig(enable_repair=True), client=client)
+    solver.predict_one(_sample())
+    assert client.calls <= 2
+    assert client.calls == 2  # one answer + one repair
+
+
+def test_speed_repair_capped_by_budget():
+    # Even if both responses are invalid, repair fires at most once (cap = 2).
+    client = FakeClient(['nope', 'still nope', 'and again'])
+    solver = OpenRouterGraphSolver(config=OpenRouterConfig(enable_repair=True), client=client)
+    out = solver.predict_one(_sample())
+    assert client.calls == 2          # answer + single repair, no more
+    assert out == "A"                 # safe fallback
+
+
+def test_thorough_mode_repairs_flagged_answer():
+    # With repair_only_on_invalid=False, a needs_review valid answer DOES repair.
+    client = FakeClient(['{"answer": "B", "needs_review": true}', '{"answer": "C"}'])
+    cfg = OpenRouterConfig(repair_only_on_invalid=False, enable_repair=True)
+    solver = OpenRouterGraphSolver(config=cfg, client=client)
+    solver.predict_one(_sample())
+    assert client.calls == 2
+
+
+def test_api_calls_logged():
+    client = FakeClient(['{"answer": "B"}'])
+    logger = CaptureLogger()
+    solver = OpenRouterGraphSolver(config=OpenRouterConfig(), client=client, logger=logger)
+    solver.predict_one(_sample())
+    assert logger.events[0]["api_calls"] == 1
+
+
+def test_no_api_key_in_logs():
+    # Even with a key in env, the logged trace must not contain it.
+    os.environ["OPENROUTER_API_KEY"] = "sk-or-SECRETVALUE123"
+    try:
+        client = FakeClient(['{"answer": "B"}'])
+        logger = CaptureLogger()
+        solver = OpenRouterGraphSolver(config=OpenRouterConfig(), client=client, logger=logger)
+        solver.predict_one(_sample())
+        blob = repr(logger.events[0])
+        assert "sk-or-SECRETVALUE123" not in blob
+        assert "SECRET" not in blob
+    finally:
+        os.environ.pop("OPENROUTER_API_KEY", None)
+
+
 def test_factory_registers_openrouter_graph():
     assert "openrouter_graph" in SOLVER_NAMES
 
 
 def test_factory_without_key_raises():
+    # Hermetic "no key": force api_key_available False (a real .env may exist).
+    import src.openrouter_client as oc
     saved = os.environ.pop("OPENROUTER_API_KEY", None)
+    orig = oc.api_key_available
+    oc.api_key_available = lambda: False
     try:
         raised = False
         try:
@@ -126,6 +196,7 @@ def test_factory_without_key_raises():
             assert "OPENROUTER_API_KEY" in str(exc)
         assert raised
     finally:
+        oc.api_key_available = orig
         if saved is not None:
             os.environ["OPENROUTER_API_KEY"] = saved
 
