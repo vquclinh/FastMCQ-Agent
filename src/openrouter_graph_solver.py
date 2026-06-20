@@ -74,6 +74,10 @@ class OpenRouterConfig:
     max_api_calls_per_sample_with_repair: int = 2
     max_context_chars: int = 3000
     compress_long_context: bool = True
+    # Deterministic calculation helper (PAL-lite) for the calculation route.
+    calc_enabled: bool = True
+    calc_override_when_safe: bool = True
+    calc_min_confidence: float = 0.95
 
 
 class OpenRouterGraphSolver(BaseSolver):
@@ -102,6 +106,13 @@ class OpenRouterGraphSolver(BaseSolver):
             self._profile_node(state)
             self._evidence_node(state)
             self._route_node(state)
+            # Deterministic calculation override (calculation route only). When a
+            # high-confidence family matches, use it and SKIP the LLM call.
+            if self._calculation_node(state):
+                self._finalize_node(state)
+                state["elapsed_sec"] = round(time.perf_counter() - start, 4)
+                self._emit(state)
+                return state["final_answer"] or _FALLBACK
             self._answer_node(state)
             self._verify_node(state)
             if (state["verifier_result"].get("needs_repair") and self.cfg.enable_repair
@@ -134,6 +145,37 @@ class OpenRouterGraphSolver(BaseSolver):
 
     def _route_node(self, s):
         s["route"] = route_question(s["_sample"]).route
+
+    def _calculation_node(self, s) -> bool:
+        """Run the deterministic calculation helper on the calculation route.
+
+        Records calc metadata in the trace. Returns True iff it produced a safe
+        override (so the caller skips the LLM call). Never returns a bad label.
+        """
+        # Run on the calculation route AND on the ambiguous route (duplicate-choice
+        # numeric questions land there). This is safe: a family only matches genuine
+        # formula patterns and only overrides when safe_to_override; non-numeric text
+        # never matches, so nothing is overridden spuriously.
+        if not self.cfg.calc_enabled or s["route"] not in ("calculation", "ambiguous"):
+            return False
+        from .calculation_solver import solve_calculation_sample
+        sample = s["_sample"]
+        labels = labels_for(len(sample.get("choices", []) or []))
+        res = solve_calculation_sample(sample, labels,
+                                       min_confidence=self.cfg.calc_min_confidence)
+        s["calculation_matched"] = res.matched
+        s["calculation_method"] = res.method
+        s["calculation_answer"] = res.answer
+        s["calculation_confidence"] = res.confidence
+        s["calculation_safe_to_override"] = res.safe_to_override
+        s["calculation_rationale"] = res.rationale
+        if (res.safe_to_override and self.cfg.calc_override_when_safe
+                and res.answer in labels):
+            s["final_answer"] = res.answer
+            s["confidence"] = res.confidence
+            s["strategy"] = f"calculation_override:{res.method}"
+            return True
+        return False
 
     def _answer_node(self, s):
         s["raw_response"], parsed = self._ask(s, mode="answer")
@@ -238,12 +280,20 @@ class OpenRouterGraphSolver(BaseSolver):
             "compressed_context_stats": None,
             "prompt_version": "v1",
             "model": self.cfg.model,
+            "strategy": None,
             "raw_response": None,
             "parsed_answer": None,
             "verifier_result": {},
             "repair_used": False,
             "self_consistency_used": False,
             "api_calls": 0,
+            # Deterministic calculation helper metadata (calculation route only).
+            "calculation_matched": False,
+            "calculation_method": None,
+            "calculation_answer": None,
+            "calculation_confidence": None,
+            "calculation_safe_to_override": False,
+            "calculation_rationale": None,
             "final_answer": None,
             "confidence": None,
             "errors": [],

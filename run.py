@@ -79,6 +79,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--openrouter-reasoning-effort", default=None, choices=["low", "medium", "high"], help="reasoning effort (when reasoning enabled)")
     parser.add_argument("--openrouter-reasoning-max-tokens", type=int, default=None, help="cap reasoning tokens (when reasoning enabled)")
     parser.add_argument("--openrouter-reasoning-exclude", action="store_true", default=None, help="exclude reasoning from the response body (when reasoning enabled)")
+    parser.add_argument("--calculation-solver", dest="calculation_solver", action="store_true", default=None, help="enable the deterministic calculation helper (calculation route)")
+    parser.add_argument("--no-calculation-solver", dest="calculation_solver", action="store_false", help="disable the deterministic calculation helper")
     parser.add_argument("--trust-remote-code", action="store_true", default=None, help="allow trust_remote_code on model load")
     parser.add_argument("--device", default=None, help="device: auto | cpu | cuda")
     parser.add_argument("--limit", type=int, default=None, help="only run the first N samples (smoke testing)")
@@ -143,6 +145,8 @@ def main(argv: list[str] | None = None) -> int:
         openrouter_config["reasoning_max_tokens"] = args.openrouter_reasoning_max_tokens
     if args.openrouter_reasoning_exclude:
         openrouter_config["reasoning_exclude"] = True
+    if args.calculation_solver is not None:
+        openrouter_config["calc_enabled"] = args.calculation_solver
     trust_remote_code = bool(_resolve(args.trust_remote_code, hf_cfg.get("trust_remote_code"), False))
     device = _resolve(args.device, hf_cfg.get("device"), "auto")
     save_raw = bool(_resolve(args.save_raw, hf_cfg.get("save_raw"), False))

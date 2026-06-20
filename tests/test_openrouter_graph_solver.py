@@ -177,6 +177,58 @@ def test_no_api_key_in_logs():
         os.environ.pop("OPENROUTER_API_KEY", None)
 
 
+# --- calculation override integration (calculation route) --------------------
+
+def _cylinder_sample():
+    # Routes as "calculation" (numeric choices + math) and matches cylinder_rate.
+    return {"qid": "calc1",
+            "question": ("Một bể chứa hình trụ được đổ đầy nước với tốc độ 50 cm³/s. "
+                         "Bán kính của bể là 5 cm. Tốc độ tăng của độ cao mực nước?"),
+            "choices": ["0.2 cm/s", "0.4 cm/s", "0.6 cm/s", "0.8 cm/s"]}
+
+
+def test_calculation_override_uses_zero_api_calls():
+    client = FakeClient(['{"answer": "A"}'])  # would be wrong; must NOT be called
+    solver = OpenRouterGraphSolver(config=OpenRouterConfig(), client=client)
+    ans = solver.predict_one(_cylinder_sample())
+    assert ans == "C"            # deterministic cylinder answer (0.6366 -> 0.6)
+    assert client.calls == 0      # LLM skipped entirely
+
+
+def test_calculation_disabled_falls_back_to_llm():
+    client = FakeClient(['{"answer": "A"}'])
+    solver = OpenRouterGraphSolver(config=OpenRouterConfig(calc_enabled=False), client=client)
+    ans = solver.predict_one(_cylinder_sample())
+    assert ans == "A"            # calc disabled -> LLM path used
+    assert client.calls == 1
+
+
+def test_calculation_no_match_uses_llm():
+    # Calculation-routed but no family matches -> normal LLM path.
+    client = FakeClient(['{"answer": "B"}'])
+    solver = OpenRouterGraphSolver(config=OpenRouterConfig(), client=client)
+    sample = {"qid": "calc2",
+              "question": "Tính giá trị biểu thức $2x+3$ khi $x=4$?",
+              "choices": ["9", "11", "13", "15"]}
+    ans = solver.predict_one(sample)
+    assert ans == "B" and client.calls == 1
+
+
+def test_calculation_metadata_logged():
+    client = FakeClient(['{"answer": "A"}'])
+    logger = CaptureLogger()
+    solver = OpenRouterGraphSolver(config=OpenRouterConfig(), client=client, logger=logger)
+    solver.predict_one(_cylinder_sample())
+    rec = logger.events[0]
+    for key in ("calculation_matched", "calculation_method", "calculation_answer",
+                "calculation_confidence", "calculation_safe_to_override",
+                "calculation_rationale"):
+        assert key in rec
+    assert rec["calculation_matched"] is True
+    assert rec["calculation_method"] == "cylinder_rate"
+    assert rec["final_answer"] == "C"
+
+
 def test_factory_registers_openrouter_graph():
     assert "openrouter_graph" in SOLVER_NAMES
 

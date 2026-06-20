@@ -88,6 +88,13 @@ openrouter:
   max_api_calls_per_sample_default: 1
   max_api_calls_per_sample_with_repair: 2
   max_samples_for_smoke: 3
+  # Deterministic calculation helper (PAL-lite) for the calculation route. When a
+  # high-confidence closed-form family matches (decay/Hess/cylinder/elasticity/
+  # expectation/resistor), use its label and SKIP the LLM call. Conservative:
+  # overrides only at confidence >= calc_min_confidence; otherwise the LLM answers.
+  calc_enabled: true
+  calc_override_when_safe: true
+  calc_min_confidence: 0.95
 
 # --- Prompt / runtime placeholders (informational) ---------------------------
 prompt:
