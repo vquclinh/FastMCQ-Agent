@@ -11,6 +11,16 @@ dist/
 venv/
 env/
 
+# Secrets — never commit API keys (OPENROUTER_API_KEY etc.)
+.env
+.env.*
+!.env.example
+
+# Local model weights / HF cache / temp (kept outside git; ignore if placed here)
+models/
+.hf-cache/
+.tmp/
+
 # Test / tooling caches
 .pytest_cache/
 .mypy_cache/

@@ -1,0 +1,19 @@
+# Optional dependencies for the Round-1 OpenRouter graph solver.
+#
+# OPTIONAL. The baseline (`always_a`), local HF solvers, `adaptive_agent`, the
+# test suite, and the Docker baseline do NOT need anything here. Install only to
+# run the `openrouter_graph` solver:
+#
+#     pip install -r requirements-openrouter.txt
+#
+# Set OPENROUTER_API_KEY in the environment (or a git-ignored .env). Never commit
+# the key. This uses OpenRouter only (no OpenAI/Gemini/Claude direct APIs).
+
+httpx>=0.27          # HTTP client for the OpenRouter chat-completions endpoint
+python-dotenv>=1.0   # optional .env loading for OPENROUTER_API_KEY (git-ignored)
+
+# Optional: a graph framework. NOT used by default — the solver ships a small,
+# dependency-free internal graph runner (see src/openrouter_graph_solver.py).
+# LangGraph is intentionally not required (heavy dependency tree; uncertain
+# Python 3.14 wheels; no benefit without live API). Enable later if desired:
+# langgraph>=0.2

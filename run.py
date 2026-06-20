@@ -62,7 +62,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--input", default=None, help="input JSON/CSV file (default: auto-detect in /data)")
     parser.add_argument("--output", default=None, help="output CSV path (default: /output/pred.csv)")
     parser.add_argument("--config", default="configs/default.yaml", help="YAML config path")
-    parser.add_argument("--solver", default=None, help="solver name: always_a | hf_generate | hf_option_score | adaptive_agent")
+    parser.add_argument("--solver", default=None, help="solver name: always_a | hf_generate | hf_option_score | adaptive_agent | openrouter_graph")
     parser.add_argument("--model-path", default=None, help="LOCAL model directory (required for hf_* solvers)")
     parser.add_argument("--max-new-tokens", type=int, default=None, help="max new tokens for generation solver")
     parser.add_argument("--temperature", type=float, default=None, help="sampling temperature (0 = deterministic)")
@@ -70,6 +70,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--score-mode", default=None, choices=["label_only", "label_plus_choice", "choice_only"], help="option-scoring continuation style (hf_option_score)")
     parser.add_argument("--quantization-mode", default=None, choices=["4bit", "8bit"], help="optional bitsandbytes quantized loading (requires CUDA + bitsandbytes)")
     parser.add_argument("--quantization-compute-dtype", default=None, choices=["float16", "bfloat16", "float32"], help="compute dtype for 4-bit quantization")
+    parser.add_argument("--openrouter-model", default=None, help="OpenRouter model id (default: qwen/qwen3.5-9b)")
+    parser.add_argument("--openrouter-temperature", type=float, default=None, help="OpenRouter sampling temperature")
+    parser.add_argument("--openrouter-max-tokens", type=int, default=None, help="OpenRouter max output tokens")
+    parser.add_argument("--openrouter-timeout-sec", type=float, default=None, help="OpenRouter request timeout (seconds)")
+    parser.add_argument("--openrouter-self-consistency", action="store_true", default=None, help="enable gated self-consistency for low-confidence samples")
     parser.add_argument("--trust-remote-code", action="store_true", default=None, help="allow trust_remote_code on model load")
     parser.add_argument("--device", default=None, help="device: auto | cpu | cuda")
     parser.add_argument("--limit", type=int, default=None, help="only run the first N samples (smoke testing)")
@@ -93,6 +98,7 @@ def main(argv: list[str] | None = None) -> int:
     config = load_config(args.config)
     hf_cfg = config.get("hf", {}) or {}
     io_cfg = config.get("io", {}) or {}
+    or_cfg = config.get("openrouter", {}) or {}
 
     # --- Resolve settings (CLI > config > default) ---------------------------
     solver_name = _resolve(args.solver, config.get("solver"), "always_a")
@@ -113,6 +119,18 @@ def main(argv: list[str] | None = None) -> int:
         quantization["mode"] = args.quantization_mode
     if args.quantization_compute_dtype is not None:
         quantization["compute_dtype"] = args.quantization_compute_dtype
+    # OpenRouter settings: config (openrouter.*) with optional CLI overrides.
+    openrouter_config = dict(or_cfg)
+    if args.openrouter_model is not None:
+        openrouter_config["model"] = args.openrouter_model
+    if args.openrouter_temperature is not None:
+        openrouter_config["temperature"] = args.openrouter_temperature
+    if args.openrouter_max_tokens is not None:
+        openrouter_config["max_tokens"] = args.openrouter_max_tokens
+    if args.openrouter_timeout_sec is not None:
+        openrouter_config["timeout_sec"] = args.openrouter_timeout_sec
+    if args.openrouter_self_consistency:
+        openrouter_config["enable_self_consistency"] = True
     trust_remote_code = bool(_resolve(args.trust_remote_code, hf_cfg.get("trust_remote_code"), False))
     device = _resolve(args.device, hf_cfg.get("device"), "auto")
     save_raw = bool(_resolve(args.save_raw, hf_cfg.get("save_raw"), False))
@@ -153,7 +171,8 @@ def main(argv: list[str] | None = None) -> int:
                 trust_remote_code=trust_remote_code, max_new_tokens=max_new_tokens,
                 temperature=temperature, max_input_tokens=max_input_tokens,
                 score_mode=score_mode, adaptive_config=adaptive_config,
-                quantization=quantization, save_raw=save_raw, logger=run_logger,
+                quantization=quantization, openrouter_config=openrouter_config,
+                save_raw=save_raw, logger=run_logger,
             )
         except (ValueError, HFDependencyError) as exc:
             # Configuration / dependency problems: report cleanly, no traceback.
