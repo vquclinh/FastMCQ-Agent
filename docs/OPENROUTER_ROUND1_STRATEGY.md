@@ -101,6 +101,17 @@ truncated JSON. Result on live smokes:
 (the default), temperature 0. Do **not** run full public generation unless the
 smoke shows real (non-fallback) parseable answers — which it now does.
 
+## Planned v2/v3 accuracy improvements (route-specific, gated)
+
+Both are implemented behind the graph and default-on, to be A/B-tested against the
+v1 leaderboard score before adoption:
+
+- **Calculation override (PAL-lite)** for the `calculation`/`ambiguous` routes —
+  deterministic closed-form answers, skipping the LLM (see `docs/CALCULATION_SOLVER.md`).
+- **In-question evidence reranking** for the `long_context` route — reranks the
+  embedded passage (no web retrieval) to fight lost-in-the-middle
+  (see `docs/EVIDENCE_RERANKER.md`).
+
 ## Setting `OPENROUTER_API_KEY`
 
 ```bash

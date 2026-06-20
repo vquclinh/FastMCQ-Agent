@@ -95,6 +95,20 @@ openrouter:
   calc_enabled: true
   calc_override_when_safe: true
   calc_min_confidence: 0.95
+  # In-question evidence reranking for the long_context route. Reranks evidence
+  # ALREADY inside the question (no web retrieval); fights long-context noise /
+  # lost-in-the-middle. Default method is dependency-free hybrid lexical. Optional
+  # local embedding/reranker model paths fail closed to lexical if unavailable.
+  evidence_reranker:
+    enabled: true
+    apply_routes: ["long_context"]
+    method: "hybrid_lexical"        # hybrid_lexical | embedding | reranker
+    optional_embedding_model: null  # local path only; never downloaded
+    optional_reranker_model: null   # local path only; never downloaded
+    top_k: 4
+    max_chars: 4500
+    include_global_context: true
+    global_context_chars: 800
 
 # --- Prompt / runtime placeholders (informational) ---------------------------
 prompt:

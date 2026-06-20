@@ -229,6 +229,49 @@ def test_calculation_metadata_logged():
     assert rec["final_answer"] == "C"
 
 
+# --- evidence reranker integration (long_context route) ----------------------
+
+def _long_context_sample():
+    body = " ".join(f"Câu nền số {i} không liên quan." for i in range(60))
+    q = (f"Đoạn thông tin:\n[1] Tiêu đề: Nền\nNội dung: {body}\n"
+         f"[2] Tiêu đề: Sự kiện\nNội dung: Hiệp ước được ký năm 1802 tại thành phố A. "
+         + body + "\nCâu hỏi: Hiệp ước được ký vào năm nào?")
+    return {"qid": "lc1", "question": q, "choices": ["1801", "1802", "1803", "1804"]}
+
+
+def test_evidence_reranker_runs_on_long_context_and_logs():
+    client = FakeClient(['{"answer": "B"}'])
+    logger = CaptureLogger()
+    solver = OpenRouterGraphSolver(config=OpenRouterConfig(), client=client, logger=logger)
+    out = solver.predict_one(_long_context_sample())
+    assert out == "B" and client.calls == 1
+    rec = logger.events[0]
+    assert rec["route"] == "long_context"
+    assert rec["evidence_reranker_enabled"] is True
+    for key in ("evidence_reranker_method", "evidence_selected_chunk_count",
+                "evidence_selected_chars", "evidence_fallback_used"):
+        assert key in rec
+
+
+def test_evidence_reranker_disabled_preserves_behavior():
+    client = FakeClient(['{"answer": "C"}'])
+    logger = CaptureLogger()
+    cfg = OpenRouterConfig(evidence_reranker_enabled=False)
+    solver = OpenRouterGraphSolver(config=cfg, client=client, logger=logger)
+    out = solver.predict_one(_long_context_sample())
+    assert out == "C" and client.calls == 1
+    assert logger.events[0]["evidence_reranker_enabled"] is False
+
+
+def test_evidence_reranker_only_long_context():
+    # A short-knowledge sample must not engage the reranker.
+    client = FakeClient(['{"answer": "A"}'])
+    logger = CaptureLogger()
+    solver = OpenRouterGraphSolver(config=OpenRouterConfig(), client=client, logger=logger)
+    solver.predict_one(_sample())  # short_knowledge
+    assert logger.events[0]["evidence_reranker_enabled"] is False
+
+
 def test_factory_registers_openrouter_graph():
     assert "openrouter_graph" in SOLVER_NAMES
 

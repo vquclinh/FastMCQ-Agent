@@ -78,6 +78,16 @@ class OpenRouterConfig:
     calc_enabled: bool = True
     calc_override_when_safe: bool = True
     calc_min_confidence: float = 0.95
+    # In-question evidence reranking (long_context route). Lexical by default;
+    # optional embedding/reranker model paths fail closed to lexical.
+    evidence_reranker_enabled: bool = True
+    evidence_reranker_method: str = "hybrid_lexical"
+    evidence_reranker_top_k: int = 4
+    evidence_reranker_max_chars: int = 4500
+    evidence_reranker_global_context: bool = True
+    evidence_reranker_global_context_chars: int = 800
+    evidence_embedding_model: str | None = None
+    evidence_reranker_model: str | None = None
 
 
 class OpenRouterGraphSolver(BaseSolver):
@@ -136,7 +146,37 @@ class OpenRouterGraphSolver(BaseSolver):
         sample = s["_sample"]
         # Decide compression up-front using the router's view of the route.
         decision = route_question(sample)
-        if decision.route == "long_context" and self.cfg.compress_long_context:
+        if decision.route != "long_context":
+            return
+
+        # 1) Try in-question evidence reranking (generic; in-question only).
+        if self.cfg.evidence_reranker_enabled:
+            from .evidence_reranker import rerank_evidence_for_sample
+            s["evidence_reranker_enabled"] = True
+            s["evidence_reranker_method"] = self.cfg.evidence_reranker_method
+            try:
+                rr = rerank_evidence_for_sample(
+                    sample, max_chars=self.cfg.evidence_reranker_max_chars,
+                    top_k=self.cfg.evidence_reranker_top_k,
+                    method=self.cfg.evidence_reranker_method,
+                    include_global_context=self.cfg.evidence_reranker_global_context,
+                    global_context_chars=self.cfg.evidence_reranker_global_context_chars,
+                    optional_embedding_model=self.cfg.evidence_embedding_model,
+                    optional_reranker_model=self.cfg.evidence_reranker_model)
+            except Exception:
+                rr = None
+            if rr is not None and rr.matched:
+                s["compressed_question"] = rr.selected_text
+                s["evidence_reranker_method"] = rr.method
+                s["evidence_selected_chunk_count"] = len(rr.selected_chunks)
+                s["evidence_selected_chars"] = len(rr.selected_text)
+                s["evidence_fallback_used"] = False
+                s["compressed_context_stats"] = {"method": "evidence_reranker", **rr.diagnostics}
+                return
+            s["evidence_fallback_used"] = True  # reranker declined -> compressor
+
+        # 2) Fall back to the existing deterministic lexical compressor.
+        if self.cfg.compress_long_context:
             res = compress_passage(sample.get("question", ""), sample.get("choices", []),
                                    max_context_chars=self.cfg.max_context_chars)
             s["compressed_context_stats"] = res["stats"]
@@ -278,6 +318,11 @@ class OpenRouterGraphSolver(BaseSolver):
             "route": None,
             "compressed_question": None,
             "compressed_context_stats": None,
+            "evidence_reranker_enabled": False,
+            "evidence_reranker_method": None,
+            "evidence_selected_chunk_count": None,
+            "evidence_selected_chars": None,
+            "evidence_fallback_used": False,
             "prompt_version": "v1",
             "model": self.cfg.model,
             "strategy": None,

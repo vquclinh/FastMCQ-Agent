@@ -81,6 +81,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--openrouter-reasoning-exclude", action="store_true", default=None, help="exclude reasoning from the response body (when reasoning enabled)")
     parser.add_argument("--calculation-solver", dest="calculation_solver", action="store_true", default=None, help="enable the deterministic calculation helper (calculation route)")
     parser.add_argument("--no-calculation-solver", dest="calculation_solver", action="store_false", help="disable the deterministic calculation helper")
+    parser.add_argument("--evidence-reranker", dest="evidence_reranker", action="store_true", default=None, help="enable in-question evidence reranking (long_context route)")
+    parser.add_argument("--no-evidence-reranker", dest="evidence_reranker", action="store_false", help="disable in-question evidence reranking")
     parser.add_argument("--trust-remote-code", action="store_true", default=None, help="allow trust_remote_code on model load")
     parser.add_argument("--device", default=None, help="device: auto | cpu | cuda")
     parser.add_argument("--limit", type=int, default=None, help="only run the first N samples (smoke testing)")
@@ -147,6 +149,19 @@ def main(argv: list[str] | None = None) -> int:
         openrouter_config["reasoning_exclude"] = True
     if args.calculation_solver is not None:
         openrouter_config["calc_enabled"] = args.calculation_solver
+    # Flatten the nested evidence_reranker config block into flat solver fields.
+    er_cfg = openrouter_config.pop("evidence_reranker", {}) or {}
+    _er_map = {"enabled": "evidence_reranker_enabled", "method": "evidence_reranker_method",
+               "top_k": "evidence_reranker_top_k", "max_chars": "evidence_reranker_max_chars",
+               "include_global_context": "evidence_reranker_global_context",
+               "global_context_chars": "evidence_reranker_global_context_chars",
+               "optional_embedding_model": "evidence_embedding_model",
+               "optional_reranker_model": "evidence_reranker_model"}
+    for k, flat in _er_map.items():
+        if er_cfg.get(k) is not None:
+            openrouter_config[flat] = er_cfg[k]
+    if args.evidence_reranker is not None:
+        openrouter_config["evidence_reranker_enabled"] = args.evidence_reranker
     trust_remote_code = bool(_resolve(args.trust_remote_code, hf_cfg.get("trust_remote_code"), False))
     device = _resolve(args.device, hf_cfg.get("device"), "auto")
     save_raw = bool(_resolve(args.save_raw, hf_cfg.get("save_raw"), False))
