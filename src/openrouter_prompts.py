@@ -33,6 +33,9 @@ _JSON_CONTRACT = (
     '"answer" PHẢI là đúng một trong các nhãn: {labels}. Không tạo thêm lựa chọn mới; '
     "nếu hai lựa chọn trùng nội dung thì chọn theo nhãn.\n"
     "QUY TẮC NGẮN GỌN: KHÔNG suy luận từng bước, KHÔNG giải thích dài. "
+    "Mỗi khóa xuất hiện ĐÚNG MỘT LẦN, không lặp lại khóa, không thêm khóa khác. "
+    "\"reason_type\" CHỈ là một trong: lookup, reading, calculation, elimination, other. "
+    "In JSON gọn (compact), kết thúc ngay sau dấu }} đóng, không in gì thêm. "
     "\"evidence\" tối đa 2 mục, mỗi mục tối đa ~80 ký tự (chỉ manh mối/kết quả, không phải lời giải). "
     "Với câu tính toán: chỉ ghi kết quả ngắn, không ghi cả quá trình tính. "
     "Nếu không chắc, vẫn chọn nhãn tốt nhất và đặt confidence thấp."

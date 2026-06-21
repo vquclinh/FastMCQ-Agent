@@ -375,13 +375,19 @@ class TransformersQwen3RerankerScorer:  # pragma: no cover - needs local weights
                'only be "yes" or "no".<|im_end|>\n<|im_start|>user\n')
     _SUFFIX = '<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n'
 
-    def __init__(self, model_path, *, max_len: int = 1024):
+    def __init__(self, model_path, *, max_len: int = 1024, batch_size: int = 8):
         import torch
         from transformers import AutoModelForCausalLM, AutoTokenizer
         self._torch = torch
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.max_len = max_len
+        self.batch_size = max(1, int(batch_size))
         self.tokenizer = AutoTokenizer.from_pretrained(str(model_path), local_files_only=True)
+        # Left padding so the last token of every row in a batch is at index -1
+        # (correct for causal-LM last-token scoring).
+        self.tokenizer.padding_side = "left"
+        if self.tokenizer.pad_token_id is None:
+            self.tokenizer.pad_token = self.tokenizer.eos_token
         dtype = torch.float16 if self.device == "cuda" else torch.float32
         self.model = AutoModelForCausalLM.from_pretrained(
             str(model_path), local_files_only=True, torch_dtype=dtype)
@@ -397,18 +403,40 @@ class TransformersQwen3RerankerScorer:  # pragma: no cover - needs local weights
     def _format(self, query, doc):
         return f"{self._PREFIX}<Instruct>: {self.INSTRUCTION}\n<Query>: {query}\n<Document>: {doc}{self._SUFFIX}"
 
-    def score(self, query, chunks):
+    @staticmethod
+    def _is_oom(exc) -> bool:
+        return "out of memory" in str(exc).lower() or type(exc).__name__ == "OutOfMemoryError"
+
+    def _score_prompts(self, prompts, bs):
         torch = self._torch
         out = []
-        for c in chunks:
-            enc = self.tokenizer(self._format(query, c.text), return_tensors="pt",
+        for start in range(0, len(prompts), bs):
+            batch = prompts[start:start + bs]
+            enc = self.tokenizer(batch, return_tensors="pt", padding=True,
                                  truncation=True, max_length=self.max_len).to(self.device)
             with torch.no_grad():
-                logits = self.model(**enc).logits[:, -1, :]
+                logits = self.model(**enc).logits[:, -1, :]  # left-padded -> last real token
                 pair = torch.stack([logits[:, self.token_false], logits[:, self.token_true]], dim=1)
-                prob = torch.nn.functional.log_softmax(pair, dim=1)[:, 1].exp()
-            out.append(float(prob.item()))
+                probs = torch.nn.functional.log_softmax(pair, dim=1)[:, 1].exp()
+            out.extend(float(x) for x in probs.detach().cpu().tolist())
         return out
+
+    def score(self, query, chunks):
+        if not chunks:
+            return []
+        torch = self._torch
+        prompts = [self._format(query, c.text) for c in chunks]
+        bs = max(1, int(getattr(self, "batch_size", 8) or 8))
+        while True:
+            try:
+                return self._score_prompts(prompts, bs)
+            except Exception as exc:  # CUDA OOM -> shrink batch and retry; else propagate
+                if self._is_oom(exc) and bs > 1:
+                    bs = max(1, bs // 2)
+                    if self.device == "cuda":
+                        torch.cuda.empty_cache()
+                    continue
+                raise
 
 
 class SentenceTransformerEmbeddingScorer:  # pragma: no cover - optional dep
@@ -439,54 +467,109 @@ class FlagEmbeddingRerankerScorer:  # pragma: no cover - optional dep
         return [float(x) for x in (out if isinstance(out, list) else [out])]
 
 
-def build_neural_scorer(method: str, embedding_model, reranker_model):
-    """Return (scorer_or_None, available, fallback_reason). Never downloads.
+# --- neural model/tokenizer cache (avoid reloading weights per sample) --------
+# Keyed by (scorer class name, resolved model path, device). dtype is derived from
+# the device for our backends, so the device captures it. Loading a 1-2 GB model
+# per sample was the v6 reranker overhead; the cache loads it once per process.
+_NEURAL_CACHE: dict = {}
 
+
+def _device_str() -> str:
+    try:
+        import torch
+        return "cuda" if torch.cuda.is_available() else "cpu"
+    except Exception:  # pragma: no cover - torch absent
+        return "cpu"
+
+
+def clear_neural_model_cache() -> None:
+    """Drop all cached neural scorers (used by tests to assert load behavior)."""
+    _NEURAL_CACHE.clear()
+
+
+def neural_model_cache_size() -> int:
+    return len(_NEURAL_CACHE)
+
+
+def _cached(cls, model_path):
+    """Return (scorer, cache_hit, load_seconds). Constructs once per cache key."""
+    import time as _time
+    try:
+        resolved = str(Path(model_path).resolve())
+    except Exception:  # pragma: no cover
+        resolved = str(model_path)
+    key = (cls.__name__, resolved, _device_str())
+    if key in _NEURAL_CACHE:
+        return _NEURAL_CACHE[key], True, 0.0
+    t0 = _time.perf_counter()
+    scorer = cls(model_path)             # loads tokenizer/model (local_files_only)
+    load_seconds = _time.perf_counter() - t0
+    _NEURAL_CACHE[key] = scorer
+    return scorer, False, load_seconds
+
+
+def _resolve_neural_scorer(method: str, embedding_model, reranker_model):
+    """Cache-aware backend resolution.
+
+    Returns (scorer_or_None, available, fallback_reason, cache_hit, load_seconds).
     Prefers competition-compliant transformers-native backends (BGE-M3 embedding,
-    Qwen3-Reranker), using only LOCAL model paths with ``local_files_only=True``.
-    FlagEmbedding / sentence-transformers are optional fallbacks, not required.
-    On any missing path / unsupported model / load error it fails closed to
-    lexical with an explicit reason.
+    Qwen3-Reranker) with LOCAL paths + ``local_files_only=True``. FlagEmbedding /
+    sentence-transformers are optional fallbacks. Fails closed with explicit reason.
     """
     if method == "embedding":
         if not embedding_model:
-            return None, False, "no_embedding_model_path"
+            return None, False, "no_embedding_model_path", False, 0.0
         if not Path(embedding_model).exists():
-            return None, False, "embedding_model_path_not_found"
+            return None, False, "embedding_model_path_not_found", False, 0.0
         if _looks_like_bge_m3(embedding_model):
             if _dep_available("transformers") and _dep_available("torch"):
                 try:
-                    return TransformersBgeM3EmbeddingScorer(embedding_model), True, None
+                    s, hit, secs = _cached(TransformersBgeM3EmbeddingScorer, embedding_model)
+                    return s, True, None, hit, secs
                 except Exception as exc:  # pragma: no cover
-                    return None, False, f"load_error:{type(exc).__name__}"
+                    return None, False, f"load_error:{type(exc).__name__}", False, 0.0
             if _dep_available("sentence_transformers"):
                 try:
-                    return SentenceTransformerEmbeddingScorer(embedding_model), True, None
+                    s, hit, secs = _cached(SentenceTransformerEmbeddingScorer, embedding_model)
+                    return s, True, None, hit, secs
                 except Exception as exc:  # pragma: no cover
-                    return None, False, f"load_error:{type(exc).__name__}"
-            return None, False, "dependency_missing:transformers"
-        return None, False, "unsupported_embedding_model_path"
+                    return None, False, f"load_error:{type(exc).__name__}", False, 0.0
+            return None, False, "dependency_missing:transformers", False, 0.0
+        return None, False, "unsupported_embedding_model_path", False, 0.0
     if method == "reranker":
         if not reranker_model:
-            return None, False, "no_reranker_model_path"
+            return None, False, "no_reranker_model_path", False, 0.0
         if not Path(reranker_model).exists():
-            return None, False, "reranker_model_path_not_found"
+            return None, False, "reranker_model_path_not_found", False, 0.0
         if _looks_like_qwen3_reranker(reranker_model):
             if not (_dep_available("transformers") and _dep_available("torch")):
-                return None, False, "dependency_missing:transformers"
+                return None, False, "dependency_missing:transformers", False, 0.0
             try:
-                return TransformersQwen3RerankerScorer(reranker_model), True, None
+                s, hit, secs = _cached(TransformersQwen3RerankerScorer, reranker_model)
+                return s, True, None, hit, secs
             except ValueError as exc:  # pragma: no cover - explicit unsupported format
-                return None, False, str(exc).split(":")[0]
+                return None, False, str(exc).split(":")[0], False, 0.0
             except Exception as exc:  # pragma: no cover
-                return None, False, f"load_error:{type(exc).__name__}"
+                return None, False, f"load_error:{type(exc).__name__}", False, 0.0
         if _dep_available("FlagEmbedding"):
             try:
-                return FlagEmbeddingRerankerScorer(reranker_model), True, None
+                s, hit, secs = _cached(FlagEmbeddingRerankerScorer, reranker_model)
+                return s, True, None, hit, secs
             except Exception as exc:  # pragma: no cover
-                return None, False, f"load_error:{type(exc).__name__}"
-        return None, False, "unsupported_reranker_model_path"
-    return None, False, "method_not_neural"
+                return None, False, f"load_error:{type(exc).__name__}", False, 0.0
+        return None, False, "unsupported_reranker_model_path", False, 0.0
+    return None, False, "method_not_neural", False, 0.0
+
+
+def build_neural_scorer(method: str, embedding_model, reranker_model):
+    """Return (scorer_or_None, available, fallback_reason). Never downloads.
+
+    Backward-compatible 3-tuple wrapper around :func:`_resolve_neural_scorer`
+    (which also caches the model and reports cache-hit/load timing).
+    """
+    scorer, available, reason, _hit, _secs = _resolve_neural_scorer(
+        method, embedding_model, reranker_model)
+    return scorer, available, reason
 
 
 def _embedding_available(model_path) -> bool:
@@ -508,6 +591,7 @@ def rerank_evidence_for_sample(sample: dict, *, max_chars: int = 4500, top_k: in
                                global_context_chars: int = 800,
                                optional_embedding_model=None, optional_reranker_model=None,
                                neural_fallback_to_lexical: bool = True,
+                               neural_batch_size: int = 8,
                                neural_scorer=None) -> RerankResult:
     """Rerank in-question evidence for one sample (two-stage when neural is used).
 
@@ -550,17 +634,27 @@ def rerank_evidence_for_sample(sample: dict, *, max_chars: int = 4500, top_k: in
     order = lexical_order
     scores = lexical
 
+    cache_hit = None
+    load_seconds = 0.0
+    score_seconds = 0.0
+    pair_count = 0
     if method in ("embedding", "reranker"):
         scorer = neural_scorer
         if scorer is not None:           # injected (tests) -> treat as available
             neural_available, fallback_reason = True, None
         else:
-            scorer, neural_available, fallback_reason = build_neural_scorer(
-                method, optional_embedding_model, optional_reranker_model)
+            scorer, neural_available, fallback_reason, cache_hit, load_seconds = \
+                _resolve_neural_scorer(method, optional_embedding_model, optional_reranker_model)
         if neural_available and scorer is not None:
             try:
+                if hasattr(scorer, "batch_size"):   # batched neural scoring
+                    scorer.batch_size = max(1, int(neural_batch_size))
                 cand_chunks = [chunks[i] for i in candidate_idx]
+                pair_count = len(cand_chunks)
+                import time as _time
+                _t0 = _time.perf_counter()
                 n_scores = scorer.score(query, cand_chunks)
+                score_seconds = _time.perf_counter() - _t0
                 ranked = [candidate_idx[j] for j in
                           sorted(range(len(candidate_idx)), key=lambda j: n_scores[j], reverse=True)]
                 rest = [i for i in lexical_order if i not in set(candidate_idx)]
@@ -613,6 +707,11 @@ def rerank_evidence_for_sample(sample: dict, *, max_chars: int = 4500, top_k: in
         "chunks_kept": len(selected_chunks),
         "selected_chars": len(selected_text),
         "kept_chunk_ids": [c.chunk_id for c in selected_chunks],
+        "cache_hit": cache_hit,
+        "load_seconds": round(load_seconds, 4),
+        "score_seconds": round(score_seconds, 4),
+        "pair_count": pair_count,
+        "batch_size": int(neural_batch_size),
     })
     return RerankResult(selected_text=selected_text, selected_chunks=selected_chunks,
                         global_context=global_ctx, method=effective_method, scores=scores,

@@ -89,7 +89,14 @@ evidence_reranker:
 
 CLI: `--evidence-reranker` / `--no-evidence-reranker`,
 `--evidence-reranker-method`, `--evidence-embedding-model`,
-`--evidence-reranker-model`, `--evidence-candidate-top-k`.
+`--evidence-reranker-model`, `--evidence-candidate-top-k`,
+`--evidence-neural-batch-size`.
+
+**Performance (Phase 2L.12):** neural scorers are cached by
+`(type, model path, device)` so weights load **once per process** (not per sample),
+and Qwen3-Reranker scores candidates in batches (`neural_batch_size`, default 8,
+OOM auto-shrinks). See [NEURAL_EVIDENCE_RERANKER.md](NEURAL_EVIDENCE_RERANKER.md) for
+the benchmark and the v6 runtime fix.
 
 ## Integration
 

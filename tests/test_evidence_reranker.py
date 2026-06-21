@@ -266,6 +266,115 @@ def test_build_bge_missing_transformers_fails_closed(monkeypatch):
     assert s is None and not ok and reason == "dependency_missing:transformers"
 
 
+# --- Phase 2L.12: model cache + batched scoring + OOM retry (fakes only) ------
+
+import types  # noqa: E402
+
+from src.evidence_reranker import (  # noqa: E402
+    TransformersQwen3RerankerScorer,
+    _cached,
+    clear_neural_model_cache,
+    neural_model_cache_size,
+)
+
+
+class _CountingScorer:
+    loads = 0
+
+    def __init__(self, path):
+        type(self).loads += 1
+        self.path = str(path)
+
+    def score(self, q, chunks):
+        return [0.0] * len(chunks)
+
+
+def test_model_cache_prevents_repeated_loads():
+    clear_neural_model_cache()
+    _CountingScorer.loads = 0
+    s1, hit1, secs1 = _cached(_CountingScorer, ".")
+    s2, hit2, secs2 = _cached(_CountingScorer, ".")
+    assert _CountingScorer.loads == 1            # constructed once only
+    assert hit1 is False and hit2 is True
+    assert s1 is s2 and secs2 == 0.0
+    clear_neural_model_cache()
+
+
+def test_cache_key_includes_path_and_type():
+    clear_neural_model_cache()
+    _CountingScorer.loads = 0
+    _cached(_CountingScorer, ".")
+    _cached(_CountingScorer, "tests")            # different path -> new load
+    assert _CountingScorer.loads == 2
+    assert neural_model_cache_size() == 2
+    clear_neural_model_cache()
+    assert neural_model_cache_size() == 0
+
+
+def test_cache_clear_helper_resets():
+    clear_neural_model_cache()
+    _cached(_CountingScorer, ".")
+    assert neural_model_cache_size() == 1
+    clear_neural_model_cache()
+    assert neural_model_cache_size() == 0
+
+
+def test_qwen_reranker_batched_oom_retry_shrinks_batch():
+    # Exercise the real score() retry loop without loading weights.
+    obj = TransformersQwen3RerankerScorer.__new__(TransformersQwen3RerankerScorer)
+    obj._torch = types.SimpleNamespace(cuda=types.SimpleNamespace(empty_cache=lambda: None))
+    obj.device = "cpu"
+    obj.batch_size = 8
+    calls = []
+
+    def fake_score_prompts(prompts, bs):
+        calls.append(bs)
+        if bs > 2:
+            raise RuntimeError("CUDA out of memory: tried to allocate ...")
+        return [0.5] * len(prompts)
+
+    obj._score_prompts = fake_score_prompts
+    chunks = [types.SimpleNamespace(text=f"c{i}") for i in range(3)]
+    scores = TransformersQwen3RerankerScorer.score(obj, "q", chunks)
+    assert len(scores) == 3                      # one score per chunk
+    assert calls == [8, 4, 2]                    # shrank 8 -> 4 -> 2 on OOM
+
+
+def test_is_oom_detection():
+    assert TransformersQwen3RerankerScorer._is_oom(RuntimeError("CUDA out of memory"))
+    assert not TransformersQwen3RerankerScorer._is_oom(ValueError("bad input"))
+
+
+def test_cached_load_error_propagates_and_fails_closed(monkeypatch):
+    class _Boom:
+        def __init__(self, path):
+            raise RuntimeError("explode")
+    # Route the bge path to _Boom; build_neural_scorer must fail closed (no raise).
+    bad = _make_model_dir("bge-m3", {"architectures": ["XLMRobertaModel"]})
+    monkeypatch.setattr(_er, "TransformersBgeM3EmbeddingScorer", _Boom)
+    monkeypatch.setattr(_er, "_dep_available", lambda name: name in ("transformers", "torch"))
+    clear_neural_model_cache()
+    s, ok, reason = _er.build_neural_scorer("embedding", bad, None)
+    assert s is None and not ok and reason.startswith("load_error:")
+
+
+def test_rerank_sets_batch_size_and_records_timing():
+    # Injected fake with a batch_size attribute -> rerank sets it + records diagnostics.
+    class _BS:
+        def __init__(self):
+            self.batch_size = 1
+        def score(self, q, chunks):
+            return [1.0 if "Cairo" in c.text else 0.0 for c in chunks]
+    fake = _BS()
+    r = rerank_evidence_for_sample(_titled_sample(), max_chars=2500, top_k=1,
+                                   candidate_top_k=12, method="reranker",
+                                   neural_batch_size=4, neural_scorer=fake)
+    assert r.matched and fake.batch_size == 4
+    assert r.diagnostics["batch_size"] == 4
+    assert r.diagnostics["pair_count"] >= 1
+    assert r.diagnostics["score_seconds"] >= 0.0
+
+
 def test_no_web_or_eval_in_source():
     import re as _re
     src = Path(__file__).resolve().parent.parent.joinpath("src/evidence_reranker.py").read_text()

@@ -133,6 +133,41 @@ python scripts/compare_neural_vs_lexical_chunks.py --input public-test_178036831
   --output outputs/neural_vs_lexical_bge_m3_chunk_report.jsonl
 ```
 
+## Performance & model caching (Phase 2L.12)
+
+The v6 full run (37.99 s/sample avg) exposed two costs. Fixes:
+
+- **Model caching** — the scorer was rebuilt **per long-context sample**, reloading
+  the 1.2 GB Qwen reranker every time (the repeated "Loading weights"). Scorers are
+  now cached by `(scorer type, resolved model path, device)` so weights load **once
+  per process**. Benchmark (RTX 4060, 20 long-context samples): cold load **16.75 s
+  once**, then **20/20 cache hits**, warm rerank **~0.57 s/sample**, peak CUDA 4.6 GB.
+  `clear_neural_model_cache()` / `neural_model_cache_size()` are exposed for tests.
+- **Batched scoring** — Qwen3-Reranker scores all `candidate_top_k` pairs in batches
+  (`neural_batch_size`, default 8; left-padded so the last-token logits stay
+  correct). On CUDA OOM the batch size auto-halves down to 1 before any lexical
+  fallback. CLI: `--evidence-neural-batch-size N`.
+- **Overlong/malformed JSON** — 58/463 v6 samples (12.5%) hit `no_json`/
+  `partial_answer_key` and averaged **59.8 s** vs 35.9 s for clean JSON (generations
+  running to the 1024-token cap). `reason_type` is now a strict **enum**,
+  `additionalProperties:false` rejects repeated/extra keys, and the prompt demands
+  compact single-occurrence keys. Recommended **v6b** main-call cap: lower
+  `--openrouter-max-tokens` to ~512 (the JSON answer needs far less than 1024).
+
+New trace fields: `evidence_reranker_cache_hit`, `evidence_reranker_load_seconds`,
+`evidence_reranker_score_seconds`, `evidence_reranker_pair_count`,
+`evidence_reranker_batch_size`, plus `openrouter_call_seconds`,
+`openrouter_completion_tokens`, `openrouter_total_tokens`, `raw_response_chars`,
+`parsed_answer_source`, `parsed_answer_error`, `verifier_call_seconds`.
+
+Speed benchmark (no OpenRouter, no CSV):
+
+```bash
+python scripts/benchmark_neural_reranker_speed.py --input public-test_1780368312.json \
+  --method reranker --model-path models/qwen3-reranker-0.6b \
+  --max-samples 20 --candidate-top-k 12 --batch-size 8
+```
+
 ## Limitations
 
 - Requires the user to install a dep AND stage a **local** compliant model; this

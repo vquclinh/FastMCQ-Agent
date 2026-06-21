@@ -90,6 +90,7 @@ class OpenRouterConfig:
     evidence_reranker_model: str | None = None
     evidence_candidate_top_k: int = 12
     evidence_neural_fallback_to_lexical: bool = True
+    evidence_neural_batch_size: int = 8
     # Selective second-pass MCQ verifier (off by default). One extra call, only on
     # hard/uncertain cases; never overrides a deterministic calculation answer.
     mcq_verifier_enabled: bool = False
@@ -178,7 +179,8 @@ class OpenRouterGraphSolver(BaseSolver):
                     global_context_chars=self.cfg.evidence_reranker_global_context_chars,
                     optional_embedding_model=self.cfg.evidence_embedding_model,
                     optional_reranker_model=self.cfg.evidence_reranker_model,
-                    neural_fallback_to_lexical=self.cfg.evidence_neural_fallback_to_lexical)
+                    neural_fallback_to_lexical=self.cfg.evidence_neural_fallback_to_lexical,
+                    neural_batch_size=self.cfg.evidence_neural_batch_size)
             except Exception:
                 rr = None
             if rr is not None and rr.matched:
@@ -192,6 +194,11 @@ class OpenRouterGraphSolver(BaseSolver):
                 s["evidence_candidate_chunk_count"] = diag.get("candidate_chunk_count")
                 s["evidence_selected_chunk_count"] = len(rr.selected_chunks)
                 s["evidence_selected_chars"] = len(rr.selected_text)
+                s["evidence_reranker_cache_hit"] = diag.get("cache_hit")
+                s["evidence_reranker_load_seconds"] = diag.get("load_seconds")
+                s["evidence_reranker_score_seconds"] = diag.get("score_seconds")
+                s["evidence_reranker_pair_count"] = diag.get("pair_count")
+                s["evidence_reranker_batch_size"] = diag.get("batch_size")
                 s["evidence_fallback_used"] = False
                 s["compressed_context_stats"] = {"method": "evidence_reranker", **diag}
                 return
@@ -318,8 +325,11 @@ class OpenRouterGraphSolver(BaseSolver):
             evidence_diag=s.get("compressed_context_stats"))
         s["api_calls"] = s.get("api_calls", 0) + 1
         try:
+            import time as _time
+            _t0 = _time.perf_counter()
             result = self.client.chat(messages,
                                       response_format=verifier_response_format_schema())
+            s["verifier_call_seconds"] = round(_time.perf_counter() - _t0, 4)
             vr = parse_verification(result.content, labels, original)
         except Exception as exc:
             s["verifier_error"] = f"{type(exc).__name__}: {exc}"
@@ -356,11 +366,24 @@ class OpenRouterGraphSolver(BaseSolver):
             messages = build_messages(s["route"], sample, question_text=qtext)
         response_format = response_format_schema() if self.cfg.structured_output else None
         s["api_calls"] = s.get("api_calls", 0) + 1  # count every LLM/API call
+        import time as _time
+        _t0 = _time.perf_counter()
         result = self.client.chat(messages, response_format=response_format,
                                    temperature=temperature)
+        call_seconds = _time.perf_counter() - _t0
         valid_labels = labels_for(len(sample.get("choices", []) or []))
         parsed = parse_structured_answer(result.content, valid_labels)
         s["model"] = result.model or self.cfg.model
+        # Timing + parse-quality + token-usage instrumentation (answer call only).
+        if mode != "verifier":
+            s["openrouter_call_seconds"] = round(s.get("openrouter_call_seconds") or 0.0, 4) + round(call_seconds, 4)
+            s["raw_response_chars"] = len(str(result.content or ""))
+            pa = parsed.to_dict() if hasattr(parsed, "to_dict") else {}
+            s["parsed_answer_source"] = pa.get("source")
+            s["parsed_answer_error"] = pa.get("error")
+            usage = result.usage or {}
+            s["openrouter_completion_tokens"] = usage.get("completion_tokens")
+            s["openrouter_total_tokens"] = usage.get("total_tokens")
         return _concise(result.content), parsed
 
     def _should_self_consist(self, s) -> bool:
@@ -390,12 +413,24 @@ class OpenRouterGraphSolver(BaseSolver):
             "evidence_candidate_chunk_count": None,
             "evidence_selected_chunk_count": None,
             "evidence_selected_chars": None,
+            "evidence_reranker_cache_hit": None,
+            "evidence_reranker_load_seconds": None,
+            "evidence_reranker_score_seconds": None,
+            "evidence_reranker_pair_count": None,
+            "evidence_reranker_batch_size": None,
             "evidence_fallback_used": False,
             "prompt_version": "v1",
             "model": self.cfg.model,
             "strategy": None,
             "raw_response": None,
             "parsed_answer": None,
+            "raw_response_chars": None,
+            "parsed_answer_source": None,
+            "parsed_answer_error": None,
+            "openrouter_call_seconds": None,
+            "openrouter_completion_tokens": None,
+            "openrouter_total_tokens": None,
+            "verifier_call_seconds": None,
             "verifier_result": {},
             "repair_used": False,
             "self_consistency_used": False,

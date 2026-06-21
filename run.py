@@ -87,6 +87,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--evidence-embedding-model", default=None, help="LOCAL embedding model path (method=embedding); never downloaded")
     parser.add_argument("--evidence-reranker-model", default=None, help="LOCAL cross-encoder reranker path (method=reranker); never downloaded")
     parser.add_argument("--evidence-candidate-top-k", type=int, default=None, help="stage-1 lexical candidate count fed to the neural reranker")
+    parser.add_argument("--evidence-neural-batch-size", type=int, default=None, help="batch size for neural reranker scoring (default 8)")
     parser.add_argument("--mcq-verifier", dest="mcq_verifier", action="store_true", default=None, help="enable the selective second-pass MCQ verifier")
     parser.add_argument("--no-mcq-verifier", dest="mcq_verifier", action="store_false", help="disable the MCQ verifier")
     parser.add_argument("--mcq-verifier-threshold", type=float, default=None, help="min verifier confidence to override the original answer")
@@ -165,7 +166,8 @@ def main(argv: list[str] | None = None) -> int:
                "optional_embedding_model": "evidence_embedding_model",
                "optional_reranker_model": "evidence_reranker_model",
                "candidate_top_k": "evidence_candidate_top_k",
-               "neural_fallback_to_lexical": "evidence_neural_fallback_to_lexical"}
+               "neural_fallback_to_lexical": "evidence_neural_fallback_to_lexical",
+               "neural_batch_size": "evidence_neural_batch_size"}
     for k, flat in _er_map.items():
         if er_cfg.get(k) is not None:
             openrouter_config[flat] = er_cfg[k]
@@ -179,6 +181,8 @@ def main(argv: list[str] | None = None) -> int:
         openrouter_config["evidence_reranker_model"] = args.evidence_reranker_model
     if args.evidence_candidate_top_k is not None:
         openrouter_config["evidence_candidate_top_k"] = args.evidence_candidate_top_k
+    if args.evidence_neural_batch_size is not None:
+        openrouter_config["evidence_neural_batch_size"] = args.evidence_neural_batch_size
     # Flatten the nested mcq_verifier config block into flat solver fields.
     mv_cfg = openrouter_config.pop("mcq_verifier", {}) or {}
     _mv_map = {"enabled": "mcq_verifier_enabled", "apply_routes": "mcq_verifier_apply_routes",

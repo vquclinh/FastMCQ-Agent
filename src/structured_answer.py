@@ -171,7 +171,9 @@ def response_format_schema() -> dict:
                     # cannot truncate the JSON (Phase 2K.2 correctness fix).
                     "answer": {"type": "string", "maxLength": 4},
                     "confidence": {"type": "number"},
-                    "reason_type": {"type": "string"},
+                    # enum (not free string) so the model cannot emit repeated /
+                    # malformed reason_type values (Phase 2L.12 output discipline).
+                    "reason_type": {"type": "string", "enum": list(REASON_TYPES)},
                     "needs_review": {"type": "boolean"},
                     "evidence": {
                         "type": "array",
@@ -180,6 +182,8 @@ def response_format_schema() -> dict:
                     },
                 },
                 "required": ["answer"],
+                # Reject any extra/duplicate keys -> shorter, well-formed JSON.
+                "additionalProperties": False,
             },
         },
     }
