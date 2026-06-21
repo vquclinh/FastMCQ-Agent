@@ -174,6 +174,180 @@ def test_extracted_values_recorded():
     assert r.matched and "dhdt" in r.extracted_values and r.formula_family == "related_rates"
 
 
+# --- Phase 2L.8 generic families --------------------------------------------
+
+def test_kepler_period_ratio():
+    q = ("Theo định luật Kepler III, một hành tinh có bán kính quỹ đạo gấp 4 lần "
+         "Trái Đất thì chu kỳ quỹ đạo gấp bao nhiêu lần?")
+    r, _ = _solve(q, ["2 lần", "4 lần", "8 lần", "16 lần"])  # 4^1.5 = 8
+    assert r.matched and r.answer == "C" and r.method == "kepler_third_law"
+    assert r.formula_family == "astronomy" and r.safe_to_override
+
+
+def test_kepler_absolute_period():
+    q = ("Một vệ tinh có chu kỳ quỹ đạo là 2 năm. Nếu bán kính quỹ đạo tăng gấp 4 "
+         "lần thì chu kỳ quỹ đạo mới là bao nhiêu? (định luật Kepler)")
+    r, _ = _solve(q, ["8 năm", "16 năm", "4 năm", "32 năm"])  # 2 * 8 = 16
+    assert r.matched and r.answer == "B" and r.extracted_values["T_old"] == 2.0
+
+
+def test_kepler_declines_without_factor():
+    q = "Hành tinh có chu kỳ quỹ đạo là 2 năm. Chu kỳ này bằng bao nhiêu ngày?"
+    r, _ = _solve(q, ["730 ngày", "365 ngày", "100 ngày", "50 ngày"])
+    assert not r.matched and not r.safe_to_override
+
+
+def test_gamma_fraction_of_c():
+    q = ("Theo thuyết tương đối, một vật chuyển động với vận tốc 0,6c. Hệ số giãn "
+         "nở thời gian gamma là bao nhiêu?")
+    r, _ = _solve(q, ["1,25", "1,33", "1,5", "2,0"])  # 1/sqrt(1-0.36)=1.25
+    assert r.matched and r.answer == "A" and r.method == "relativistic_gamma"
+    assert r.formula_family == "physics"
+
+
+def test_gamma_percent_of_c():
+    q = ("Trong thuyết tương đối, một hạt chuyển động bằng 80% tốc độ ánh sáng. Hệ "
+         "số Lorentz gamma của hạt là bao nhiêu?")
+    r, _ = _solve(q, ["1,67", "1,25", "2,0", "1,33"])  # 1/sqrt(1-0.64)=1.667
+    assert r.matched and r.answer == "A"
+
+
+def test_gamma_declines_without_speed():
+    r, _ = _solve("Thuyết tương đối hẹp của Einstein nói về điều gì?",
+                  ["Không gian", "Thời gian", "Cả hai", "Khác"])
+    assert not r.matched
+
+
+def test_money_multiplier_percent():
+    q = "Nếu tỷ lệ dự trữ bắt buộc là 10%, số nhân tiền tối đa là bao nhiêu?"
+    r, _ = _solve(q, ["5", "10", "20", "100"])  # 1/0.10 = 10
+    assert r.matched and r.answer == "B" and r.method == "money_multiplier"
+
+
+def test_money_multiplier_other_ratio():
+    q = "Với tỷ lệ dự trữ bắt buộc 25%, số nhân tiền là bao nhiêu?"
+    r, _ = _solve(q, ["2", "3", "4", "5"])  # 1/0.25 = 4
+    assert r.matched and r.answer == "C"
+
+
+def test_money_multiplier_declines_no_ratio():
+    r, _ = _solve("Số nhân tiền phụ thuộc vào yếu tố nào?",
+                  ["Lãi suất", "Tỷ lệ dự trữ", "Lạm phát", "Tỷ giá"])
+    assert not r.matched
+
+
+def test_t_statistic_basic():
+    q = ("Một mẫu có trung bình mẫu là 52, độ lệch chuẩn là 5, cỡ mẫu là 25. Kiểm "
+         "định giả thuyết trung bình tổng thể là 50. Giá trị thống kê t là bao nhiêu?")
+    r, _ = _solve(q, ["1,0", "2,0", "2,5", "4,0"])  # (52-50)/(5/5)=2
+    assert r.matched and r.answer == "B" and r.method == "t_statistic"
+    assert r.formula_family == "statistics"
+
+
+def test_t_statistic_negative():
+    q = ("Trung bình mẫu là 48, độ lệch chuẩn là 4, cỡ mẫu là 16. Kiểm định giả "
+         "thuyết trung bình tổng thể là 50. Tính giá trị thống kê t.")
+    r, _ = _solve(q, ["-2,0", "-1,0", "2,0", "1,0"])  # (48-50)/(4/4)=-2
+    assert r.matched and r.answer == "A"
+
+
+def test_t_statistic_declines_missing_value():
+    q = "Kiểm định giả thuyết với trung bình mẫu là 52 và cỡ mẫu là 25. Giá trị t?"
+    r, _ = _solve(q, ["1,0", "2,0", "2,5", "4,0"])  # no s -> decline
+    assert not r.matched
+
+
+def test_acid_base_volume():
+    q = "Cần bao nhiêu mL dung dịch NaOH 0,1 M để trung hòa 50 mL dung dịch HCl 0,2 M?"
+    r, _ = _solve(q, ["50 mL", "100 mL", "150 mL", "25 mL"])  # 0.2*50/0.1 = 100
+    assert r.matched and r.answer == "B" and r.method == "acid_base_neutralization"
+    assert r.formula_family == "chemistry"
+
+
+def test_acid_base_volume_other():
+    q = "Thể tích NaOH 0,5 M cần để trung hòa 100 mL HCl 0,25 M là bao nhiêu?"
+    r, _ = _solve(q, ["25 mL", "50 mL", "100 mL", "200 mL"])  # 0.25*100/0.5 = 50
+    assert r.matched and r.answer == "B"
+
+
+def test_acid_base_declines_non_neutralization():
+    r, _ = _solve("HCl là một axit mạnh hay yếu?", ["Mạnh", "Yếu", "Trung tính", "Bazơ"])
+    assert not r.matched
+
+
+def test_supply_demand_shortage():
+    q = ("Cho hàm cầu Qd = 100 - 2P và hàm cung Qs = 20 + 3P. Nếu chính phủ áp giá "
+         "trần là 10, mức thiếu hụt trên thị trường là bao nhiêu?")
+    r, _ = _solve(q, ["10", "20", "30", "40"])  # Qd=80 Qs=50 shortage=30
+    assert r.matched and r.answer == "C" and r.method == "supply_demand_gap"
+
+
+def test_supply_demand_surplus():
+    q = ("Hàm cầu Qd = 120 - 4P, hàm cung Qs = 30 + 2P. Với giá sàn 20, mức dư thừa "
+         "trên thị trường là bao nhiêu?")
+    r, _ = _solve(q, ["10", "30", "40", "70"])  # Qd=40 Qs=70 surplus=30
+    assert r.matched and r.answer == "B"
+
+
+def test_supply_demand_declines_no_equations():
+    q = "Khi giá trần thấp hơn giá cân bằng, thị trường sẽ thiếu hụt. Điều này đúng không?"
+    r, _ = _solve(q, ["Đúng", "Sai"])
+    assert not r.matched
+
+
+def test_cobb_douglas_isoquant():
+    q = ("Hàm sản xuất Q = 2\\sqrt{KL}. Để đạt sản lượng 12 trên đường đẳng lượng, "
+         "tổ hợp đầu vào nào sau đây phù hợp?")
+    r, _ = _solve(q, ["K=2, L=4", "K=4, L=9", "K=3, L=3", "K=5, L=5"])  # 2*sqrt(36)=12
+    assert r.matched and r.answer == "B" and r.method == "cobb_douglas_isoquant"
+
+
+def test_cobb_douglas_pair_tuple_form():
+    q = "Với hàm sản xuất Q = √(KL), sản lượng 6 đạt được tại tổ hợp nào? (đẳng lượng)"
+    r, _ = _solve(q, ["(2, 8)", "(3, 10)", "(4, 9)", "(1, 5)"])  # sqrt(36)=6 -> (4,9)
+    assert r.matched and r.answer == "C"
+
+
+def test_cobb_douglas_declines_ambiguous():
+    # Two pairs satisfy Q -> ambiguous -> decline.
+    q = "Hàm sản xuất Q = 2\\sqrt{KL}, sản lượng 12 đạt tại tổ hợp nào? (đẳng lượng)"
+    r, _ = _solve(q, ["K=4, L=9", "K=9, L=4", "K=1, L=1", "K=2, L=2"])  # both first two -> 12
+    assert not r.matched
+
+
+def test_modular_power():
+    r, _ = _solve("Tìm số dư khi chia 2^10 cho 7.", ["1", "2", "3", "4"])  # 1024%7=2
+    assert r.matched and r.answer == "B" and r.method == "modular_arithmetic"
+    assert r.formula_family == "number_theory"
+
+
+def test_modular_power_mod_keyword():
+    r, _ = _solve("Giá trị của 7^100 mod 5 là bao nhiêu?", ["0", "1", "2", "3"])  # =1
+    assert r.matched and r.answer == "B"
+
+
+def test_modular_declines_without_modulus():
+    r, _ = _solve("Lũy thừa 2^10 bằng bao nhiêu?", ["512", "1024", "2048", "256"])
+    assert not r.matched
+
+
+def test_new_families_no_qid_effect():
+    q = "Nếu tỷ lệ dự trữ bắt buộc là 10%, số nhân tiền tối đa là bao nhiêu?"
+    ch = ["5", "10", "20", "100"]
+    L = labels_for(len(ch))
+    r1 = solve_calculation_sample({"qid": "test_0055", "question": q, "choices": ch}, L)
+    r2 = solve_calculation_sample({"qid": "private_zzz", "question": q, "choices": ch}, L)
+    r3 = solve_calculation_sample({"question": q, "choices": ch}, L)
+    assert r1.answer == r2.answer == r3.answer == "B"
+
+
+def test_source_has_no_network_imports():
+    src = Path(__file__).resolve().parent.parent.joinpath("src/calculation_solver.py").read_text()
+    for bad in ("import requests", "import urllib", "import httpx", "import socket",
+                "open(", "eval(", "exec(", "__import__"):
+        assert bad not in src, f"unexpected '{bad}' in calculation_solver.py"
+
+
 if __name__ == "__main__":
     failures = 0
     for name, fn in sorted(globals().items()):

@@ -119,6 +119,17 @@ def _first(pattern: str, text: str):
     return _to_float(m.group(1)) if m else None
 
 
+def _first_int(pattern: str, text: str):
+    """First capture group parsed as a plain non-negative integer, else None."""
+    m = re.search(pattern, text, re.IGNORECASE)
+    if not m:
+        return None
+    try:
+        return int(m.group(1))
+    except (ValueError, TypeError):
+        return None
+
+
 # --- formula families (each returns CalculationResult or _no_match()) ---------
 
 def try_exponential(q: str, choices, labels) -> CalculationResult:
@@ -306,16 +317,251 @@ def try_resistor(q: str, choices, labels) -> CalculationResult:
     return _no_match()
 
 
-# Conservative order: exact families first, then nearest-numeric families.
+# --- generic families added in Phase 2L.8 -------------------------------------
+
+def try_kepler(q: str, choices, labels) -> CalculationResult:
+    """Kepler III / power law: T ∝ r^(3/2). If radius scales by k, T scales by k^1.5.
+
+    Two shapes: (a) old period T given -> T_new = T·k^(3/2); (b) only the factor is
+    asked ("gấp bao nhiêu lần") -> ratio = k^(3/2).
+    """
+    low = q.lower()
+    if "kepler" not in low and not (("chu kỳ" in low or "chu kì" in low)
+                                    and ("quỹ đạo" in low or "hành tinh" in low or "vệ tinh" in low)):
+        return _no_match()
+    k = (_first(r"gấp\s*([-+]?\d+(?:[.,]\d+)?)\s*lần", q)
+         or _first(r"bán kính[^0-9]{0,40}?([-+]?\d+(?:[.,]\d+)?)\s*lần", q))
+    if k is None or k <= 0:
+        return _no_match()
+    t_old = _first(r"chu k[ỳì][^0-9]{0,30}?([-+]?\d+(?:[.,]\d+)?)\s*(?:năm|ngày|tháng|giờ|year|day)", q)
+    ratio = k ** 1.5
+    if t_old is not None:
+        target, rationale = t_old * ratio, f"T'=T·k^(3/2)={t_old * ratio:.4g}"
+        extracted = {"T_old": t_old, "k": k, "T_new": t_old * ratio}
+    else:
+        target, rationale = ratio, f"ratio=k^(3/2)={ratio:.4g}"
+        extracted = {"k": k, "ratio": ratio}
+    label = _nearest_label(target, choices, labels)
+    if label is not None:
+        return CalculationResult(label, _CONF_NEAREST, "kepler_third_law", rationale,
+                                 True, True, "astronomy", extracted)
+    return _no_match()
+
+
+def try_relativistic_gamma(q: str, choices, labels) -> CalculationResult:
+    """Lorentz factor γ = 1/√(1−β²) from a speed given as a fraction of c."""
+    low = q.lower()
+    if not any(w in low for w in ("tương đối", "giãn nở thời gian", "lorentz",
+                                  "gamma", "hệ số giãn", "co ngắn")):
+        return _no_match()
+    beta = None
+    m = re.search(r"([-+]?\d+(?:[.,]\d+)?)\s*c(?![a-zA-Z])", q)            # "0,6c"
+    if m:
+        beta = _to_float(m.group(1))
+    if beta is None:
+        m = re.search(r"([-+]?\d+(?:[.,]\d+)?)\s*%\s*(?:tốc độ|vận tốc)\s*ánh sáng", q, re.IGNORECASE)
+        if m:
+            beta = _to_float(m.group(1)) / 100.0
+    if beta is None:
+        m = re.search(r"([-+]?\d+(?:[.,]\d+)?)\s*lần\s*(?:tốc độ|vận tốc)\s*ánh sáng", q, re.IGNORECASE)
+        if m:
+            beta = _to_float(m.group(1))
+    if beta is None or not (0.0 < beta < 1.0):
+        return _no_match()
+    gamma = 1.0 / math.sqrt(1.0 - beta * beta)
+    label = _nearest_label(gamma, choices, labels, rel_tol=0.03)
+    if label is not None:
+        return CalculationResult(label, _CONF_NEAREST, "relativistic_gamma",
+                                 f"γ=1/√(1−β²)={gamma:.4g} (β={beta:g})", True, True,
+                                 "physics", {"beta": beta, "gamma": gamma})
+    return _no_match()
+
+
+def try_money_multiplier(q: str, choices, labels) -> CalculationResult:
+    """Simple money multiplier = 1 / reserve_ratio."""
+    low = q.lower()
+    if not any(w in low for w in ("dự trữ bắt buộc", "tỷ lệ dự trữ", "reserve ratio",
+                                  "số nhân tiền", "money multiplier")):
+        return _no_match()
+    rr = _first(r"(?:dự trữ bắt buộc|tỷ lệ dự trữ|reserve ratio)[^0-9%]{0,30}?"
+                r"([-+]?\d+(?:[.,]\d+)?)\s*%", q)
+    ratio = rr / 100.0 if rr is not None else None
+    if ratio is None:
+        rr = _first(r"(?:dự trữ bắt buộc|tỷ lệ dự trữ)[^0-9]{0,30}?(0?[.,]\d+)", q)
+        ratio = rr if rr is not None else None
+    if ratio is None or not (0.0 < ratio <= 1.0):
+        return _no_match()
+    mult = 1.0 / ratio
+    label = _nearest_label(mult, choices, labels, rel_tol=0.03)
+    if label is not None:
+        return CalculationResult(label, _CONF_NEAREST, "money_multiplier",
+                                 f"m=1/rr={mult:.4g}", True, True, "economics",
+                                 {"reserve_ratio": ratio, "multiplier": mult})
+    return _no_match()
+
+
+def try_t_statistic(q: str, choices, labels) -> CalculationResult:
+    """One-sample t/z statistic: t = (x̄ − μ₀) / (s / √n)."""
+    low = q.lower()
+    if not any(w in low for w in ("kiểm định", "thống kê t", "t-statistic", "giá trị t",
+                                  "thống kê z", "z-statistic", "giá trị z")):
+        return _no_match()
+    xbar = _first(r"trung bình mẫu[^0-9]{0,20}?([-+]?\d+(?:[.,]\d+)?)", q)
+    mu0 = (_first(r"giả thuyết[^0-9]{0,40}?([-+]?\d+(?:[.,]\d+)?)", q)
+           or _first(r"trung bình[^0-9]{0,8}?(?:tổng thể|lý thuyết|kỳ vọng)[^0-9]{0,20}?([-+]?\d+(?:[.,]\d+)?)", q)
+           or _first(r"[μµ]_?0?\s*=\s*([-+]?\d+(?:[.,]\d+)?)", q))
+    s = _first(r"độ lệch chuẩn[^0-9]{0,20}?([-+]?\d+(?:[.,]\d+)?)", q)
+    n = (_first(r"(?:cỡ mẫu|kích thước mẫu)[^0-9]{0,12}?([-+]?\d+(?:[.,]\d+)?)", q)
+         or _first(r"\bn\s*=\s*([-+]?\d+(?:[.,]\d+)?)", q))
+    if None in (xbar, mu0, s, n) or s == 0 or n <= 0:
+        return _no_match()
+    t = (xbar - mu0) / (s / math.sqrt(n))
+    label = _nearest_label(t, choices, labels, rel_tol=0.05)
+    if label is not None:
+        return CalculationResult(label, _CONF_NEAREST, "t_statistic",
+                                 f"t=(x̄−μ₀)/(s/√n)={t:.4g}", True, True, "statistics",
+                                 {"xbar": xbar, "mu0": mu0, "s": s, "n": n, "t": t})
+    return _no_match()
+
+
+def try_acid_base_volume(q: str, choices, labels) -> CalculationResult:
+    """1:1 strong acid/base neutralization volume: V_b = (M_a·V_a)/M_b (same unit)."""
+    low = q.lower()
+    is_ab = ("hcl" in low and "naoh" in low) or \
+            ("trung hòa" in low and any(w in low for w in ("axit", "axít", "bazơ", "bazo", "kiềm")))
+    if not is_ab or "trung hòa" not in low:
+        return _no_match()
+    # Acid (M, V) — accept either "V mL ... HCl ... M" or "HCl ... M ... V mL".
+    acid = re.search(r"(\d+(?:[.,]\d+)?)\s*ml[^?.]{0,30}?hcl[^?.]{0,30}?(\d+(?:[.,]\d+)?)\s*m\b", low)
+    if acid:
+        v_a, m_a = _to_float(acid.group(1)), _to_float(acid.group(2))
+    else:
+        acid = re.search(r"hcl[^?.]{0,30}?(\d+(?:[.,]\d+)?)\s*m\b[^?.]{0,30}?(\d+(?:[.,]\d+)?)\s*ml", low)
+        if not acid:
+            return _no_match()
+        m_a, v_a = _to_float(acid.group(1)), _to_float(acid.group(2))
+    m_b = _first(r"naoh[^?.]{0,30}?(\d+(?:[.,]\d+)?)\s*m\b", low)
+    if None in (v_a, m_a, m_b) or not m_b:
+        return _no_match()
+    v_b = (m_a * v_a) / m_b
+    label = _nearest_label(v_b, choices, labels, rel_tol=0.03)
+    if label is not None:
+        return CalculationResult(label, _CONF_NEAREST, "acid_base_neutralization",
+                                 f"V_b=(M_a·V_a)/M_b={v_b:.4g} mL", True, True, "chemistry",
+                                 {"M_acid": m_a, "V_acid": v_a, "M_base": m_b, "V_base": v_b})
+    return _no_match()
+
+
+def try_supply_demand(q: str, choices, labels) -> CalculationResult:
+    """Linear Qd/Qs at a controlled price -> shortage (Qd−Qs) or surplus (Qs−Qd)."""
+    low = q.lower()
+    if not any(w in low for w in ("thiếu hụt", "dư thừa", "dư cung", "thặng dư", "shortage", "surplus")):
+        return _no_match()
+    eq = r"=\s*([-+]?\d+(?:[.,]\d+)?)\s*([-+])\s*(\d+(?:[.,]\d+)?)\s*p"
+    qd = re.search(r"q[_]?d\s*" + eq, low) or re.search(r"(?:lượng cầu|cầu)[^=]{0,12}?" + eq, low)
+    qs = re.search(r"q[_]?s\s*" + eq, low) or re.search(r"(?:lượng cung|cung)[^=]{0,12}?" + eq, low)
+    p0 = (_first(r"giá (?:trần|sàn)[^0-9]{0,20}?([-+]?\d+(?:[.,]\d+)?)", q)
+          or _first(r"(?:quy định|kiểm soát|ấn định)[^0-9]{0,20}?([-+]?\d+(?:[.,]\d+)?)", q))
+    if not qd or not qs or p0 is None:
+        return _no_match()
+
+    def _val(m):
+        a, sign, b = _to_float(m.group(1)), m.group(2), _to_float(m.group(3))
+        return a + (b if sign == "+" else -b) * p0
+
+    q_d, q_s = _val(qd), _val(qs)
+    wants_shortage = any(w in low for w in ("thiếu hụt", "shortage"))
+    diff = (q_d - q_s) if wants_shortage else (q_s - q_d)
+    if diff <= 0:
+        return _no_match()  # requested condition not actually present -> defer
+    label = _nearest_label(diff, choices, labels, rel_tol=0.02)
+    if label is not None:
+        kind = "shortage" if wants_shortage else "surplus"
+        return CalculationResult(label, _CONF_NEAREST, "supply_demand_gap",
+                                 f"{kind}={diff:.4g} at P={p0:g}", True, True, "economics",
+                                 {"Qd": q_d, "Qs": q_s, "P": p0, kind: diff})
+    return _no_match()
+
+
+def try_cobb_douglas_isoquant(q: str, choices, labels) -> CalculationResult:
+    """Isoquant: pick the (K,L) choice that yields the target output for Q=A√(KL)."""
+    low = q.lower()
+    qn = q.replace(" ", "")
+    is_sqrt = bool(re.search(r"=\s*(\d+(?:[.,]\d+)?)?\\?sqrt\{?kl", qn, re.IGNORECASE)) or \
+              ("√" in q and "kl" in low)
+    if not is_sqrt or not any(w in low for w in ("đẳng lượng", "isoquant", "sản lượng", "sản xuất")):
+        return _no_match()
+    a = _first(r"(\d+(?:[.,]\d+)?)\s*\\?sqrt", qn) or _first(r"(\d+(?:[.,]\d+)?)\s*√", q) or 1.0
+    target = (_first(r"sản lượng[^0-9]{0,20}?([-+]?\d+(?:[.,]\d+)?)", q)
+              or _first(r"q\s*=\s*([-+]?\d+(?:[.,]\d+)?)\D", low))
+    if target is None:
+        return _no_match()
+    hits = []
+    for i, c in enumerate(choices):
+        pair = re.search(r"k\s*=\s*(\d+(?:[.,]\d+)?)\D{0,10}?l\s*=\s*(\d+(?:[.,]\d+)?)", str(c), re.IGNORECASE) \
+            or re.search(r"\(\s*(\d+(?:[.,]\d+)?)\s*[,;]\s*(\d+(?:[.,]\d+)?)\s*\)", str(c))
+        if not pair:
+            continue
+        kk, ll = _to_float(pair.group(1)), _to_float(pair.group(2))
+        if kk is None or ll is None or kk < 0 or ll < 0:
+            continue
+        q_pred = a * math.sqrt(kk * ll)
+        if abs(q_pred - target) <= 1e-6 + 1e-3 * abs(target):
+            hits.append(labels[i])
+    if len(hits) == 1:
+        return CalculationResult(hits[0], _CONF_EXACT, "cobb_douglas_isoquant",
+                                 f"Q={a:g}√(KL)={target:g}", True, True, "economics",
+                                 {"A": a, "target_Q": target})
+    return _no_match()
+
+
+def try_modular_arithmetic(q: str, choices, labels) -> CalculationResult:
+    """Modular results computed with integer arithmetic only (no eval/exec).
+
+    Handles ``base^exp mod n`` via ``pow(base, exp, n)`` and simple ``a mod n``.
+    """
+    low = q.lower()
+    if not any(w in low for w in ("mod", "chia", "đồng dư", "số dư", "dư")):
+        return _no_match()
+    n = _first_int(r"(?:mod(?:ulo)?|chia[^?.\n]{0,15}?cho)\s*(\d+)", q)
+    if n is None or n <= 0:
+        return _no_match()
+    pe = re.search(r"(\d+)\s*(?:\^|mũ)\s*\{?\s*(\d+)", q)
+    if pe:
+        base, exp = int(pe.group(1)), int(pe.group(2))
+        result = pow(base, exp, n)
+        rationale = f"{base}^{exp} mod {n} = {result}"
+    else:
+        a = _first_int(r"(\d{2,})\s*(?:chia|mod)", q)  # only a clear standalone integer
+        if a is None:
+            return _no_match()
+        result = a % n
+        rationale = f"{a} mod {n} = {result}"
+    label = _exact_label(float(result), choices, labels)
+    if label is not None:
+        return CalculationResult(label, _CONF_EXACT, "modular_arithmetic", rationale,
+                                 True, True, "number_theory", {"mod": n, "result": result})
+    return _no_match()
+
+
+# Conservative order: exact-result families first, then nearest-numeric families.
 _FAMILIES = (
     try_exponential,
     try_hess_law,
     try_expected_distinct,
     try_resistor,
+    try_modular_arithmetic,
+    try_cobb_douglas_isoquant,
+    try_supply_demand,
     try_gdp_inflation,
     try_cylinder_rate,
     try_sphere_rate,
     try_price_elasticity,
+    try_kepler,
+    try_relativistic_gamma,
+    try_money_multiplier,
+    try_t_statistic,
+    try_acid_base_volume,
 )
 
 

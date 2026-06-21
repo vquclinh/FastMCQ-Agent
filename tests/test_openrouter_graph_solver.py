@@ -214,6 +214,18 @@ def test_calculation_no_match_uses_llm():
     assert ans == "B" and client.calls == 1
 
 
+def test_new_family_money_multiplier_bypasses_llm():
+    # A Phase-2L.8 family (money multiplier) also overrides the LLM when safe.
+    client = FakeClient(['{"answer": "D"}'])  # wrong; must NOT be used
+    solver = OpenRouterGraphSolver(config=OpenRouterConfig(), client=client)
+    sample = {"qid": "calc_mm",
+              "question": ("Trong nền kinh tế, nếu tỷ lệ dự trữ bắt buộc là 10%, "
+                           "số nhân tiền tối đa là bao nhiêu?"),
+              "choices": ["5", "10", "20", "100"]}
+    ans = solver.predict_one(sample)
+    assert ans == "B" and client.calls == 0   # deterministic 1/0.10 = 10 -> B
+
+
 def test_calculation_metadata_logged():
     client = FakeClient(['{"answer": "A"}'])
     logger = CaptureLogger()

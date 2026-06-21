@@ -42,9 +42,19 @@ would be. Matching public qids is incidental, not encoded.
 | `price_elasticity_midpoint` | economics | two (P,Q) points | `E = (ΔQ/Q̄)/(ΔP/P̄)`; signed or `|E|` |
 | `expected_distinct` | probability | `Xi` uniform {1..k}, distinct in `n` | `E[Y]=k(1-(1-1/k)^n)` |
 | `resistor_cut_parallel` | circuits | `R` cut in two equal halves, parallel | `R/4 ⇒ I'=4I` |
+| `kepler_third_law` | astronomy | Kepler III, orbit radius ×k | `T' = T·k^(3/2)` (or ratio `k^(3/2)`) |
+| `relativistic_gamma` | physics | special relativity, speed as fraction of `c` | `γ = 1/√(1−β²)` |
+| `money_multiplier` | economics | reserve ratio `rr` | `m = 1/rr` |
+| `t_statistic` | statistics | `x̄`, `μ₀`, `s`, `n` given | `t = (x̄−μ₀)/(s/√n)` |
+| `acid_base_neutralization` | chemistry | 1:1 strong acid/base, volume to neutralize | `V_b = (M_a·V_a)/M_b` |
+| `supply_demand_gap` | economics | linear `Qd`,`Qs` at a controlled price | `shortage=Qd−Qs` / `surplus=Qs−Qd` |
+| `cobb_douglas_isoquant` | economics | `Q=A√(KL)`, target output, `(K,L)` choices | pick the unique pair with `A√(KL)=Q` |
+| `modular_arithmetic` | number_theory | `base^exp mod n` or `a mod n` | `pow(base,exp,n)` / `a%n` (integer-only) |
 
 Each `CalculationResult` records `method`, `formula_family`, `extracted_values`,
-`confidence`, `rationale`, `matched`, `safe_to_override`.
+`confidence`, `rationale`, `matched`, `safe_to_override`. The full generic taxonomy
+(and intentionally-declined families) is documented in
+[CALCULATION_TAXONOMY.md](CALCULATION_TAXONOMY.md).
 
 ## Conservative override policy
 
@@ -61,9 +71,11 @@ Each `CalculationResult` records `method`, `formula_family`, `extracted_values`,
 
 ## Why no arbitrary code execution
 
-There is **no `eval`, no `exec`, no sandbox, no external calls** — only regex +
-numeric parsing + fixed arithmetic. This keeps the helper deterministic,
-auditable, safe, and dependency-free.
+There is **no `eval`, no `exec`, no `__import__`, no `open`, no sandbox, no external
+calls** — only regex + numeric parsing + fixed arithmetic. The `modular_arithmetic`
+family computes results with Python's integer `pow(base, exp, n)` / `a % n` on
+**parsed integers only** — never by evaluating a string expression. This keeps the
+helper deterministic, auditable, safe, and dependency-free.
 
 ## Integration & config
 
@@ -88,9 +100,17 @@ and a short `calculation_rationale` (no hidden chain-of-thought).
 
 ## Limitations
 
-- Small set of families; most samples are **not** matched (≈9/463 match on the
-  public set; the rest, including most of the 159 calculation-route questions, are
-  left to the LLM) — by design.
+- Most samples are **not** matched (≈12/463 match on the public set after the
+  Phase-2L.8 expansion; the rest, including most of the 159 calculation-route
+  questions, are left to the LLM) — by design. The newly-added families
+  (kepler/gamma/money/t-stat/acid-base/supply-demand/cobb-douglas/modular) exist to
+  generalize to the **private** test; several of them match 0 public samples.
+- **Route interaction:** the calc node runs only on the `calculation`/`ambiguous`
+  routes. On the public set all 12 safe matches route to `calculation`, so none are
+  blocked. A prose-phrased private physics/stat formula question could route to
+  `short_knowledge` and miss the override — see CALCULATION_TAXONOMY.md for the
+  optional route-widening consideration (not enabled by default to avoid an
+  unvalidated behavior change).
 - Extraction is regex-based and Vietnamese-aware (handles comma decimals like
   `2,50`); unusual phrasings simply don't match.
 - Duplicate-choice numeric questions route to `ambiguous`; the calc node runs on
@@ -110,8 +130,26 @@ and a short `calculation_rationale` (no hidden chain-of-thought).
 `--no-calculation-solver`, or set `openrouter.calc_enabled: false`. The solver
 then behaves exactly as before (pure LLM path).
 
-## Use in v2
+## Interaction with the reranker and verifier
 
-The intended v2 run keeps the chosen OpenRouter config and **adds the calculation
-override**: deterministic answers for the matched calculation samples, LLM for the
-rest. This should be A/B-compared against the v1 leaderboard score before adopting.
+- **Evidence reranker** ([EVIDENCE_RERANKER.md](EVIDENCE_RERANKER.md)) acts on the
+  `long_context` route; the calc node acts on `calculation`/`ambiguous`. They do not
+  overlap, so a calc override and a rerank never both apply to one sample.
+- **Selective MCQ verifier** ([MCQ_VERIFIER.md](MCQ_VERIFIER.md)) runs **after** the
+  LLM answer. A safe calc override short-circuits the graph (0 API calls) **before**
+  the verifier, so the verifier never second-guesses a deterministic answer — the
+  formula is trusted over LLM option-elimination. This ordering is intentional
+  (correctness-first: an exact formula beats a probabilistic re-check).
+
+## Diagnostic inventory
+
+`scripts/inventory_calculation_families.py --input <file>` reports, per sample,
+which family matched, whether it is a safe override, and the extracted values — a
+**pattern** inventory only (no ground truth, no CSV, no network).
+
+## Use in a future v5 run
+
+A v5 run keeps the chosen OpenRouter config and the expanded calculation override:
+deterministic answers for the matched calculation samples, LLM for the rest. Run
+into a **new** file (`outputs/pred_v5_calc_taxonomy.csv`) and A/B-compare against
+v1/v2 before adopting — no leaderboard claim without validation.
