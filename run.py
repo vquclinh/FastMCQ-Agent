@@ -88,6 +88,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--evidence-reranker-model", default=None, help="LOCAL cross-encoder reranker path (method=reranker); never downloaded")
     parser.add_argument("--evidence-candidate-top-k", type=int, default=None, help="stage-1 lexical candidate count fed to the neural reranker")
     parser.add_argument("--evidence-neural-batch-size", type=int, default=None, help="batch size for neural reranker scoring (default 8)")
+    parser.add_argument("--adaptive-reasoning", action="store_true", default=None, help="enable the adaptive reasoning orchestrator (trace-only; never changes answers)")
     parser.add_argument("--mcq-verifier", dest="mcq_verifier", action="store_true", default=None, help="enable the selective second-pass MCQ verifier")
     parser.add_argument("--no-mcq-verifier", dest="mcq_verifier", action="store_false", help="disable the MCQ verifier")
     parser.add_argument("--mcq-verifier-threshold", type=float, default=None, help="min verifier confidence to override the original answer")
@@ -199,6 +200,14 @@ def main(argv: list[str] | None = None) -> int:
         openrouter_config["mcq_verifier_enabled"] = args.mcq_verifier
     if args.mcq_verifier_threshold is not None:
         openrouter_config["mcq_verifier_min_confidence_to_override"] = args.mcq_verifier_threshold
+    # Flatten the nested adaptive_reasoning config block (Phase 2L.15A; trace-only).
+    ar_cfg = openrouter_config.pop("adaptive_reasoning", {}) or {}
+    if ar_cfg.get("enabled") is not None:
+        openrouter_config["adaptive_reasoning_enabled"] = ar_cfg["enabled"]
+    if ar_cfg.get("mode") is not None:
+        openrouter_config["adaptive_reasoning_mode"] = ar_cfg["mode"]
+    if args.adaptive_reasoning is not None:
+        openrouter_config["adaptive_reasoning_enabled"] = args.adaptive_reasoning
     trust_remote_code = bool(_resolve(args.trust_remote_code, hf_cfg.get("trust_remote_code"), False))
     device = _resolve(args.device, hf_cfg.get("device"), "auto")
     save_raw = bool(_resolve(args.save_raw, hf_cfg.get("save_raw"), False))

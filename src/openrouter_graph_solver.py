@@ -102,6 +102,10 @@ class OpenRouterConfig:
     mcq_verifier_trigger_on_repair: bool = True
     mcq_verifier_trigger_on_reranked_long_context: bool = True
     mcq_verifier_max_extra_calls: int = 1
+    # Adaptive reasoning orchestrator (Phase 2L.15A). OFF by default; trace_only mode
+    # only logs an `adaptive` diagnostics object and NEVER changes the final answer.
+    adaptive_reasoning_enabled: bool = False
+    adaptive_reasoning_mode: str = "trace_only"
 
 
 class OpenRouterGraphSolver(BaseSolver):
@@ -458,7 +462,24 @@ class OpenRouterGraphSolver(BaseSolver):
             "elapsed_sec": None,
         }
 
+    def _adaptive_node(self, s):
+        """Attach the trace-only `adaptive` diagnostics object. Never changes answers."""
+        if not self.cfg.adaptive_reasoning_enabled or "adaptive" in s:
+            return
+        try:
+            from .adaptive_orchestrator import AdaptiveConfig, AdaptiveOrchestrator
+            orch = AdaptiveOrchestrator(AdaptiveConfig(
+                enabled=True, mode=self.cfg.adaptive_reasoning_mode))
+            before = s.get("final_answer")
+            tr = orch.analyze(s["_sample"], existing_answer=before, state=s)
+            s["adaptive"] = tr.to_dict()
+            s["final_answer"] = before  # invariant: orchestrator must not alter the answer
+        except Exception as exc:
+            s["adaptive"] = {"enabled": True, "mode": self.cfg.adaptive_reasoning_mode,
+                             "error": type(exc).__name__}
+
     def _emit(self, s):
+        self._adaptive_node(s)
         if self.logger is None:
             return
         # Log a concise trace — never the full hidden reasoning.

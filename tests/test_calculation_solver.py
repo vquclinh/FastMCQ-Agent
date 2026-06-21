@@ -341,6 +341,111 @@ def test_new_families_no_qid_effect():
     assert r1.answer == r2.answer == r3.answer == "B"
 
 
+# --- Phase 2L.14B: relativity fix + new generic families ---------------------
+
+def test_gamma_still_fires_when_gamma_asked():
+    q = "Một hạt chuyển động với tốc độ 0,6c. Hệ số Lorentz của hạt là bao nhiêu?"
+    r, _ = _solve(q, ["1,25", "1,33", "1,5", "2,0"])
+    assert r.matched and r.answer == "A" and r.method == "relativistic_gamma"
+
+
+def test_gamma_does_not_fire_for_momentum():
+    # The 2L.13 bug: gamma over-matched a momentum question. Must NOT answer γ now.
+    q = ("Một hạt đang chuyển động với tốc độ 0,6c. Động lượng tương đối p của hạt "
+         "là bao nhiêu nếu khối lượng nghỉ của nó là m₀?")
+    r, _ = _solve(q, ["0,6 m₀c", "0,75 m₀c", "1,25 m₀c", "1,0 m₀c"])
+    assert r.method != "relativistic_gamma"
+
+
+def test_relativistic_momentum_075_m0c():
+    q = ("Một hạt chuyển động với tốc độ 0,6c, khối lượng nghỉ m₀. Động lượng tương "
+         "đối p của hạt là bao nhiêu?")
+    r, _ = _solve(q, ["0,6 m₀c", "0,75 m₀c", "1,25 m₀c", "1,0 m₀c"])  # γβ=1.25*0.6=0.75
+    assert r.matched and r.answer == "B" and r.method == "relativistic_momentum"
+
+
+def test_cobb_douglas_scaling_half_output():
+    q = ("Hàm sản xuất Q = 2K^0.5L^0.5. Tại điểm K=4, L=9, nếu sản lượng giảm một "
+         "nửa thì tổ hợp đầu vào nào sau đây phù hợp?")  # Q0=12, half=6 -> 2√(KL)=6 -> (1,9)
+    r, _ = _solve(q, ["K=1, L=9", "K=4, L=9", "K=5, L=5", "K=2, L=2"])
+    assert r.matched and r.answer == "A" and r.method == "cobb_douglas_isoquant_scaling"
+
+
+def test_t_statistic_one_sample_interval():
+    q = ("Kiểm định giả thuyết trung bình tổng thể là 50. Trung bình mẫu là 52, độ "
+         "lệch chuẩn 5, cỡ mẫu 25. Giá trị thống kê t nằm trong khoảng nào?")  # t=2.0
+    r, _ = _solve(q, ["nhỏ hơn 1,0", "1,0 đến 1,5", "2,0 đến 2,5", "lớn hơn 2,5"])
+    assert r.matched and r.answer == "C" and r.method == "t_statistic_one_sample"
+
+
+def test_z_score_one_sample_numeric():
+    q = ("Kiểm định z: độ lệch chuẩn của quần thể là 10. Trung bình mẫu là 105, "
+         "trung bình tổng thể giả thuyết là 100, cỡ mẫu 4. Giá trị thống kê z?")  # z=1.0
+    r, _ = _solve(q, ["0,5", "1,0", "2,0", "2,5"])
+    assert r.matched and r.answer == "B" and r.method == "z_score_one_sample"
+
+
+def test_supply_demand_price_control_shortage():
+    q = ("Hàm cầu Qd = 100 - 2P, hàm cung Qs = 30P - 50. Chính phủ áp giá trần 4. "
+         "Mức thiếu hụt là bao nhiêu?")  # Qd=92, Qs=70 -> shortage 22
+    r, _ = _solve(q, ["10", "22", "30", "40"])
+    assert r.matched and r.answer == "B" and r.method == "supply_demand_price_control"
+
+
+def test_henderson_hasselbalch_buffer_decimal_comma():
+    q = ("Một dung dịch đệm có pKa = 4,74. Nồng độ bazơ liên hợp là 0,1 M và nồng độ "
+         "axit là 0,1 M. Tính pH của dung dịch đệm.")  # pH = 4,74
+    r, _ = _solve(q, ["3,74", "4,74", "5,74", "6,74"])
+    assert r.matched and r.answer == "B" and r.method == "henderson_hasselbalch_buffer"
+
+
+def test_linear_total_equation_y_zero():
+    q = ("E1 = 3000 + 100y, E2 = 4000 + 150y, E3 = 5000 + 200y, E4 = 6000 + 250y. "
+         "Tổng của bốn phương trình bằng 18000. Tìm y.")  # y = 0
+    r, _ = _solve(q, ["0", "2", "5", "10"])
+    assert r.matched and r.answer == "A" and r.method == "linear_total_equation"
+
+
+def test_nuclear_binding_energy_release():
+    q = ("Một hạt nhân có số khối 200 bị phân hạch. Năng lượng liên kết trên mỗi "
+         "nucleon trước là 7,5 MeV và sau là 8,5 MeV. Năng lượng giải phóng là?")  # 200*1=200
+    r, _ = _solve(q, ["100 MeV", "150 MeV", "200 MeV", "250 MeV"])
+    assert r.matched and r.answer == "C" and r.method == "nuclear_binding_energy_release"
+
+
+def test_accrued_simple_interest_july_to_dec():
+    q = ("Một trái phiếu có mệnh giá 1.000.000 đồng, lãi suất 12%/năm. Tính lãi tích "
+         "lũy từ ngày 1 tháng 7 đến ngày 31 tháng 12.")  # 1e6*0.12*6/12 = 60000
+    r, _ = _solve(q, ["30.000 đồng", "60.000 đồng", "90.000 đồng", "120.000 đồng"])
+    assert r.matched and r.answer == "B" and r.method == "accrued_simple_interest"
+
+
+def test_operating_margin_asset_turnover_combined():
+    q = ("Doanh nghiệp có lợi nhuận gộp 500, chi phí hoạt động 300, doanh thu 1000, "
+         "tổng tài sản 500. Biên lợi nhuận hoạt động và vòng quay tài sản là bao nhiêu?")
+    r, _ = _solve(q, ["Biên 10%, vòng quay 1,0", "Biên 20%, vòng quay 2,0",
+                      "Biên 30%, vòng quay 2,0", "Biên 20%, vòng quay 1,0"])  # 20%, 2.0
+    assert r.matched and r.answer == "B" and r.method == "operating_margin_asset_turnover"
+
+
+def test_legal_admin_count_not_formula_overridden():
+    # Legal/admin count is NOT a deterministic formula -> must defer to LLM (no match).
+    q = "Theo Luật Bảo vệ môi trường 2020, có bao nhiêu nguyên tắc bảo vệ môi trường?"
+    r, _ = _solve(q, ["5", "6", "7", "8"])
+    assert not r.matched and not r.safe_to_override
+
+
+def test_new_families_no_qid_effect():
+    q = ("Một hạt chuyển động với tốc độ 0,6c, khối lượng nghỉ m₀. Động lượng tương "
+         "đối p của hạt là bao nhiêu?")
+    ch = ["0,6 m₀c", "0,75 m₀c", "1,25 m₀c", "1,0 m₀c"]
+    L = labels_for(len(ch))
+    r1 = solve_calculation_sample({"qid": "test_0085", "question": q, "choices": ch}, L)
+    r2 = solve_calculation_sample({"qid": "private_x", "question": q, "choices": ch}, L)
+    r3 = solve_calculation_sample({"question": q, "choices": ch}, L)
+    assert r1.answer == r2.answer == r3.answer == "B"
+
+
 def test_source_has_no_network_imports():
     src = Path(__file__).resolve().parent.parent.joinpath("src/calculation_solver.py").read_text()
     for bad in ("import requests", "import urllib", "import httpx", "import socket",
