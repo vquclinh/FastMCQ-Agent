@@ -41,3 +41,8 @@ data/*
 .idea/
 .vscode/
 *.swp
+
+# Local model weights - never commit
+models/*
+!models/.gitkeep
+!models/README.md
