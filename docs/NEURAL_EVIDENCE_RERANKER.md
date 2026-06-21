@@ -24,25 +24,49 @@ Lexical stage is cheap/robust and bounds the work; the neural model only scores 
 small candidate set. If neural is unavailable, Stage 1's lexical order is used —
 identical to the previous behavior.
 
-## Backends (`method`)
+## Backends (`method`) — competition-compliant, transformers-native
 
-| method | backend | dependency | model |
+The primary backends use **`transformers` + `torch` only** (no FlagEmbedding, no
+sentence-transformers required) with the local competition-compliant models:
+
+| method | backend | dependency | local model |
 |---|---|---|---|
 | `hybrid_lexical` (default) | `HybridLexicalScorer` | none | none |
-| `embedding` | `SentenceTransformerEmbeddingScorer` (cosine) | `sentence-transformers` | local BGE-M3-style path |
-| `reranker` | `FlagEmbeddingRerankerScorer` (cross-encoder) | `FlagEmbedding` | local bge-reranker / Qwen-rerank path |
+| `embedding` | `TransformersBgeM3EmbeddingScorer` (CLS pool + cosine) | `transformers`+`torch` | `models/bge-m3` (`BAAI/bge-m3`) |
+| `reranker` | `TransformersQwen3RerankerScorer` (causal-LM yes/no) | `transformers`+`torch` | `models/qwen3-reranker-0.6b` (`Qwen/Qwen3-Reranker-0.6B`) |
+
+Optional legacy fallbacks (`SentenceTransformerEmbeddingScorer`,
+`FlagEmbeddingRerankerScorer`) are used only if those packages happen to be
+installed and the transformers path does not apply — they are **not required**.
+
+- **BGE-M3 embedding**: `AutoTokenizer`+`AutoModel` (XLM-RoBERTa), pools the last
+  hidden state (CLS per the model's `1_Pooling` config), L2-normalizes, scores each
+  chunk by cosine vs the query.
+- **Qwen3-Reranker**: `AutoTokenizer`+`AutoModelForCausalLM`, builds the official
+  system/Instruct/Query/Document prompt, reads the last-position logits, and returns
+  `P("yes")` over {"no","yes"} as the relevance score. The `<think>` block is left
+  empty — no hidden reasoning is generated or logged.
 
 `build_neural_scorer(method, embedding_model, reranker_model)` returns
-`(scorer, available, fallback_reason)` — a backend is built **only** when a LOCAL
-model path is given AND the dependency is importable; both are lazy-imported.
+`(scorer, available, fallback_reason)`. A backend is built **only** when the LOCAL
+path exists, its config/name matches the expected model shape (so an unrelated
+directory is never silently used), and `transformers`+`torch` import. Explicit
+fallback reasons include `embedding_model_path_not_found`,
+`unsupported_embedding_model_path`, `unsupported_reranker_model_path`,
+`dependency_missing:transformers`, `unsupported_qwen_reranker_scoring_format`,
+`load_error:<Type>`.
 
 ## Local-only / no-download guarantee
 
-- Model paths are local directories; `sentence-transformers` is loaded with
-  `local_files_only=True`. No network, no download, no install performed by code.
-- Any missing dep / missing path / load error / scoring error is caught and the
-  pipeline falls back to lexical (unless `neural_fallback_to_lexical: false`, in
-  which case the long-context node defers to the lexical compressor).
+- Model paths are local directories; **every** `from_pretrained` call uses
+  `local_files_only=True` (asserted by a source-inspection test). No network, no
+  download, no install performed by code; no `hf_hub_download`/`snapshot_download`.
+- Any missing dep / missing path / unsupported model / load error / scoring error is
+  caught and the pipeline falls back to lexical (unless
+  `neural_fallback_to_lexical: false`, in which case the long-context node defers to
+  the lexical compressor).
+- CUDA is used when available; otherwise CPU. Model weights are gitignored under
+  `models/` and never committed.
 
 ## Config (`openrouter.evidence_reranker`)
 
@@ -77,11 +101,37 @@ evidence_reranker:
 ## Environment check
 
 ```bash
-python scripts/check_neural_reranker_env.py
+python scripts/check_neural_reranker_env.py          # shallow (no weight load)
+python scripts/check_neural_reranker_env.py --deep   # loads weights locally, scores a probe
 ```
-Reports dep availability, CUDA, and local candidate model dirs (read-only). In the
-current environment: `sentence_transformers`/`FlagEmbedding` **not installed** →
-neural **not usable** → effective method stays `hybrid_lexical`.
+Reports `transformers`/`torch`/CUDA, whether `models/bge-m3` and
+`models/qwen3-reranker-0.6b` are present and shape-match, and whether each method is
+usable. `--deep` additionally loads the local weights (`local_files_only`, no
+network) and scores a tiny probe.
+
+**Current environment (Phase 2L.10): both methods USABLE.** `transformers`+`torch`
+installed, CUDA (RTX 4060). Deep check probe: BGE-M3 ranks the relevant chunk above
+noise (≈0.68 vs 0.29); Qwen3-Reranker ≈0.997 vs 0.0.
+
+## CLI usage (exact)
+
+```bash
+# BGE-M3 embedding
+--evidence-reranker --evidence-reranker-method embedding \
+  --evidence-embedding-model models/bge-m3 --evidence-candidate-top-k 12
+# Qwen3-Reranker
+--evidence-reranker --evidence-reranker-method reranker \
+  --evidence-reranker-model models/qwen3-reranker-0.6b --evidence-candidate-top-k 12
+```
+
+Chunk-selection smoke (no OpenRouter, no CSV):
+
+```bash
+python scripts/compare_neural_vs_lexical_chunks.py --input public-test_1780368312.json \
+  --method embedding --model-path models/bge-m3 \
+  --max-samples 30 --top-k 4 --candidate-top-k 12 \
+  --output outputs/neural_vs_lexical_bge_m3_chunk_report.jsonl
+```
 
 ## Limitations
 

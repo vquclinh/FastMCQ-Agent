@@ -59,11 +59,16 @@ packed within `max_chars`.
 
 `method: embedding|reranker` enables a **two-stage** pipeline: hybrid lexical
 selects the top `candidate_top_k` chunks (stage 1, always), then a **local** neural
-model reranks only those candidates (stage 2). Backends are lazy-imported and
-**fail closed** to hybrid lexical unless the dependency (`sentence-transformers`
-for `embedding`, `FlagEmbedding` for `reranker`) is installed **and** a local model
-path is given. No model is downloaded; tests never require these deps. Full design,
-fallback reasons, and trace fields: [NEURAL_EVIDENCE_RERANKER.md](NEURAL_EVIDENCE_RERANKER.md).
+model reranks only those candidates (stage 2). The primary backends are
+**transformers-native** (no FlagEmbedding / sentence-transformers required):
+`embedding` → **BGE-M3** (`models/bge-m3`, CLS pooling + cosine); `reranker` →
+**Qwen3-Reranker-0.6B** (`models/qwen3-reranker-0.6b`, causal-LM yes/no). Backends
+are lazy-imported, loaded `local_files_only=True`, and **fail closed** to hybrid
+lexical unless `transformers`+`torch` import **and** the local path shape-matches
+the expected model. No model is downloaded; tests never require real weights.
+**Current env: both usable** (transformers+torch+CUDA, both models staged). Full
+design, fallback reasons, and trace fields:
+[NEURAL_EVIDENCE_RERANKER.md](NEURAL_EVIDENCE_RERANKER.md).
 
 ## Config (`openrouter:` block)
 

@@ -181,24 +181,143 @@ def test_neural_error_falls_back_lexical_by_default():
     assert "neural_error" in (r.diagnostics["neural_fallback_reason"] or "")
 
 
+# --- Phase 2L.10: transformers-native local backend selection (fakes only) ----
+
+import json as _json2  # noqa: E402
+import tempfile  # noqa: E402
+
+import src.evidence_reranker as _er  # noqa: E402
+from src.evidence_reranker import (  # noqa: E402
+    _looks_like_bge_m3,
+    _looks_like_qwen3_reranker,
+)
+
+
+def _make_model_dir(name, config):
+    d = Path(tempfile.mkdtemp(prefix="model_")) / name
+    d.mkdir(parents=True)
+    (d / "config.json").write_text(_json2.dumps(config))
+    return d
+
+
+def test_looks_like_bge_m3_by_name_and_arch():
+    by_name = _make_model_dir("bge-m3", {})
+    by_arch = _make_model_dir("some-embed", {"architectures": ["XLMRobertaModel"]})
+    not_bge = _make_model_dir("random-llm", {"architectures": ["LlamaForCausalLM"]})
+    assert _looks_like_bge_m3(by_name) and _looks_like_bge_m3(by_arch)
+    assert not _looks_like_bge_m3(not_bge)
+
+
+def test_looks_like_qwen3_reranker_requires_name_and_arch():
+    ok = _make_model_dir("qwen3-reranker-0.6b", {"architectures": ["Qwen3ForCausalLM"]})
+    plain_qwen = _make_model_dir("qwen3.5-9b", {"architectures": ["Qwen3ForCausalLM"]})
+    assert _looks_like_qwen3_reranker(ok)
+    assert not _looks_like_qwen3_reranker(plain_qwen)  # no "reranker" in name
+
+
+def test_build_selects_bge_m3_backend(monkeypatch):
+    captured = {}
+
+    class _FakeBge:
+        def __init__(self, path):
+            captured["path"] = str(path)
+
+        def score(self, q, chunks):
+            return [1.0] * len(chunks)
+
+    monkeypatch.setattr(_er, "TransformersBgeM3EmbeddingScorer", _FakeBge)
+    monkeypatch.setattr(_er, "_dep_available", lambda name: name in ("transformers", "torch"))
+    path = _make_model_dir("bge-m3", {"architectures": ["XLMRobertaModel"]})
+    scorer, ok, reason = _er.build_neural_scorer("embedding", path, None)
+    assert ok and reason is None and isinstance(scorer, _FakeBge)
+    assert captured["path"] == str(path)
+
+
+def test_build_selects_qwen3_reranker_backend(monkeypatch):
+    class _FakeQwen:
+        def __init__(self, path):
+            pass
+
+        def score(self, q, chunks):
+            return [0.5] * len(chunks)
+
+    monkeypatch.setattr(_er, "TransformersQwen3RerankerScorer", _FakeQwen)
+    monkeypatch.setattr(_er, "_dep_available", lambda name: name in ("transformers", "torch"))
+    path = _make_model_dir("qwen3-reranker-0.6b", {"architectures": ["Qwen3ForCausalLM"]})
+    scorer, ok, reason = _er.build_neural_scorer("reranker", None, path)
+    assert ok and reason is None and isinstance(scorer, _FakeQwen)
+
+
+def test_build_missing_path_fails_closed():
+    s, ok, reason = _er.build_neural_scorer("embedding", "/nonexistent/model/dir", None)
+    assert s is None and not ok and reason == "embedding_model_path_not_found"
+
+
+def test_build_unsupported_path_fails_closed():
+    bad = _make_model_dir("mystery-model", {"architectures": ["LlamaForCausalLM"]})
+    s, ok, reason = _er.build_neural_scorer("embedding", bad, None)
+    assert s is None and not ok and reason == "unsupported_embedding_model_path"
+
+
+def test_build_bge_missing_transformers_fails_closed(monkeypatch):
+    monkeypatch.setattr(_er, "_dep_available", lambda name: False)
+    path = _make_model_dir("bge-m3", {"architectures": ["XLMRobertaModel"]})
+    s, ok, reason = _er.build_neural_scorer("embedding", path, None)
+    assert s is None and not ok and reason == "dependency_missing:transformers"
+
+
 def test_no_web_or_eval_in_source():
     import re as _re
     src = Path(__file__).resolve().parent.parent.joinpath("src/evidence_reranker.py").read_text()
     # No network clients and no dynamic code execution.
     for bad in ("import requests", "import urllib", "import httpx", "import socket",
-                "eval(", "exec(", "__import__"):
+                "__import__", "hf_hub_download", "snapshot_download"):
         assert bad not in src, f"unexpected '{bad}' in evidence_reranker.py"
+    # Bare eval(/exec( only — torch's `.eval()` (model eval mode) is allowed.
+    for pat in (r"(?<![.\w])eval\(", r"(?<![.\w])exec\("):
+        assert not _re.search(pat, src), f"unexpected dynamic execution '{pat}'"
+    # Every model load must be local-only (no implicit download).
+    for m in _re.finditer(r"\.from_pretrained\(", src):
+        window = src[m.start(): m.start() + 200]
+        assert "local_files_only=True" in window, "from_pretrained without local_files_only"
     # No qid is read for decisions.
     for pat in (r'\[\s*["\']qid', r'\.get\(\s*["\']qid'):
         assert not _re.search(pat, src)
 
 
+class _StandaloneMonkeypatch:
+    """Minimal monkeypatch shim so fixture-using tests run in standalone mode."""
+
+    def __init__(self):
+        self._undo = []
+
+    def setattr(self, target, name, value=None):
+        obj, attr = (target, name) if value is not None else (None, None)
+        if value is None:  # not used in this file's call style
+            raise NotImplementedError
+        self._undo.append((obj, attr, getattr(obj, attr)))
+        setattr(obj, attr, value)
+
+    def undo(self):
+        for obj, attr, old in reversed(self._undo):
+            setattr(obj, attr, old)
+
+
 if __name__ == "__main__":
+    import inspect
     failures = 0
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):
+            mp = None
             try:
-                fn(); print(f"PASS {name}")
+                if "monkeypatch" in inspect.signature(fn).parameters:
+                    mp = _StandaloneMonkeypatch(); fn(mp)
+                else:
+                    fn()
+                print(f"PASS {name}")
             except AssertionError as exc:
                 failures += 1; print(f"FAIL {name}: {exc}")
+            finally:
+                if mp is not None:
+                    mp.undo()
     raise SystemExit(1 if failures else 0)
