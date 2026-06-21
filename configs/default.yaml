@@ -105,10 +105,12 @@ openrouter:
     method: "hybrid_lexical"        # hybrid_lexical | embedding | reranker
     optional_embedding_model: null  # local path only; never downloaded
     optional_reranker_model: null   # local path only; never downloaded
+    candidate_top_k: 12             # stage-1 lexical candidates fed to neural rerank
     top_k: 4
     max_chars: 4500
     include_global_context: true
     global_context_chars: 800
+    neural_fallback_to_lexical: true  # if neural backend unavailable/errors -> lexical
   # Selective second-pass MCQ verifier + option elimination. OFF by default so v1/v2
   # behavior is unchanged. When enabled it makes ONE extra call on hard/uncertain
   # cases only, and never overrides a deterministic calculation answer.

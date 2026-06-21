@@ -241,16 +241,89 @@ def _build_global_context(chunks: list, full_context: str, *, max_chars: int) ->
 
 # --- optional embedding hook (off by default; fails closed) ------------------
 
-def _embedding_available(model_path) -> bool:
-    """True only if a model path is given AND the dep is importable. No download."""
-    if not model_path:
-        return False
+
+import importlib.util
+
+
+def _dep_available(name: str) -> bool:
     try:
-        import importlib.util
-        return importlib.util.find_spec("sentence_transformers") is not None \
-            or importlib.util.find_spec("FlagEmbedding") is not None
-    except Exception:
+        return importlib.util.find_spec(name) is not None
+    except (ImportError, ValueError):  # pragma: no cover - env dependent
         return False
+
+
+# --- scorer backends (protocol: .score(query, chunks) -> list[float]) --------
+
+class HybridLexicalScorer:
+    """Dependency-free lexical scorer (BM25-lite + trigram + title + length)."""
+
+    def __init__(self, choices=None):
+        self.choices = choices or []
+
+    def score(self, query, chunks):
+        return [d["score"] for d in _score_chunks_lexical(chunks, query, self.choices)]
+
+
+class SentenceTransformerEmbeddingScorer:  # pragma: no cover - optional dep
+    """Local sentence-transformers embedding cosine scorer (e.g. BGE-M3). No download."""
+
+    def __init__(self, model_path):
+        from sentence_transformers import SentenceTransformer  # lazy
+        # local_files_only avoids any network fetch.
+        self.model = SentenceTransformer(str(model_path), local_files_only=True)
+
+    def score(self, query, chunks):
+        import numpy as np
+        texts = [query] + [c.text for c in chunks]
+        emb = self.model.encode(texts, normalize_embeddings=True)
+        q = emb[0]
+        return [float(np.dot(q, emb[i + 1])) for i in range(len(chunks))]
+
+
+class FlagEmbeddingRerankerScorer:  # pragma: no cover - optional dep
+    """Local FlagEmbedding cross-encoder reranker (e.g. bge-reranker / Qwen). No download."""
+
+    def __init__(self, model_path):
+        from FlagEmbedding import FlagReranker  # lazy
+        self.model = FlagReranker(str(model_path), use_fp16=False)
+
+    def score(self, query, chunks):
+        pairs = [[query, c.text] for c in chunks]
+        out = self.model.compute_score(pairs)
+        return [float(x) for x in (out if isinstance(out, list) else [out])]
+
+
+def build_neural_scorer(method: str, embedding_model, reranker_model):
+    """Return (scorer_or_None, available, fallback_reason). Never downloads.
+
+    A neural scorer is built only when a LOCAL model path is given AND the
+    matching dependency is importable; otherwise it fails closed to lexical.
+    """
+    if method == "embedding":
+        if not embedding_model:
+            return None, False, "no_embedding_model_path"
+        if not _dep_available("sentence_transformers"):
+            return None, False, "dependency_missing:sentence_transformers"
+        try:
+            return SentenceTransformerEmbeddingScorer(embedding_model), True, None
+        except Exception as exc:  # pragma: no cover
+            return None, False, f"load_error:{type(exc).__name__}"
+    if method == "reranker":
+        if not reranker_model:
+            return None, False, "no_reranker_model_path"
+        if not _dep_available("FlagEmbedding"):
+            return None, False, "dependency_missing:FlagEmbedding"
+        try:
+            return FlagEmbeddingRerankerScorer(reranker_model), True, None
+        except Exception as exc:  # pragma: no cover
+            return None, False, f"load_error:{type(exc).__name__}"
+    return None, False, "method_not_neural"
+
+
+def _embedding_available(model_path) -> bool:
+    """Back-compat shim: any neural dep importable AND a model path given."""
+    return bool(model_path) and (_dep_available("sentence_transformers")
+                                 or _dep_available("FlagEmbedding"))
 
 
 # --- main API ----------------------------------------------------------------
@@ -261,25 +334,27 @@ def has_long_context(sample: dict) -> bool:
 
 
 def rerank_evidence_for_sample(sample: dict, *, max_chars: int = 4500, top_k: int = 4,
-                               method: str = "hybrid_lexical",
+                               candidate_top_k: int = 12, method: str = "hybrid_lexical",
                                include_global_context: bool = True,
                                global_context_chars: int = 800,
-                               optional_embedding_model=None,
-                               optional_reranker_model=None) -> RerankResult:
-    """Rerank in-question evidence for one sample. Never uses web/qid/ground truth.
+                               optional_embedding_model=None, optional_reranker_model=None,
+                               neural_fallback_to_lexical: bool = True,
+                               neural_scorer=None) -> RerankResult:
+    """Rerank in-question evidence for one sample (two-stage when neural is used).
 
-    Returns ``matched=False`` (caller falls back) if there is no usable structured
-    context or reranking cannot improve on the raw question.
+    Stage 1: lexical candidate retrieval (top ``candidate_top_k``).
+    Stage 2: optional neural rerank of those candidates (``embedding``/``reranker``),
+    failing closed to lexical when unavailable. Never uses web/qid/ground truth.
     """
     question = str(sample.get("question", "") or "")
     choices = sample.get("choices", []) or []
-    diagnostics = {"original_chars": len(question)}
+    diagnostics = {"original_chars": len(question),
+                   "requested_method": method}
 
     if not question:
         return RerankResult("", [], "", "none", [], False, {"reason": "empty_question"})
 
     stem = extract_question_stem(question)
-    # The "context" is everything before the trailing stem (best-effort).
     context = question[: question.rfind(stem)] if stem and stem in question else question
     context = context.strip() or question
 
@@ -288,35 +363,52 @@ def rerank_evidence_for_sample(sample: dict, *, max_chars: int = 4500, top_k: in
     except Exception as exc:
         return RerankResult("", [], "", "none", [], False,
                             {"reason": f"chunk_error:{type(exc).__name__}"})
-
     if len(chunks) < 2:
-        # Not enough structure to rerank meaningfully -> let the compressor handle it.
         return RerankResult("", [], "", "none", [], False,
                             {"reason": "insufficient_chunks", "chunks": len(chunks)})
 
-    # Choice-aware query: question stem + all choice texts.
     query = stem + " " + " ".join(str(c) for c in choices)
 
-    used_method = "hybrid_lexical"
-    # Optional embedding/reranker hook — only if explicitly configured AND present.
-    if method in ("embedding", "reranker") and _embedding_available(
-            optional_embedding_model or optional_reranker_model):
-        try:
-            scored = _score_chunks_embedding(chunks, query,
-                                             optional_embedding_model or optional_reranker_model)
-            used_method = method
-        except Exception:
-            scored = _score_chunks_lexical(chunks, query, choices)  # fail closed
-            used_method = "hybrid_lexical_fallback"
-    else:
-        scored = _score_chunks_lexical(chunks, query, choices)
+    # Stage 1 — lexical candidate retrieval (always).
+    lexical = _score_chunks_lexical(chunks, query, choices)
+    lexical_order = sorted(range(len(chunks)), key=lambda i: lexical[i]["score"], reverse=True)
+    candidate_idx = lexical_order[: max(1, candidate_top_k)]
 
-    order = sorted(range(len(chunks)), key=lambda i: scored[i]["score"], reverse=True)
-    # Pack top chunks (by score) until the budget, then restore reading order.
+    # Stage 2 — optional neural rerank of the candidates.
+    effective_method = "hybrid_lexical"
+    neural_available = False
+    fallback_reason = None
+    order = lexical_order
+    scores = lexical
+
+    if method in ("embedding", "reranker"):
+        scorer = neural_scorer
+        if scorer is not None:           # injected (tests) -> treat as available
+            neural_available, fallback_reason = True, None
+        else:
+            scorer, neural_available, fallback_reason = build_neural_scorer(
+                method, optional_embedding_model, optional_reranker_model)
+        if neural_available and scorer is not None:
+            try:
+                cand_chunks = [chunks[i] for i in candidate_idx]
+                n_scores = scorer.score(query, cand_chunks)
+                ranked = [candidate_idx[j] for j in
+                          sorted(range(len(candidate_idx)), key=lambda j: n_scores[j], reverse=True)]
+                rest = [i for i in lexical_order if i not in set(candidate_idx)]
+                order = ranked + rest
+                effective_method = method
+            except Exception as exc:     # fail closed to lexical
+                fallback_reason = f"neural_error:{type(exc).__name__}"
+                neural_available = False
+                if not neural_fallback_to_lexical:
+                    return RerankResult("", [], "", "none", [], False,
+                                        {"reason": fallback_reason, **diagnostics})
+
+    # Pack top_k from `order` within budget, then restore reading order.
     budget = max_chars - (global_context_chars if include_global_context else 0) - len(stem) - 64
     budget = max(budget, 400)
     kept_idx, used = [], 0
-    for i in order[: max(top_k, 1) * 3]:  # consider a few extra, bounded by budget
+    for i in order[: max(top_k, 1) * 3]:
         if len(kept_idx) >= top_k:
             break
         c = chunks[i]
@@ -324,41 +416,35 @@ def rerank_evidence_for_sample(sample: dict, *, max_chars: int = 4500, top_k: in
             continue
         kept_idx.append(i)
         used += len(c.text) + 1
-    if not kept_idx:               # at least keep the single best chunk (trimmed)
+    if not kept_idx:
         kept_idx = [order[0]]
     kept_idx.sort()
     selected_chunks = [chunks[i] for i in kept_idx]
 
     global_ctx = _build_global_context(chunks, context, max_chars=global_context_chars) \
         if include_global_context else ""
-
     parts = []
     if global_ctx:
         parts.append("[NGỮ CẢNH TỔNG QUAN]\n" + global_ctx)
-    evidence = "\n\n".join(c.text for c in selected_chunks)
-    parts.append("[BẰNG CHỨNG LIÊN QUAN]\n" + evidence)
-    parts.append("[CÂU HỎI]\n" + stem)   # question last (near the choices)
+    parts.append("[BẰNG CHỨNG LIÊN QUAN]\n" + "\n\n".join(c.text for c in selected_chunks))
+    parts.append("[CÂU HỎI]\n" + stem)
     selected_text = "\n\n".join(parts).strip()
-
-    # Never return empty; never return longer than the original question.
     if not selected_text:
         return RerankResult("", [], "", "none", [], False, {"reason": "empty_selection"})
     if len(selected_text) >= len(question):
-        # Reranking didn't shrink it; still valid, but mark for diagnostics.
         diagnostics["no_shrink"] = True
 
-    diagnostics.update({"chunks_total": len(chunks), "chunks_kept": len(selected_chunks),
-                        "selected_chars": len(selected_text),
-                        "kept_chunk_ids": [c.chunk_id for c in selected_chunks]})
+    diagnostics.update({
+        "requested_method": method,
+        "effective_method": effective_method,
+        "neural_available": neural_available,
+        "neural_fallback_reason": fallback_reason,
+        "candidate_chunk_count": len(candidate_idx),
+        "chunks_total": len(chunks),
+        "chunks_kept": len(selected_chunks),
+        "selected_chars": len(selected_text),
+        "kept_chunk_ids": [c.chunk_id for c in selected_chunks],
+    })
     return RerankResult(selected_text=selected_text, selected_chunks=selected_chunks,
-                        global_context=global_ctx, method=used_method, scores=scored,
+                        global_context=global_ctx, method=effective_method, scores=scores,
                         matched=True, diagnostics=diagnostics)
-
-
-def _score_chunks_embedding(chunks, query, model_path):  # pragma: no cover - optional
-    """Optional embedding similarity scoring. Only reached if a dep is installed.
-
-    Intentionally minimal and lazy; raises on any problem so the caller fails
-    closed to the lexical method. No model is downloaded (local path expected).
-    """
-    raise NotImplementedError("optional embedding reranker not wired in this phase")

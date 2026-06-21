@@ -83,6 +83,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--no-calculation-solver", dest="calculation_solver", action="store_false", help="disable the deterministic calculation helper")
     parser.add_argument("--evidence-reranker", dest="evidence_reranker", action="store_true", default=None, help="enable in-question evidence reranking (long_context route)")
     parser.add_argument("--no-evidence-reranker", dest="evidence_reranker", action="store_false", help="disable in-question evidence reranking")
+    parser.add_argument("--evidence-reranker-method", default=None, choices=["hybrid_lexical", "embedding", "reranker"], help="evidence reranker backend (neural falls back to lexical if unavailable)")
+    parser.add_argument("--evidence-embedding-model", default=None, help="LOCAL embedding model path (method=embedding); never downloaded")
+    parser.add_argument("--evidence-reranker-model", default=None, help="LOCAL cross-encoder reranker path (method=reranker); never downloaded")
+    parser.add_argument("--evidence-candidate-top-k", type=int, default=None, help="stage-1 lexical candidate count fed to the neural reranker")
     parser.add_argument("--mcq-verifier", dest="mcq_verifier", action="store_true", default=None, help="enable the selective second-pass MCQ verifier")
     parser.add_argument("--no-mcq-verifier", dest="mcq_verifier", action="store_false", help="disable the MCQ verifier")
     parser.add_argument("--mcq-verifier-threshold", type=float, default=None, help="min verifier confidence to override the original answer")
@@ -159,12 +163,22 @@ def main(argv: list[str] | None = None) -> int:
                "include_global_context": "evidence_reranker_global_context",
                "global_context_chars": "evidence_reranker_global_context_chars",
                "optional_embedding_model": "evidence_embedding_model",
-               "optional_reranker_model": "evidence_reranker_model"}
+               "optional_reranker_model": "evidence_reranker_model",
+               "candidate_top_k": "evidence_candidate_top_k",
+               "neural_fallback_to_lexical": "evidence_neural_fallback_to_lexical"}
     for k, flat in _er_map.items():
         if er_cfg.get(k) is not None:
             openrouter_config[flat] = er_cfg[k]
     if args.evidence_reranker is not None:
         openrouter_config["evidence_reranker_enabled"] = args.evidence_reranker
+    if args.evidence_reranker_method is not None:
+        openrouter_config["evidence_reranker_method"] = args.evidence_reranker_method
+    if args.evidence_embedding_model is not None:
+        openrouter_config["evidence_embedding_model"] = args.evidence_embedding_model
+    if args.evidence_reranker_model is not None:
+        openrouter_config["evidence_reranker_model"] = args.evidence_reranker_model
+    if args.evidence_candidate_top_k is not None:
+        openrouter_config["evidence_candidate_top_k"] = args.evidence_candidate_top_k
     # Flatten the nested mcq_verifier config block into flat solver fields.
     mv_cfg = openrouter_config.pop("mcq_verifier", {}) or {}
     _mv_map = {"enabled": "mcq_verifier_enabled", "apply_routes": "mcq_verifier_apply_routes",

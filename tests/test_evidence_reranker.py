@@ -107,6 +107,80 @@ def test_question_stem_extraction_vietnamese():
     assert "Thủ đô của Ai Cập" in stem and stem.endswith("?")
 
 
+# --- neural backend adapter (Phase 2L.6): all fail closed to lexical ---------
+
+from src.evidence_reranker import build_neural_scorer  # noqa: E402
+
+
+class _FakeNeuralScorer:
+    """Deterministic fake: scores chunks by a keyword so ranking is predictable."""
+
+    def __init__(self, keyword):
+        self.keyword = keyword
+
+    def score(self, query, chunks):
+        return [1.0 if self.keyword in c.text else 0.0 for c in chunks]
+
+
+def test_lexical_default_effective_method():
+    r = rerank_evidence_for_sample(_titled_sample(), max_chars=2000, top_k=2)
+    assert r.matched and r.diagnostics["effective_method"] == "hybrid_lexical"
+    assert r.diagnostics["requested_method"] == "hybrid_lexical"
+
+
+def test_neural_missing_dependency_falls_back_lexical():
+    # method=reranker but no model path / dep -> lexical, with a fallback reason.
+    r = rerank_evidence_for_sample(_titled_sample(), max_chars=2000, top_k=2,
+                                   method="reranker", optional_reranker_model=None)
+    assert r.matched and r.diagnostics["effective_method"] == "hybrid_lexical"
+    assert r.diagnostics["neural_available"] is False
+    assert "no_reranker_model_path" in (r.diagnostics["neural_fallback_reason"] or "")
+
+
+def test_build_neural_scorer_reports_unavailable():
+    for method in ("embedding", "reranker"):
+        scorer, avail, reason = build_neural_scorer(method, None, None)
+        assert scorer is None and avail is False and reason
+
+
+def test_fake_neural_scorer_changes_ranking():
+    # Inject a fake scorer that ranks the chunk containing "Nile/Cairo" top.
+    s = _titled_sample()
+    r = rerank_evidence_for_sample(s, max_chars=2500, top_k=1, candidate_top_k=12,
+                                   method="reranker", neural_scorer=_FakeNeuralScorer("Cairo"))
+    assert r.matched and r.diagnostics["effective_method"] == "reranker"
+    assert r.diagnostics["neural_available"] is True
+    assert "Cairo" in r.selected_text
+
+
+def test_candidate_top_k_limits_stage1():
+    s = _titled_sample()
+    r = rerank_evidence_for_sample(s, max_chars=2500, top_k=2, candidate_top_k=1,
+                                   method="reranker", neural_scorer=_FakeNeuralScorer("zzz"))
+    # Only 1 candidate is fed to the neural stage.
+    assert r.diagnostics["candidate_chunk_count"] == 1
+
+
+def test_neural_no_fallback_returns_unmatched_on_error():
+    class _Boom:
+        def score(self, q, chunks):
+            raise RuntimeError("boom")
+    r = rerank_evidence_for_sample(_titled_sample(), max_chars=2000, top_k=2,
+                                   method="reranker", neural_scorer=_Boom(),
+                                   neural_fallback_to_lexical=False)
+    assert not r.matched and "neural_error" in (r.diagnostics.get("reason") or "")
+
+
+def test_neural_error_falls_back_lexical_by_default():
+    class _Boom:
+        def score(self, q, chunks):
+            raise RuntimeError("boom")
+    r = rerank_evidence_for_sample(_titled_sample(), max_chars=2000, top_k=2,
+                                   method="reranker", neural_scorer=_Boom())
+    assert r.matched and r.diagnostics["effective_method"] == "hybrid_lexical"
+    assert "neural_error" in (r.diagnostics["neural_fallback_reason"] or "")
+
+
 def test_no_web_or_eval_in_source():
     import re as _re
     src = Path(__file__).resolve().parent.parent.joinpath("src/evidence_reranker.py").read_text()

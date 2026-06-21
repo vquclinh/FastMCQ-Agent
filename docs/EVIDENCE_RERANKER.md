@@ -10,9 +10,10 @@ targets long-context noise and the "lost in the middle" effect.
   the embedded passage. **No web/external retrieval. No ground truth. No qid.**
 - **No public-test hardcoding.** Generic chunking + scoring; a private question
   matching the same structure is handled identically.
-- **Dependency-safe.** Default method is dependency-free hybrid lexical. Optional
-  embedding/reranker hooks are off by default and **fail closed** to lexical if a
-  model/dependency is absent (nothing is downloaded).
+- **Dependency-safe.** Default method is dependency-free **hybrid lexical**.
+  Optional **local** neural backends (embedding / cross-encoder reranker) are off
+  by default and **fail closed** to lexical if a model/dependency is absent
+  (nothing is downloaded). See [NEURAL_EVIDENCE_RERANKER.md](NEURAL_EVIDENCE_RERANKER.md).
 
 ## Pipeline
 
@@ -54,13 +55,15 @@ packed within `max_chars`.
   head of the context when untitled (no LLM summarization).
 - **Factual chunks:** the top-scoring evidence windows.
 
-## Optional embedding / reranker hooks
+## Optional two-stage neural reranking (Phase 2L.6)
 
-`method: embedding|reranker` with a **local** `optional_embedding_model` /
-`optional_reranker_model` path. These are placeholders that **fail closed** to
-hybrid lexical unless a supported dependency (e.g. `sentence-transformers` /
-`FlagEmbedding`) is installed and a local model path is given. No model is
-downloaded; tests never require these deps.
+`method: embedding|reranker` enables a **two-stage** pipeline: hybrid lexical
+selects the top `candidate_top_k` chunks (stage 1, always), then a **local** neural
+model reranks only those candidates (stage 2). Backends are lazy-imported and
+**fail closed** to hybrid lexical unless the dependency (`sentence-transformers`
+for `embedding`, `FlagEmbedding` for `reranker`) is installed **and** a local model
+path is given. No model is downloaded; tests never require these deps. Full design,
+fallback reasons, and trace fields: [NEURAL_EVIDENCE_RERANKER.md](NEURAL_EVIDENCE_RERANKER.md).
 
 ## Config (`openrouter:` block)
 
@@ -71,13 +74,17 @@ evidence_reranker:
   method: "hybrid_lexical"        # hybrid_lexical | embedding | reranker
   optional_embedding_model: null  # local path only; never downloaded
   optional_reranker_model: null   # local path only; never downloaded
+  candidate_top_k: 12             # stage-1 candidates fed to the neural stage
   top_k: 4
   max_chars: 4500
   include_global_context: true
   global_context_chars: 800
+  neural_fallback_to_lexical: true
 ```
 
-CLI: `--evidence-reranker` / `--no-evidence-reranker`.
+CLI: `--evidence-reranker` / `--no-evidence-reranker`,
+`--evidence-reranker-method`, `--evidence-embedding-model`,
+`--evidence-reranker-model`, `--evidence-candidate-top-k`.
 
 ## Integration
 
@@ -98,7 +105,7 @@ prediction CSV was produced; no accuracy is claimed (leaderboard decides).
 ## Limitations
 
 - Lexical scoring can miss semantically-relevant-but-lexically-different chunks;
-  the optional embedding hook is the future remedy.
+  the optional neural two-stage rerank is the remedy when a local model is staged.
 - Question-stem extraction is heuristic (trailing interrogative).
 - Reranking never *adds* information; it only selects/orders what's present.
 

@@ -263,6 +263,22 @@ def test_evidence_reranker_disabled_preserves_behavior():
     assert logger.events[0]["evidence_reranker_enabled"] is False
 
 
+def test_evidence_reranker_neural_method_falls_back_lexical():
+    # method=reranker with no local model/dep -> lexical fallback, still answers,
+    # and the trace records the requested/effective method + fallback reason.
+    client = FakeClient(['{"answer": "B"}'])
+    logger = CaptureLogger()
+    cfg = OpenRouterConfig(evidence_reranker_method="reranker")
+    solver = OpenRouterGraphSolver(config=cfg, client=client, logger=logger)
+    out = solver.predict_one(_long_context_sample())
+    assert out == "B" and client.calls == 1
+    rec = logger.events[0]
+    assert rec["evidence_reranker_requested_method"] == "reranker"
+    assert rec["evidence_reranker_effective_method"] == "hybrid_lexical"
+    assert rec["evidence_neural_available"] is False
+    assert rec["evidence_neural_fallback_reason"]
+
+
 def test_evidence_reranker_only_long_context():
     # A short-knowledge sample must not engage the reranker.
     client = FakeClient(['{"answer": "A"}'])

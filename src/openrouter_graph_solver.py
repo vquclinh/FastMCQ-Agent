@@ -88,6 +88,8 @@ class OpenRouterConfig:
     evidence_reranker_global_context_chars: int = 800
     evidence_embedding_model: str | None = None
     evidence_reranker_model: str | None = None
+    evidence_candidate_top_k: int = 12
+    evidence_neural_fallback_to_lexical: bool = True
     # Selective second-pass MCQ verifier (off by default). One extra call, only on
     # hard/uncertain cases; never overrides a deterministic calculation answer.
     mcq_verifier_enabled: bool = False
@@ -170,20 +172,28 @@ class OpenRouterGraphSolver(BaseSolver):
                 rr = rerank_evidence_for_sample(
                     sample, max_chars=self.cfg.evidence_reranker_max_chars,
                     top_k=self.cfg.evidence_reranker_top_k,
+                    candidate_top_k=self.cfg.evidence_candidate_top_k,
                     method=self.cfg.evidence_reranker_method,
                     include_global_context=self.cfg.evidence_reranker_global_context,
                     global_context_chars=self.cfg.evidence_reranker_global_context_chars,
                     optional_embedding_model=self.cfg.evidence_embedding_model,
-                    optional_reranker_model=self.cfg.evidence_reranker_model)
+                    optional_reranker_model=self.cfg.evidence_reranker_model,
+                    neural_fallback_to_lexical=self.cfg.evidence_neural_fallback_to_lexical)
             except Exception:
                 rr = None
             if rr is not None and rr.matched:
+                diag = rr.diagnostics
                 s["compressed_question"] = rr.selected_text
                 s["evidence_reranker_method"] = rr.method
+                s["evidence_reranker_requested_method"] = diag.get("requested_method")
+                s["evidence_reranker_effective_method"] = diag.get("effective_method")
+                s["evidence_neural_available"] = diag.get("neural_available")
+                s["evidence_neural_fallback_reason"] = diag.get("neural_fallback_reason")
+                s["evidence_candidate_chunk_count"] = diag.get("candidate_chunk_count")
                 s["evidence_selected_chunk_count"] = len(rr.selected_chunks)
                 s["evidence_selected_chars"] = len(rr.selected_text)
                 s["evidence_fallback_used"] = False
-                s["compressed_context_stats"] = {"method": "evidence_reranker", **rr.diagnostics}
+                s["compressed_context_stats"] = {"method": "evidence_reranker", **diag}
                 return
             s["evidence_fallback_used"] = True  # reranker declined -> compressor
 
@@ -373,6 +383,11 @@ class OpenRouterGraphSolver(BaseSolver):
             "compressed_context_stats": None,
             "evidence_reranker_enabled": False,
             "evidence_reranker_method": None,
+            "evidence_reranker_requested_method": None,
+            "evidence_reranker_effective_method": None,
+            "evidence_neural_available": None,
+            "evidence_neural_fallback_reason": None,
+            "evidence_candidate_chunk_count": None,
             "evidence_selected_chunk_count": None,
             "evidence_selected_chars": None,
             "evidence_fallback_used": False,
