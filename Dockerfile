@@ -11,7 +11,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # The competition harness mounts the dataset into /data and reads /output.
-# We do NOT hard-code the input filename: run.py auto-detects the input inside
-# /data (public-test.json, private-test.json, public_test.csv, private_test.csv,
-# or any other .csv/.json), so the same image works whichever file BTC mounts.
-CMD ["python", "run.py", "--output", "/output/pred.csv"]
+# The entrypoint auto-detects the input inside /data (private before public, csv
+# before json, then any .csv/.json) and runs the generalized production pipeline
+# with the stable preset. OPENROUTER_API_KEY is provided by the evaluator's env and
+# is NOT baked into the image. If the local neural reranker is unavailable the
+# pipeline fails closed to the lexical reranker.
+RUN chmod +x scripts/docker_entrypoint.sh
+CMD ["bash", "scripts/docker_entrypoint.sh"]
