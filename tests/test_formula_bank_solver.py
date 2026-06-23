@@ -224,6 +224,40 @@ def test_cache_amat():
                 ["10 ns", "12 ns", "102 ns", "20 ns"]) == "B"
 
 
+# --- Phase 2L.26B: Cournot duopoly --------------------------------------------
+
+_COURNOT_OPTS = ["q_X = 3, q_Y = 3", "q_X = 4, q_Y = 4", "q_X = 5, q_Y = 5",
+                 "q_X = 6, q_Y = 6", "q_X = 7, q_Y = 7"]
+
+
+def test_cournot_duopoly_positive():
+    q = ("Xét thị trường độc quyền hai hãng X và Y cạnh tranh về lượng (Cournot). Hàm chi "
+         "phí mỗi hãng C(q) = 2q. Hàm cầu thị trường P = 20 - Q. Lượng cân bằng?")
+    assert _ans(q, _COURNOT_OPTS) == "D"          # (20-2)/3 = 6 -> q_X=q_Y=6
+
+
+def test_cournot_declines_three_firms():
+    q = ("Thị trường Cournot ba hãng cạnh tranh về lượng, C(q)=2q, P=20-Q. Lượng mỗi hãng?")
+    assert _r(q, _COURNOT_OPTS) is None
+
+
+def test_cournot_declines_nonlinear_demand():
+    q = ("Hai hãng cạnh tranh Cournot, C(q)=2q, cầu P = 20 - Q^2. Lượng cân bằng mỗi hãng?")
+    assert _r(q, _COURNOT_OPTS) is None
+
+
+def test_cournot_declines_no_matching_option():
+    q = ("Hai hãng cạnh tranh Cournot (cạnh tranh về lượng), C(q)=2q, P=20-Q. Lượng mỗi hãng?")
+    # q_i=6 but no option has 6
+    assert _r(q, ["q_X=3,q_Y=3", "q_X=4,q_Y=4", "q_X=5,q_Y=5"]) is None
+
+
+def test_cournot_declines_asymmetric_costs():
+    q = ("Hai hãng Cournot: chi phí hãng X là C_X(q)=2q, chi phí hãng Y là C_Y(q)=4q, "
+         "P=20-Q. Lượng cân bằng?")
+    assert _r(q, _COURNOT_OPTS) is None
+
+
 # --- source safety ------------------------------------------------------------
 
 def test_no_qid_or_external_sheet_in_source():

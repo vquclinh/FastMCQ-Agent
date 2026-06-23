@@ -2,7 +2,7 @@
 
 A thin, dependency-light client over OpenRouter's OpenAI-compatible
 chat-completions endpoint. Used **only** with the competition-approved model
-(default ``qwen/qwen3.5-9b``). No OpenAI/Gemini/Claude direct APIs.
+(default ``qwen/qwen3.5-9b``). No direct third-party model APIs (OpenAI, Gemini, Claude, etc.).
 
 Design notes:
   * API key is read from ``OPENROUTER_API_KEY`` (env), or a git-ignored ``.env``

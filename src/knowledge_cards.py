@@ -105,6 +105,63 @@ CARDS = (
         "giãn: ngược lại.",
         "elastic: P↑⇒TR↓, P↓⇒TR↑ ; inelastic: P↑⇒TR↑, P↓⇒TR↓",
         (), ""),
+    # --- Phase 2L.25 expansion (general definitions only) ---
+    KnowledgeCard(
+        "subnet_usable_hosts", "computer_science",
+        ("subnet", "mặt nạ mạng", "usable hosts", "địa chỉ host", "tiền tố mạng", "prefix"),
+        "Số host khả dụng trong một mạng con IPv4 = 2^(32 - prefix) - 2 (trừ địa chỉ "
+        "mạng và broadcast).",
+        "usable_hosts = 2^(32 - prefix) - 2", ("/24 ⇒ 254 host.",), ""),
+    KnowledgeCard(
+        "big_o_basics", "computer_science",
+        ("độ phức tạp", "big-o", "big o", "vòng lặp lồng", "o(n)", "o(n^2)"),
+        "Một vòng lặp đơn theo n là O(n); hai vòng lặp lồng nhau theo n là O(n^2); "
+        "chia đôi mỗi bước là O(log n).",
+        "single loop O(n); nested O(n^2); halving O(log n)", (), ""),
+    KnowledgeCard(
+        "kinematics_uniform", "physics",
+        ("chuyển động đều", "vận tốc", "quãng đường", "thời gian", "s=vt"),
+        "Chuyển động thẳng đều: quãng đường = vận tốc × thời gian.",
+        "s = v · t (v = s/t, t = s/v)", ("v=10, t=5 ⇒ s=50.",), ""),
+    KnowledgeCard(
+        "kinetic_potential_energy", "physics",
+        ("động năng", "thế năng", "kinetic energy", "potential energy"),
+        "Động năng = ½·m·v²; thế năng trọng trường = m·g·h.",
+        "KE = 0.5·m·v² ; PE = m·g·h", (), ""),
+    KnowledgeCard(
+        "wave_speed", "physics",
+        ("vận tốc sóng", "tần số", "bước sóng", "wave speed", "frequency", "wavelength"),
+        "Tốc độ sóng = tần số × bước sóng.",
+        "v = f · λ", (), ""),
+    KnowledgeCard(
+        "basic_probability_ev", "statistics",
+        ("xác suất", "kỳ vọng", "giá trị kỳ vọng", "expected value", "probability"),
+        "Giá trị kỳ vọng = tổng (giá trị × xác suất). Xác suất nằm trong [0,1] và tổng "
+        "các xác suất loại trừ nhau bằng 1.",
+        "E[X] = Σ x_i · p_i", (), ""),
+    KnowledgeCard(
+        "mean_median_mode", "statistics",
+        ("trung bình", "trung vị", "mốt", "mean", "median", "mode"),
+        "Trung bình cộng = tổng/đếm; trung vị = giá trị giữa khi sắp xếp; mốt = giá trị "
+        "xuất hiện nhiều nhất.",
+        "mean=sum/n; median=middle; mode=most frequent", (), ""),
+    KnowledgeCard(
+        "break_even", "finance",
+        ("hòa vốn", "điểm hòa vốn", "break-even"),
+        "Sản lượng hòa vốn = chi phí cố định / (giá bán − chi phí biến đổi mỗi đơn vị).",
+        "Q* = FC / (P − VC)", (), ""),
+    KnowledgeCard(
+        "roi_profit", "finance",
+        ("roi", "lợi nhuận", "tỷ suất lợi nhuận", "return on investment", "profit"),
+        "Lợi nhuận = doanh thu − chi phí; ROI = lợi nhuận / vốn đầu tư.",
+        "profit = revenue − cost ; ROI = gain / investment", (), ""),
+    KnowledgeCard(
+        "civic_general", "civics",
+        ("hiến pháp", "quyền", "nghĩa vụ", "nguyên tắc", "nhà nước"),
+        "Khái niệm dân sự/hiến pháp chung: hiến pháp là luật cơ bản; công dân có quyền "
+        "và nghĩa vụ theo quy định pháp luật.",
+        "general civic definitions (no specific article numbers)",
+        (), "Chỉ định nghĩa chung; KHÔNG suy ra số điều/khoản cụ thể."),
 )
 
 _REGISTRY = {c.id: c for c in CARDS}
@@ -133,12 +190,17 @@ def score_card(card: KnowledgeCard, question: str) -> float:
     return 1.5 * trigger_hits + overlap
 
 
+# Minimum relevance to retrieve: a trigger-term hit (1.5) clears it; an incidental
+# single-word token overlap (~0.2) does not — so unrelated questions retrieve nothing.
+_MIN_SCORE = 0.5
+
+
 def retrieve_cards(question: str, top_k: int = 3) -> list:
-    """Return up to ``top_k`` (card, score) pairs with score > 0, best first.
+    """Return up to ``top_k`` (card, score) pairs with score >= _MIN_SCORE, best first.
 
     Deterministic (ties broken by registry order). Selects no answer.
     """
     scored = [(c, score_card(c, question)) for c in CARDS]
-    scored = [(c, s) for c, s in scored if s > 0]
+    scored = [(c, s) for c, s in scored if s >= _MIN_SCORE]
     scored.sort(key=lambda cs: cs[1], reverse=True)
     return scored[: max(0, top_k)]

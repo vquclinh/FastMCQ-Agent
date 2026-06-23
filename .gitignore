@@ -28,9 +28,14 @@ models/
 .coverage
 htmlcov/
 
-# Local prediction outputs (keep the dir via .gitkeep, ignore generated files)
+# Local prediction outputs (keep the dir via .gitkeep, ignore generated files).
+# EXCEPTIONS: the required final-package artifacts are tracked so a git clone/package can
+# build & run without regenerating them — the winning v11 submission (production default)
+# and the v10 fallback. The runtime export (pred.csv) and experimental candidates stay ignored.
 outputs/*
 !outputs/.gitkeep
+!outputs/pred_v11_independent_rerun1.csv
+!outputs/pred_v10_full_production_user_run.csv
 
 # Data dropped in by the harness at runtime (keep the dir, ignore contents)
 data/*

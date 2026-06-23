@@ -746,7 +746,195 @@ def try_cache_amat(q, choices, labels):
                extracted={"hit_time": hit_time, "miss_rate": mr, "penalty": penalty}) if lbl else None
 
 
+def try_cournot_duopoly(q, choices, labels):
+    """Symmetric linear Cournot duopoly: q_i = (a - c) / (b·(n+1)), n=2.
+
+    Detects two firms competing in quantities, inverse demand P = a - bQ, and a single
+    symmetric marginal cost c (C(q)=c·q). Declines on >2 firms, nonlinear demand,
+    asymmetric costs, or no unique symmetric option match.
+    """
+    low = q.lower()
+    qn = q.replace(" ", "")
+    is_cournot = "cournot" in low or _has(low, ("cạnh tranh về lượng", "cạnh tranh sản lượng",
+                                                "cournot competition", "quantity competition"))
+    two_firms = _has(low, ("hai hãng", "hai doanh nghiệp", "hai công ty", "duopoly",
+                           "độc quyền hai", "two firms", "2 hãng"))
+    if not (is_cournot and two_firms):
+        return None
+    if _has(low, ("ba hãng", "three firms", "n hãng", "nhiều hãng")):
+        return None                                  # not n=2
+    # Inverse demand P = a - bQ  (b optional = 1). Reject nonlinear (Q^2).
+    if re.search(r"q\s*\^?\s*2|q²", low):
+        return None
+    m = re.search(r"p\s*=\s*(\d+(?:[.,]\d+)?)\s*-\s*(\d+(?:[.,]\d+)?)?\s*\*?\s*q", qn, re.IGNORECASE)
+    if not m:
+        return None
+    a = _to_float(m.group(1))
+    b = _to_float(m.group(2)) if m.group(2) else 1.0
+    # Symmetric marginal cost: a single C(q)=c·q (reject asymmetric C_X/C_Y).
+    if re.search(r"c_?x|c_?y|hãng x[^.]*chi phí[^.]*hãng y", low):
+        return None
+    cm = (re.search(r"c\s*\(\s*q\s*\)\s*=\s*(\d+(?:[.,]\d+)?)\s*\*?\s*q", qn, re.IGNORECASE)
+          or re.search(r"(?:chi phí biên|mc|marginal cost)\s*=?\s*(\d+(?:[.,]\d+)?)", low))
+    if not cm:
+        return None
+    c = _to_float(cm.group(1))
+    if a is None or b is None or c is None or b <= 0 or a <= c:
+        return None
+    qi = (a - c) / (b * 3.0)                          # n=2 -> (a-c)/(b·3)
+    # Match the unique option whose (symmetric) per-firm quantities both equal qi.
+    hits = []
+    for i, ch in enumerate(choices):
+        pair = [v for v in _nums(str(ch)) if v is not None]
+        if len(pair) >= 2 and abs(pair[0] - qi) <= 1e-6 + 1e-3 * abs(qi) \
+                and abs(pair[1] - qi) <= 1e-6 + 1e-3 * abs(qi):
+            hits.append(labels[i])
+    if len(hits) == 1:
+        return _mk("cournot_duopoly", hits[0],
+                   f"q_i=(a-c)/(b·(n+1))=({a:g}-{c:g})/({b:g}·3)={qi:g}", choices, labels,
+                   conf=0.97, extracted={"a": a, "b": b, "c": c, "q_i": qi})
+    return None
+
+
+def try_monopoly_linear(q, choices, labels):
+    """Monopoly with linear inverse demand P=a-bQ, MC=c: q*=(a-c)/(2b)."""
+    low = q.lower()
+    qn = q.replace(" ", "")
+    if "độc quyền" not in low and "monopoly" not in low:
+        return None
+    if _has(low, ("hai hãng", "duopoly", "cournot", "hai doanh nghiệp")):
+        return None                                  # not a single-firm monopoly
+    if re.search(r"q\s*\^?\s*2|q²", low):
+        return None
+    m = re.search(r"p\s*=\s*(\d+(?:[.,]\d+)?)\s*-\s*(\d+(?:[.,]\d+)?)?\s*\*?\s*q", qn, re.IGNORECASE)
+    if not m:
+        return None
+    a = _to_float(m.group(1)); b = _to_float(m.group(2)) if m.group(2) else 1.0
+    cm = (re.search(r"c\s*\(\s*q\s*\)\s*=\s*(\d+(?:[.,]\d+)?)\s*\*?\s*q", qn, re.IGNORECASE)
+          or re.search(r"(?:chi phí biên|mc|marginal cost)\s*=?\s*(\d+(?:[.,]\d+)?)", low))
+    if not cm or a is None or b is None or b <= 0:
+        return None
+    c = _to_float(cm.group(1))
+    if c is None or a <= c:
+        return None
+    qstar = (a - c) / (2 * b)
+    if "sản lượng" in low or "lượng" in low or "quantity" in low:
+        lbl = _nearest_label(qstar, choices, labels, rel_tol=0.02)
+        return _mk("monopoly_linear_quantity", lbl, f"q*=(a-c)/2b={qstar:g}", choices, labels,
+                   extracted={"a": a, "b": b, "c": c, "q": qstar}) if lbl else None
+    return None
+
+
+def try_hex_decimal(q, choices, labels):
+    """Decimal<->hexadecimal conversion (exact)."""
+    low = q.lower()
+    if "thập lục phân" not in low and "hexadecimal" not in low and "hex" not in low:
+        return None
+    if _has(low, ("sang thập lục phân", "thành thập lục phân", "to hex", "ra thập lục phân")):
+        m = re.search(r"(?:số|thập phân|decimal)\D{0,8}(\d+)", q) or re.search(r"\b(\d+)\b", q)
+        if not m:
+            return None
+        target = format(int(m.group(1)), "x").upper()
+        hits = [labels[i] for i, c in enumerate(choices)
+                if re.sub(r"(?i)0x|h$|\s", "", str(c)).upper() == target]
+        if len(hits) == 1:
+            return _mk("hex_decimal", hits[0], f"dec->hex={target}", choices, labels)
+    elif _has(low, ("sang thập phân", "thành thập phân", "to decimal")):
+        m = re.search(r"(?:0x)?([0-9a-fA-F]{2,})", q)
+        if not m:
+            return None
+        try:
+            target = float(int(m.group(1), 16))
+        except ValueError:
+            return None
+        lbl = _exact_label(target, choices, labels)
+        if lbl:
+            return _mk("hex_decimal", lbl, f"hex->dec={int(target)}", choices, labels)
+    return None
+
+
+def try_subnet_hosts(q, choices, labels):
+    """IPv4 usable hosts = 2^(32 - prefix) - 2."""
+    low = q.lower()
+    if not _has(low, ("subnet", "mạng con", "mặt nạ mạng", "usable hosts", "host khả dụng",
+                      "địa chỉ host")):
+        return None
+    m = re.search(r"/\s*(\d{1,2})\b", q) or re.search(r"prefix\D{0,8}(\d{1,2})", low)
+    if not m:
+        return None
+    prefix = int(m.group(1))
+    if not (1 <= prefix <= 31):
+        return None
+    hosts = 2 ** (32 - prefix) - 2
+    lbl = _exact_label(float(hosts), choices, labels) or _nearest_label(hosts, choices, labels, rel_tol=0.001)
+    return _mk("subnet_usable_hosts", lbl, f"2^(32-{prefix})-2={hosts}", choices, labels,
+               extracted={"prefix": prefix, "hosts": hosts}) if lbl else None
+
+
+def try_percent_change(q, choices, labels):
+    """Single percent increase/decrease of one base value (Phase 2L.28B).
+
+    Conservative: requires exactly a base number and a percent, an explicit
+    increase/decrease keyword, and a UNIQUE close option. Declines on any ambiguity
+    (multiple bases, compound %, percent-of vs percent-change wording)."""
+    low = q.lower()
+    pm = re.search(r"(" + _NUM + r")\s*%", q) or re.search(r"(" + _NUM + r")\s*phần trăm", low)
+    if not pm:
+        return None
+    pct = _to_float(pm.group(1))
+    if pct is None or not (0 < pct < 100):
+        return None
+    up = _has(low, ("tăng", "tăng thêm", "increase", "tăng giá", "lên"))
+    down = _has(low, ("giảm", "giảm bớt", "decrease", "hạ", "chiết khấu", "discount"))
+    if up == down:                       # need exactly one clear direction
+        return None
+    # base = the single numeric value that is NOT the percent and NOT a small count
+    others = [v for v in _nums(q) if abs(v - pct) > 1e-9]
+    bases = [v for v in others if abs(v) >= 1]
+    if len(bases) != 1:                  # ambiguous base -> decline
+        return None
+    base = bases[0]
+    target = base * (1 + pct / 100.0) if up else base * (1 - pct / 100.0)
+    lbl = _nearest_label(target, choices, labels, rel_tol=0.01)
+    if lbl:
+        return _mk("percent_change", lbl,
+                   f"{base:g}{'×(1+' if up else '×(1−'}{pct:g}%)={target:.6g}", choices, labels,
+                   extracted={"base": base, "percent": pct, "result": target,
+                              "direction": "up" if up else "down"})
+    return None
+
+
+def try_simple_linear_equation(q, choices, labels):
+    """Solve a single linear equation ax + b = c for x (Phase 2L.28B).
+
+    Conservative: matches an explicit 'ax + b = c' (or 'ax - b = c') pattern with a
+    single unknown letter and numeric options; declines otherwise."""
+    m = re.search(r"(" + _NUM + r")\s*([a-zA-Z])\s*([+\-])\s*(" + _NUM + r")\s*=\s*(" + _NUM + r")", q)
+    if not m:
+        m2 = re.search(r"([a-zA-Z])\s*([+\-])\s*(" + _NUM + r")\s*=\s*(" + _NUM + r")", q)
+        if not m2:
+            return None
+        a, sign, b, c = 1.0, m2.group(2), _to_float(m2.group(3)), _to_float(m2.group(4))
+    else:
+        a, sign, b, c = _to_float(m.group(1)), m.group(3), _to_float(m.group(4)), _to_float(m.group(5))
+    if a in (None, 0) or b is None or c is None:
+        return None
+    rhs = c - b if sign == "+" else c + b
+    x = rhs / a
+    lbl = _nearest_label(x, choices, labels, rel_tol=0.001)
+    if lbl:
+        return _mk("simple_linear_equation", lbl, f"x=({c:g}{'−' if sign=='+' else '+'}{b:g})/{a:g}={x:.6g}",
+                   choices, labels, extracted={"a": a, "b": b, "c": c, "x": x})
+    return None
+
+
 _NEW_RULES = (
+    try_cournot_duopoly,
+    try_monopoly_linear,
+    try_hex_decimal,
+    try_subnet_hosts,
+    try_percent_change,
+    try_simple_linear_equation,
     try_determinant_2x2,
     try_ohms_law,
     try_electric_power,

@@ -48,7 +48,31 @@ FASTMCQ-AGENT/
 └── docs/                  # hackaithon.pdf, METHOD.md, AUDIT_INITIAL_SETUP.md
 ```
 
-## Quick start (local)
+## Final submission (production default)
+
+The current best, frozen submission is the **independent v11** system
+(`outputs/pred_v11_independent_rerun1.csv`, public score **78.4**). The default final
+command is offline, needs **no API key**, validates automatically, and prints elapsed time:
+
+```bash
+python scripts/final_infer.py --input public-test_1780368312.json --output pred.csv
+```
+
+`--input`/`--output` are optional — with the test file in the current directory (or under
+`/data`) and `/output` available, the no-arg form works too (BTC/Docker style):
+
+```bash
+python scripts/final_infer.py          # auto-detects input, writes /output/pred.csv or ./pred.csv
+```
+
+No `--mode` or `--allow-pred-csv` needed. v10 is fallback only (`--mode v10`); regenerating
+via the independent v11 runner is explicit/experimental (`--mode v11_independent --execute
+--budget-usd ...`). See [FINAL_RUN.md](FINAL_RUN.md) and [DOCKER_SUBMISSION.md](DOCKER_SUBMISSION.md).
+
+## Quick start (local, historical baseline)
+
+> The commands below run the earlier Phase-1/2 `run.py` pipeline and are kept for reference.
+> For the competition submission use the **Final submission** command above.
 
 ```bash
 # Optional: install deps (core pipeline needs only the stdlib + PyYAML)

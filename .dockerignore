@@ -1,0 +1,52 @@
+# Keep secrets, local state, and bulk artifacts OUT of the final image.
+# Secrets / env
+.env
+.env.*
+*.key
+*.pem
+secrets/
+**/api_key*
+# Local experiment state and reports (NOT needed at inference time)
+scratch/
+experiments/
+docs/
+# Virtual environments (huge — torch etc.; image installs deps from requirements.txt)
+.venv/
+venv/
+env/
+# Harness mount points (provided at runtime, not baked in)
+data/
+output/
+# VCS / CI / editor
+.git/
+.gitignore
+.github/
+.vscode/
+.idea/
+# Python caches / build
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+.coverage
+htmlcov/
+# Notebooks and large/temp logs
+*.ipynb
+.ipynb_checkpoints/
+*.log
+**/*.jsonl
+# Local model weights / caches (failed-closed reranker handles absence)
+models/
+*.bin
+*.safetensors
+*.pt
+*.gguf
+.cache/
+# Keep only the required final CSV assets under outputs/ (see note in DOCKER_SUBMISSION.md):
+# outputs/pred_v11_independent_rerun1.csv and the v10 fallback are REQUIRED and NOT ignored.
+outputs/pred.csv
+outputs/pred_v11_full_adaptive_test.csv

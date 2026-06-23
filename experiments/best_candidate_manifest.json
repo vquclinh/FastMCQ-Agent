@@ -1,0 +1,28 @@
+{
+  "production_default": "independent_v11",
+  "recommended_final_csv": "outputs/pred_v11_independent_rerun1.csv",
+  "current_best": {
+    "name": "v11_independent_rerun1",
+    "file": "outputs/pred_v11_independent_rerun1.csv",
+    "public_score": 78.4,
+    "architecture": "independent_v11",
+    "do_not_overwrite": true,
+    "md5": "69f4e7c990e8c612e7bee53084d13b4d",
+    "rows": 463,
+    "generated_by": "scripts/run_full_v11_independent_submission.py + scripts/repair_v11_independent_run.py",
+    "notes": "true independent v11 (no v10 base); 9 null-answer qids repaired in 2L.30C; beats v10 baseline"
+  },
+  "previous_best": {
+    "name": "v10_full_production",
+    "file": "outputs/pred_v10_full_production_user_run.csv",
+    "public_score": 77.75,
+    "architecture": "v10",
+    "do_not_overwrite": true,
+    "md5": "c12e32fdf16ee5472e6a791c1e52e86a",
+    "rows": 463,
+    "generated_by": "scripts/run_production_pipeline.py",
+    "preset": "competition_qwen35_9b",
+    "notes": "fallback only; full graph-path production run + safe deterministic overrides"
+  },
+  "timestamp": "2026-06-23T00:00:00Z"
+}

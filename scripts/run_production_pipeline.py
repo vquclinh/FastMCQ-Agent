@@ -229,6 +229,13 @@ def main(argv=None) -> int:
     opts = _resolve_options(args)
     enable_bank = bool(opts.get("formula_bank") or opts.get("concept_solver"))
 
+    # Competition model-policy guard: refuse a disallowed base LLM or reranker model.
+    if opts.get("base_solver") == "openrouter_graph":
+        from src.model_policy import assert_allowed_llm_model, assert_allowed_rerank_model
+        assert_allowed_llm_model(opts["openrouter_model"])
+        if opts.get("evidence_reranker") and opts.get("evidence_reranker_model"):
+            assert_allowed_rerank_model(opts["evidence_reranker_model"])
+
     run_start = time.perf_counter()
     samples = load_dataset(args.input)
     print(f"[production] input={args.input} samples={len(samples)} "

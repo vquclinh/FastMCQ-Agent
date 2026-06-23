@@ -1,0 +1,27 @@
+{
+  "architecture": "independent_v11",
+  "current_best_csv": "outputs/pred_v11_independent_rerun1.csv",
+  "baseline_v10_csv": "outputs/pred_v10_full_production_user_run.csv",
+  "default_mode": "frozen_csv",
+  "runnable_mode": "v11_independent",
+  "default_script": "scripts/final_infer.py",
+  "independent_runner": "scripts/run_full_v11_independent_submission.py",
+  "model": "qwen/qwen3.5-9b-20260310",
+  "repair_finalization_enabled": true,
+  "no_v10_base": true,
+  "v10_compare_only": true,
+  "output_validation_required": true,
+  "model_policy_audit_required": true,
+  "protected_outputs": [
+    "outputs/pred_v11_independent_rerun1.csv",
+    "outputs/pred_v10_full_production_user_run.csv",
+    "outputs/pred_v8_clean_generalized_from_v7.csv",
+    "outputs/pred.csv"
+  ],
+  "notes": [
+    "frozen_csv is the default for Docker reproducibility (offline, no API key required)",
+    "v11_independent rerun is available but requires explicit --execute and an API budget",
+    "v10 is fallback only; it is never used as a base for v11 generation",
+    "no secrets/API keys are stored in this config or the image"
+  ]
+}
