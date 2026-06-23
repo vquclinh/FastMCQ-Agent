@@ -18,7 +18,26 @@
 - `auto` — resolves to `public_replay` only with `--allow-public-replay` **and** an exact public
   qid match; otherwise `dynamic_full`. Never replays public answers onto unseen qids.
 
-## The command (default = dynamic_full, API-free)
+## Short commands (run profiles — recommended)
+
+Profiles live in `configs/run_profiles.json`; the wrappers create a timestamped run dir under
+`scratch/runs/`, tee a `run.log`, and print elapsed time + output path + md5.
+
+```bash
+bash scripts/run_public_replay.sh public-test_1780368312.json   # reproduce the 79.7 public artifact
+bash scripts/run_dynamic_noapi.sh public-test_1780368312.json   # full dynamic system, no API
+bash scripts/run_public_api100.sh public-test_1780368312.json   # quick API system check (caps 100 qids)
+bash scripts/run_private_api200.sh private_test.json            # recommended BTC/private API run
+bash scripts/run_private_noapi.sh private_test.json             # private, no API
+```
+
+Profile meanings: **public_replay** = reproduce the 79.7 artifact for the exact public qids;
+**dynamic_noapi** = full dynamic system (V12B+V13) without API; **public_api100** = quick API
+system check; **private_api200** = recommended private/BTC API run. CLI flags after the input
+override the profile (e.g. `… --no-api`). Equivalent `python scripts/final_infer.py
+--profile <name> --input … --output …`.
+
+## The full command (default = dynamic_full, API-free)
 
 ```bash
 python scripts/final_infer.py --input <test>.json --output pred.csv

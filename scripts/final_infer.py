@@ -290,12 +290,62 @@ def _resolve_mode(args, config):
     return "dynamic_full"
 
 
+_PROFILES_PATH = "configs/run_profiles.json"
+# Profile JSON key -> the CLI option strings that, if explicitly passed, override the profile.
+_PROFILE_FLAGS = {
+    "mode": ["--mode"],
+    "allow_public_replay": ["--allow-public-replay"],
+    "execute_api": ["--execute-api", "--no-api"],
+    "enable_v12b": ["--enable-v12b", "--disable-v12b"],
+    "enable_v13": ["--enable-v13", "--disable-v13"],
+    "model": ["--model"],
+    "budget_usd": ["--budget-usd"],
+    "v12b_max_qids": ["--v12b-max-qids"],
+    "v12b_permutations": ["--v12b-permutations"],
+    "v12b_policy": ["--v12b-policy"],
+    "v13_max_qids": ["--v13-max-qids"],
+    "system_policy": ["--system-policy"],
+    "max_overrides": ["--max-overrides"],
+}
+
+
+def _load_profiles():
+    p = Path(_repo_path(_PROFILES_PATH))
+    if not p.exists():
+        return {}
+    return json.loads(p.read_text())
+
+
+def _apply_profile(args, raw_argv):
+    """Apply a named run profile to args. CLI flags ALWAYS override profile values. Unknown
+    profile fails clearly. Profiles cannot bypass model-policy (validated later in the layers)."""
+    if not getattr(args, "profile", None):
+        return
+    profiles = _load_profiles()
+    if args.profile not in profiles:
+        raise SystemExit(f"REFUSING: unknown profile {args.profile!r}; "
+                         f"available: {sorted(profiles)}")
+    passed = list(raw_argv or [])
+
+    def _explicit(flags):
+        return any(tok == f or tok.startswith(f + "=") for tok in passed for f in flags)
+
+    for key, val in profiles[args.profile].items():
+        flags = _PROFILE_FLAGS.get(key)
+        if flags is None:        # ignore unrecognized profile keys safely
+            continue
+        if not _explicit(flags):  # CLI flag wins
+            setattr(args, key, val)
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="Final inference entrypoint (dynamic_full default)")
     ap.add_argument("--input", default=None,
                     help="test file; if omitted: $FASTMCQ_INPUT -> /data/private_test.* / doc_public_test.* etc.")
     ap.add_argument("--output", default=None,
                     help="output CSV; if omitted: $FASTMCQ_OUTPUT -> /output/pred.csv -> ./pred.csv")
+    ap.add_argument("--profile", default=None,
+                    help="named run profile from configs/run_profiles.json (CLI flags override it)")
     ap.add_argument("--mode", default="dynamic_full",
                     choices=["dynamic_full", "public_replay", "auto",
                              "frozen_csv", "v11_independent", "v10"])
@@ -328,6 +378,8 @@ def main(argv=None) -> int:
     ap.add_argument("--allow-pred-csv", action="store_true", default=False,
                     help="deprecated no-op (kept for backward compatibility; pred.csv is allowed)")
     args = ap.parse_args(argv)
+    # Apply named profile (CLI flags override); fails clearly on unknown profile.
+    _apply_profile(args, argv if argv is not None else sys.argv[1:])
 
     t0 = time.perf_counter()
     try:
@@ -338,6 +390,8 @@ def main(argv=None) -> int:
         resolved = _resolve_mode(args, config)
         print(f"[final_infer] input detected: {args.input}")
         print(f"[final_infer] output: {args.output}")
+        if args.profile:
+            print(f"[final_infer] profile: {args.profile}")
         print(f"[final_infer] resolved mode: {resolved} "
               f"(api={'on' if args.execute_api else 'off'})")
         _guard_output_name(args.output)
@@ -368,6 +422,8 @@ def main(argv=None) -> int:
     except BaseException as e:   # always surface elapsed time, even on failure
         print("=" * 60)
         print("FINAL INFER COMPLETE")
+        if getattr(args, "profile", None):
+            print(f"profile: {args.profile}")
         print(f"mode: {args.mode}")
         print(f"output: {args.output}")
         print(f"elapsed_seconds: {round(time.perf_counter() - t0, 3)}")

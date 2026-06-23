@@ -59,7 +59,19 @@ selector. **Both V12B and V13 are enabled by default.** The frozen public artifa
 78.83, +1.30 over v11 78.40) is the current public-best CSV for **leaderboard reproducibility
 only** (`--mode public_replay`), not the universal private solution. The default command is
 API-free, validates automatically, and prints the resolved mode + V12B/V13 targets/overrides +
-elapsed time:
+elapsed time.
+
+**Short commands (run profiles — recommended):**
+
+```bash
+bash scripts/run_public_replay.sh public-test_1780368312.json   # reproduce the 79.7 public artifact
+bash scripts/run_dynamic_noapi.sh public-test_1780368312.json   # full dynamic system, no API
+bash scripts/run_public_api100.sh public-test_1780368312.json   # quick API system check
+bash scripts/run_private_api200.sh private_test.json            # recommended BTC/private API run
+```
+
+Each wrapper logs to `scratch/runs/<profile>_<ts>/` and prints elapsed time + output md5.
+Full/explicit form:
 
 ```bash
 python scripts/final_infer.py --input public-test_1780368312.json --output pred.csv

@@ -1,0 +1,67 @@
+{
+  "public_replay": {
+    "mode": "public_replay",
+    "allow_public_replay": true,
+    "execute_api": false
+  },
+  "dynamic_noapi": {
+    "mode": "dynamic_full",
+    "execute_api": false,
+    "enable_v12b": true,
+    "enable_v13": true
+  },
+  "public_noapi": {
+    "mode": "dynamic_full",
+    "execute_api": false,
+    "enable_v12b": true,
+    "enable_v13": true
+  },
+  "public_api100": {
+    "mode": "dynamic_full",
+    "execute_api": true,
+    "model": "qwen/qwen3.5-9b-20260310",
+    "budget_usd": 5.0,
+    "enable_v12b": true,
+    "enable_v13": true,
+    "v12b_max_qids": 100,
+    "v12b_permutations": 6,
+    "v12b_policy": "conservative",
+    "v13_max_qids": 100,
+    "system_policy": "conservative",
+    "max_overrides": 50
+  },
+  "public_api463": {
+    "mode": "dynamic_full",
+    "execute_api": true,
+    "model": "qwen/qwen3.5-9b-20260310",
+    "budget_usd": 20.0,
+    "enable_v12b": true,
+    "enable_v13": true,
+    "v12b_max_qids": 463,
+    "v12b_permutations": 6,
+    "v12b_policy": "conservative",
+    "v13_max_qids": 463,
+    "system_policy": "conservative",
+    "max_overrides": 100
+  },
+  "private_noapi": {
+    "mode": "dynamic_full",
+    "execute_api": false,
+    "enable_v12b": true,
+    "enable_v13": true
+  },
+  "private_api200": {
+    "mode": "dynamic_full",
+    "execute_api": true,
+    "model": "qwen/qwen3.5-9b-20260310",
+    "budget_usd": 5.0,
+    "enable_v12b": true,
+    "enable_v13": true,
+    "v12b_max_qids": 200,
+    "v12b_permutations": 6,
+    "v12b_policy": "conservative",
+    "v13_max_qids": 200,
+    "system_policy": "conservative",
+    "max_overrides": 50
+  }
+}
