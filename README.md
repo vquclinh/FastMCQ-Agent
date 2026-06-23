@@ -66,6 +66,7 @@ elapsed time.
 ```bash
 bash scripts/run_public_replay.sh public-test_1780368312.json   # reproduce the 79.7 public artifact
 bash scripts/run_dynamic_noapi.sh public-test_1780368312.json   # full dynamic system, no API
+bash scripts/run_public_api50.sh public-test_1780368312.json    # medium API pilot (caps 50 qids)
 bash scripts/run_public_api100.sh public-test_1780368312.json   # quick API system check
 bash scripts/run_private_api200.sh private_test.json            # recommended BTC/private API run
 ```

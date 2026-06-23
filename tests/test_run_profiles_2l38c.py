@@ -19,7 +19,7 @@ _PUBLIC = str(_ROOT / "public-test_1780368312.json")
 _V13 = str(_ROOT / "outputs" / "pred_v13_multilayer_candidate_api30_from_v12b.csv")
 _PROFILES = json.loads((_ROOT / "configs" / "run_profiles.json").read_text())
 _WRAPPERS = ["run_public_replay.sh", "run_dynamic_noapi.sh", "run_public_api100.sh",
-             "run_private_noapi.sh", "run_private_api200.sh"]
+             "run_private_noapi.sh", "run_private_api200.sh", "run_public_api50.sh"]
 
 
 def _fi():
@@ -117,8 +117,51 @@ def test_profile_cannot_bypass_model_policy(tmp_path):
 
 def test_api_profiles_use_allowed_model():
     from src.model_policy import is_allowed_llm_model
-    for name in ("public_api100", "public_api463", "private_api200"):
+    for name in ("public_api50", "public_api100", "public_api463", "private_api200"):
         assert is_allowed_llm_model(_PROFILES[name]["model"])
+
+
+# --- public_api50 (2L.38D) ---------------------------------------------------
+
+def test_public_api50_profile_values():
+    p = _PROFILES["public_api50"]
+    assert p["mode"] == "dynamic_full" and p["execute_api"] is True
+    assert p["model"] == "qwen/qwen3.5-9b-20260310"
+    assert p["v12b_max_qids"] == 50 and p["v13_max_qids"] == 50
+    assert p["v12b_permutations"] == 6
+    assert p["v12b_policy"] == "conservative" and p["system_policy"] == "conservative"
+
+
+def test_public_api50_model_policy():
+    from src.model_policy import is_allowed_llm_model
+    assert is_allowed_llm_model(_PROFILES["public_api50"]["model"])
+
+
+def test_public_api50_wrapper_exists_and_resumes():
+    p = _ROOT / "scripts" / "run_public_api50.sh"
+    assert p.exists()
+    r = subprocess.run(["bash", "-n", str(p)], capture_output=True, text=True)
+    assert r.returncode == 0, r.stderr
+    text = p.read_text()
+    assert "public_api50" in text and "--resume" in text
+
+
+def test_public_api50_apply_profile_sets_caps():
+    mod = _fi()
+    import argparse
+    ns = argparse.Namespace(profile="public_api50", mode="dynamic_full", execute_api=False,
+                            enable_v12b=True, enable_v13=True, model=None, budget_usd=None,
+                            v12b_max_qids=None, v12b_permutations=6, v12b_policy="conservative",
+                            v13_max_qids=None, system_policy="conservative", max_overrides=None,
+                            allow_public_replay=False)
+    mod._apply_profile(ns, ["--profile", "public_api50"])
+    assert ns.execute_api is True and ns.v12b_max_qids == 50 and ns.v13_max_qids == 50
+    assert ns.model == "qwen/qwen3.5-9b-20260310" and ns.budget_usd == 2.50
+
+
+def test_docs_mention_public_api50():
+    for doc in ("README.md", "FINAL_RUN.md", "DOCKER_SUBMISSION.md"):
+        assert "run_public_api50.sh" in (_ROOT / doc).read_text(), doc
 
 
 def test_final_infer_works_without_profile(tmp_path):

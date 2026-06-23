@@ -12,6 +12,7 @@ v11 78.40); reproduce it exactly with `--mode public_replay` on the public test.
 ```bash
 bash scripts/run_public_replay.sh public-test_1780368312.json   # reproduce the 79.7 artifact
 bash scripts/run_dynamic_noapi.sh public-test_1780368312.json   # full dynamic system, no API
+bash scripts/run_public_api50.sh public-test_1780368312.json    # medium API pilot (caps 50 qids)
 bash scripts/run_private_api200.sh private_test.json            # recommended private/BTC API run
 ```
 Each prints elapsed time + output md5 and logs under `scratch/runs/`. Full/explicit form:

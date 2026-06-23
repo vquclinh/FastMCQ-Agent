@@ -26,16 +26,19 @@ Profiles live in `configs/run_profiles.json`; the wrappers create a timestamped 
 ```bash
 bash scripts/run_public_replay.sh public-test_1780368312.json   # reproduce the 79.7 public artifact
 bash scripts/run_dynamic_noapi.sh public-test_1780368312.json   # full dynamic system, no API
+bash scripts/run_public_api50.sh public-test_1780368312.json    # medium API pilot (caps 50 qids, $2.50)
 bash scripts/run_public_api100.sh public-test_1780368312.json   # quick API system check (caps 100 qids)
 bash scripts/run_private_api200.sh private_test.json            # recommended BTC/private API run
 bash scripts/run_private_noapi.sh private_test.json             # private, no API
 ```
 
 Profile meanings: **public_replay** = reproduce the 79.7 artifact for the exact public qids;
-**dynamic_noapi** = full dynamic system (V12B+V13) without API; **public_api100** = quick API
-system check; **private_api200** = recommended private/BTC API run. CLI flags after the input
-override the profile (e.g. `… --no-api`). Equivalent `python scripts/final_infer.py
---profile <name> --input … --output …`.
+**dynamic_noapi** = full dynamic system (V12B+V13) without API; **public_api50** = medium API
+pilot over the full input file, sending up to 50 high-risk qids through the V12B/V13 API layers
+(a middle option between a manual `public_api30`-style override and `public_api100`);
+**public_api100** = quick API system check; **private_api200** = recommended private/BTC API
+run. CLI flags after the input override the profile (e.g. `… --no-api` or `… --budget-usd
+3.00`). Equivalent `python scripts/final_infer.py --profile <name> --input … --output …`.
 
 ## The full command (default = dynamic_full, API-free)
 
