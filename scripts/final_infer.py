@@ -29,11 +29,13 @@ sys.path.insert(0, str(_ROOT))
 from src.data_io import load_dataset, read_predictions  # noqa: E402
 from src.labels import is_valid_label  # noqa: E402
 
-_DEFAULT_CONFIG = "configs/production_v11_independent.json"
+_DEFAULT_CONFIG = "configs/production_v13_multilayer_7970.json"
 # Frozen/locked artifacts that must NEVER be written as an output by this entrypoint.
 # NOTE: ``pred.csv`` is intentionally NOT protected — writing it is the explicit final
 # export use case (`--output pred.csv`).
-_PROTECTED_NAMES = {"pred_v11_independent_rerun1.csv", "pred_v10_full_production_user_run.csv",
+_PROTECTED_NAMES = {"pred_v13_multilayer_candidate_api30_from_v12b.csv",
+                    "pred_v12b_permutation_candidate_api30.csv", "pred_v11_independent_rerun1.csv",
+                    "pred_v10_full_production_user_run.csv",
                     "pred_v8_clean_generalized_from_v7.csv"}
 # Global MCQ label space when the input carries no choices (BTC qid-only CSV). The public
 # test has 2–11 choices (labels A–K), so the frozen winner legitimately uses up to 'K';
@@ -226,17 +228,99 @@ def _v11_independent(args, config):
     return "v11_independent", config.get("independent_runner"), n
 
 
+def _public_qids(config):
+    """The qid set of the public frozen best artifact (current_best_csv)."""
+    src = _repo_path(config.get("current_best_csv"))
+    if not Path(src).exists():
+        return set(), src
+    return {r["qid"] for r in read_predictions(src)}, src
+
+
+def _public_replay(args, config):
+    """Reproducibility-only: copy the public frozen best CSV, but ONLY when the input qid set
+    exactly matches it. Fails clearly otherwise (never replays public answers onto unseen qids)."""
+    public_qids, src = _public_qids(config)
+    input_qids = {s["qid"] for s in load_dataset(args.input)}
+    if not public_qids:
+        raise SystemExit(f"REFUSING: public frozen artifact not found: {src}")
+    if public_qids != input_qids:
+        raise SystemExit(
+            "REFUSING: public_replay requires the input qid set to EXACTLY match the public "
+            f"frozen artifact ({len(public_qids)} qids); input has {len(input_qids)}. "
+            "Use --mode dynamic_full for private/unseen inputs.")
+    n = _copy_and_validate(src, args.output, args.input, "public_replay")
+    return "public_replay", src, n
+
+
+def _dynamic_full(args, config):
+    """The real production system: run the full dynamic architecture over the given input."""
+    from src.fastmcq_system import run_fastmcq_system, FastMCQSystemConfig
+    samples = load_dataset(args.input)
+    cfg = FastMCQSystemConfig(
+        mode="dynamic_full", enable_v12b=args.enable_v12b, enable_v13=args.enable_v13,
+        v12b_policy=args.v12b_policy, v12b_max_qids=args.v12b_max_qids,
+        v12b_permutations=args.v12b_permutations, v13_max_qids=args.v13_max_qids,
+        system_policy=args.system_policy, max_overrides=args.max_overrides,
+        model=args.model or config.get("model"),
+        budget_usd=args.budget_usd, execute_api=args.execute_api,
+        work_dir=args.work_dir or "scratch/fastmcq_run", resume=args.resume)
+    report = run_fastmcq_system(samples, args.output, cfg)
+    print(f"[final_infer] base predictions : {report.base_predictions_count}")
+    print(f"[final_infer] V12B enabled={report.v12b_enabled} executed={report.v12b_executed} "
+          f"targets={report.v12b_targets} overrides={report.v12b_overrides}")
+    print(f"[final_infer] V13 enabled={report.v13_enabled} executed={report.v13_executed} "
+          f"targets={report.v13_targets} overrides={report.v13_overrides}")
+    print(f"[final_infer] system overrides : {report.v12b_overrides + report.v13_overrides}")
+    for w in report.warnings:
+        print(f"[final_infer] warning: {w}")
+    return "dynamic_full", "src.fastmcq_system", report.output_count
+
+
+def _resolve_mode(args, config):
+    """Resolve --mode auto. Never silently replays public answers onto private/unseen qids."""
+    if args.mode != "auto":
+        return args.mode
+    if args.allow_public_replay:
+        public_qids, _src = _public_qids(config)
+        input_qids = {s["qid"] for s in load_dataset(args.input)}
+        if public_qids and public_qids == input_qids:
+            print("[final_infer] auto -> public_replay (qid set matches public artifact)")
+            return "public_replay"
+    print("[final_infer] auto -> dynamic_full")
+    return "dynamic_full"
+
+
 def main(argv=None) -> int:
-    ap = argparse.ArgumentParser(description="Final inference entrypoint (frozen_csv default)")
+    ap = argparse.ArgumentParser(description="Final inference entrypoint (dynamic_full default)")
     ap.add_argument("--input", default=None,
-                    help="test file; if omitted: $FASTMCQ_INPUT -> /data/doc_public_test.csv etc.")
+                    help="test file; if omitted: $FASTMCQ_INPUT -> /data/private_test.* / doc_public_test.* etc.")
     ap.add_argument("--output", default=None,
                     help="output CSV; if omitted: $FASTMCQ_OUTPUT -> /output/pred.csv -> ./pred.csv")
-    ap.add_argument("--mode", default="frozen_csv", choices=["frozen_csv", "v11_independent", "v10"])
+    ap.add_argument("--mode", default="dynamic_full",
+                    choices=["dynamic_full", "public_replay", "auto",
+                             "frozen_csv", "v11_independent", "v10"])
+    ap.add_argument("--allow-public-replay", action="store_true", default=False,
+                    help="auto mode only: allow public_replay when input qids match the public artifact")
     ap.add_argument("--source-csv", default=None, help="frozen_csv only: explicit source CSV")
     ap.add_argument("--config", default=_DEFAULT_CONFIG)
     ap.add_argument("--model", default=None)
     ap.add_argument("--budget-usd", type=float, default=None)
+    ap.add_argument("--work-dir", default=None)
+    # API gating for dynamic_full: no-api by default; --execute-api to call the model.
+    ap.add_argument("--execute-api", dest="execute_api", action="store_true", default=False)
+    ap.add_argument("--no-api", dest="execute_api", action="store_false")
+    # V12B / V13 layer toggles.
+    ap.add_argument("--enable-v12b", dest="enable_v12b", action="store_true", default=True)
+    ap.add_argument("--disable-v12b", dest="enable_v12b", action="store_false")
+    ap.add_argument("--v12b-max-qids", type=int, default=None)
+    ap.add_argument("--v12b-permutations", type=int, default=6)
+    ap.add_argument("--v12b-policy", choices=["conservative", "balanced"], default="conservative")
+    ap.add_argument("--enable-v13", dest="enable_v13", action="store_true", default=True)
+    ap.add_argument("--disable-v13", dest="enable_v13", action="store_false")
+    ap.add_argument("--v13-max-qids", type=int, default=None)
+    ap.add_argument("--system-policy", choices=["conservative", "balanced"], default="conservative")
+    ap.add_argument("--max-overrides", type=int, default=None)
+    # Legacy flags (v11_independent regeneration).
     ap.add_argument("--execute", action="store_true", default=False)
     ap.add_argument("--dry-run", action="store_true", default=False)
     ap.add_argument("--resume", action="store_true", default=False)
@@ -251,29 +335,29 @@ def main(argv=None) -> int:
         # Resolve I/O (no-arg BTC default: input from /data, output to /output/pred.csv).
         args.input = _resolve_input(args.input)
         args.output = _resolve_output(args.output)
+        resolved = _resolve_mode(args, config)
         print(f"[final_infer] input detected: {args.input}")
         print(f"[final_infer] output: {args.output}")
+        print(f"[final_infer] resolved mode: {resolved} "
+              f"(api={'on' if args.execute_api else 'off'})")
         _guard_output_name(args.output)
 
         if args.dry_run:
-            source = args.source_csv or config.get("current_best_csv")
             print("=" * 60)
-            print(f"FINAL INFER — DRY-RUN (mode={args.mode}; no write)")
+            print(f"FINAL INFER — DRY-RUN (mode={resolved}; no write)")
             print(f"input: {args.input}")
             print(f"output (planned): {args.output}")
-            if args.mode == "frozen_csv":
-                print(f"frozen source: {source}")
-            elif args.mode == "v10":
-                print(f"v10 source: {config.get('baseline_v10_csv')} (fallback only)")
-            else:
-                print(f"v11 runner: {config.get('independent_runner')} (needs --execute + budget)")
             print(f"elapsed_seconds: {round(time.perf_counter() - t0, 3)}")
             print("=" * 60)
             return 0
 
-        if args.mode == "frozen_csv":
+        if resolved == "dynamic_full":
+            mode_label, source, n = _dynamic_full(args, config)
+        elif resolved == "public_replay":
+            mode_label, source, n = _public_replay(args, config)
+        elif resolved == "frozen_csv":
             mode_label, source, n = _frozen_csv(args, config)
-        elif args.mode == "v10":
+        elif resolved == "v10":
             mode_label, source, n = _v10_fallback(args, config)
         else:
             mode_label, source, n = _v11_independent(args, config)

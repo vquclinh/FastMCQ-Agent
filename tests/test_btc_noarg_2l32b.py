@@ -18,7 +18,8 @@ _ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_ROOT))
 
 _INPUT = str(_ROOT / "public-test_1780368312.json")
-_BEST = str(_ROOT / "outputs" / "pred_v11_independent_rerun1.csv")
+# Current production best (promoted in 2L.36A): V12B option-permutation debiaser (78.83).
+_BEST = str(_ROOT / "outputs" / "pred_v12b_permutation_candidate_api30.csv")
 
 
 def _fi():
@@ -42,6 +43,8 @@ def _qid_csv(path):
 # --- no-arg run --------------------------------------------------------------
 
 def test_runs_with_no_input_no_output(monkeypatch):
+    # No-arg default is now dynamic_full: it must run and emit valid predictions for exactly
+    # the detected input's qids (NOT a public-frozen replay).
     mod = _fi()
     d = tempfile.mkdtemp()
     Path(d, "public-test_1780368312.json").write_text(Path(_INPUT).read_text())
@@ -49,7 +52,9 @@ def test_runs_with_no_input_no_output(monkeypatch):
     rc = mod.main([])                       # no --input, no --output
     assert rc == 0
     out = Path(d) / "pred.csv"
-    assert out.exists() and _md5(out) == _md5(_BEST)
+    assert out.exists()
+    n_input = len(json.loads(Path(_INPUT).read_text()))
+    assert len(out.read_text().splitlines()) - 1 == n_input   # one row per input qid
 
 
 def test_no_arg_csv_input_autodetected(monkeypatch):
@@ -59,10 +64,11 @@ def test_no_arg_csv_input_autodetected(monkeypatch):
     monkeypatch.chdir(d)
     rc = mod.main([])
     out = Path(d) / "pred.csv"
-    assert rc == 0 and out.exists() and _md5(out) == _md5(_BEST)
+    n_input = len(json.loads(Path(_INPUT).read_text()))
+    assert rc == 0 and out.exists() and len(out.read_text().splitlines()) - 1 == n_input
 
 
-def test_no_arg_default_uses_v11_frozen_best(monkeypatch):
+def test_no_arg_default_is_dynamic_full(monkeypatch):
     mod = _fi()
     d = tempfile.mkdtemp()
     Path(d, "public-test_1780368312.json").write_text(Path(_INPUT).read_text())
@@ -70,7 +76,7 @@ def test_no_arg_default_uses_v11_frozen_best(monkeypatch):
     buf = io.StringIO()
     with redirect_stdout(buf):
         mod.main([])
-    assert "source: " in buf.getvalue() and "pred_v11_independent_rerun1.csv" in buf.getvalue()
+    assert "resolved mode: dynamic_full" in buf.getvalue()
 
 
 def test_no_arg_makes_no_api_call(monkeypatch):

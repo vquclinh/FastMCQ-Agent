@@ -15,7 +15,9 @@ _ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_ROOT))
 
 _INPUT = str(_ROOT / "public-test_1780368312.json")
-_BEST = "outputs/pred_v11_independent_rerun1.csv"
+# Current production best (promoted in 2L.36A): V12B option-permutation debiaser (78.83).
+# Current production best (promoted in 2L.38A): V13 multi-layer dynamic system (79.7).
+_BEST = "outputs/pred_v13_multilayer_candidate_api30_from_v12b.csv"
 _V10 = "outputs/pred_v10_full_production_user_run.csv"
 
 
@@ -32,14 +34,15 @@ def _md5(p):
 
 # --- manifest ----------------------------------------------------------------
 
-def test_manifest_freezes_v11_as_default():
+def test_manifest_freezes_v13_as_default():
     m = json.loads((_ROOT / "experiments" / "best_candidate_manifest.json").read_text())
-    assert m["production_default"] == "independent_v11"
+    assert m["production_default"] == "v13_multilayer_dynamic_system"
     assert m["recommended_final_csv"] == _BEST
-    assert m["current_best"]["public_score"] == 78.4
+    assert m["current_best"]["public_score"] == 79.7
     assert m["current_best"]["md5"] == _md5(_ROOT / _BEST)        # manifest md5 matches the file
-    assert m["previous_best"]["architecture"] == "v10"
-    assert m["current_best"]["public_score"] > m["previous_best"]["public_score"]
+    assert m["previous_best_v12b"]["architecture"] == "v12b_option_permutation_debiaser"
+    # current best beats the previous V12B best (79.7 > 78.83)
+    assert m["current_best"]["public_score"] > m["previous_best_v12b"]["public_score"]
 
 
 # --- final_infer frozen_csv --------------------------------------------------
@@ -83,7 +86,8 @@ def test_refuses_protected_output_names():
 def test_pred_csv_allowed_without_flag():
     mod = _load("final_infer.py")
     d = tempfile.mkdtemp(); out = f"{d}/pred.csv"         # basename pred.csv, no --allow-pred-csv
-    rc = mod.main(["--input", _INPUT, "--output", out])
+    # public_replay reproduces the frozen best exactly; pred.csv basename needs no special flag.
+    rc = mod.main(["--input", _INPUT, "--output", out, "--mode", "public_replay"])
     assert rc == 0 and Path(out).exists() and _md5(out) == _md5(_ROOT / _BEST)
 
 
@@ -167,11 +171,11 @@ def test_dockerignore_excludes_secrets_and_scratch():
 
 
 def test_docker_default_not_v10():
-    # default entrypoint must use the v11 frozen entrypoint, not the v10 production pipeline
+    # default entrypoint runs the dynamic system, not the v10 production pipeline
     dockerfile = (_ROOT / "Dockerfile").read_text()
     assert "docker_entrypoint_v11.sh" in dockerfile
     entry = (_ROOT / "scripts" / "docker_entrypoint_v11.sh").read_text()
-    assert "frozen_csv" in entry and "run_production_pipeline.py --input" not in entry
+    assert "dynamic_full" in entry and "run_production_pipeline.py --input" not in entry
 
 
 def test_no_qid_hardcoding():

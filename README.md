@@ -50,9 +50,16 @@ FASTMCQ-AGENT/
 
 ## Final submission (production default)
 
-The current best, frozen submission is the **independent v11** system
-(`outputs/pred_v11_independent_rerun1.csv`, public score **78.4**). The default final
-command is offline, needs **no API key**, validates automatically, and prints elapsed time:
+The official system is a **dynamic full pipeline** (`--mode dynamic_full`, the default) that
+runs over any input — public, private, unseen, or larger sets — and outputs predictions for
+exactly the input qids: dynamic base predictor → official **V12B** option-permutation debiaser →
+official **V13** multi-layer reasoning (programmatic / content-first / least-to-most) → unified
+selector. **Both V12B and V13 are enabled by default.** The frozen public artifact
+`outputs/pred_v13_multilayer_candidate_api30_from_v12b.csv` (public **79.7**; +0.87 over V12B
+78.83, +1.30 over v11 78.40) is the current public-best CSV for **leaderboard reproducibility
+only** (`--mode public_replay`), not the universal private solution. The default command is
+API-free, validates automatically, and prints the resolved mode + V12B/V13 targets/overrides +
+elapsed time:
 
 ```bash
 python scripts/final_infer.py --input public-test_1780368312.json --output pred.csv

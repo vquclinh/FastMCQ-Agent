@@ -1,12 +1,38 @@
-# FINAL RUN — FASTMCQ (Independent V11, frozen)
+# FINAL RUN — FASTMCQ (dynamic system; V12B + V13 official layers)
 
-## The command (explicit)
+> **The official system is a DYNAMIC full pipeline that runs over any input** (public, private,
+> unseen, larger sets) and outputs predictions for exactly the input qids:
+> dynamic base predictor → **V12B** option-permutation debiaser → **V13** multi-layer
+> (programmatic / content-first / least-to-most) → unified selector. The frozen public CSV
+> (`pred_v13_multilayer_candidate_api30_from_v12b.csv`, public **79.7**) is the current
+> public-best **artifact** for leaderboard reproducibility — it is **not** the universal
+> private solution.
+
+## Modes
+
+- `dynamic_full` (**default**) — the real production/BTC system. Runs the dynamic base predictor
+  + official **V12B** and **V13** layers over the given input. Works for any qids. API-free by
+  default (`--no-api`); add `--execute-api` to call the allowed model.
+- `public_replay` — reproducibility only. Copies the frozen **V13 79.7** CSV, **but only if the
+  input qid set exactly matches** the public artifact; fails clearly otherwise.
+- `auto` — resolves to `public_replay` only with `--allow-public-replay` **and** an exact public
+  qid match; otherwise `dynamic_full`. Never replays public answers onto unseen qids.
+
+## The command (default = dynamic_full, API-free)
 
 ```bash
-python scripts/final_infer.py --input public-test_1780368312.json --output pred.csv
+python scripts/final_infer.py --input <test>.json --output pred.csv
 ```
 
-That's it. No `--mode`, no `--allow-pred-csv`, **no API key**.
+No `--mode` needed. Runs the dynamic pipeline (V12B + V13 enabled by default); **no API key**
+required (deterministic parts run; model-dependent layers reported skipped). Add `--execute-api`
+for the full layers (see below).
+
+## Reproduce the public 79.7 artifact (leaderboard only)
+
+```bash
+python scripts/final_infer.py --input public-test_1780368312.json --output pred.csv --mode public_replay
+```
 
 ## No-argument command (BTC style)
 
@@ -27,25 +53,61 @@ no choices, answers are validated against the global label space `A–K`.
 
 ## What it does
 
-- **Default = frozen winning independent v11** (`outputs/pred_v11_independent_rerun1.csv`,
-  public score **78.4**).
-- Copies that frozen CSV to your `--output` (including `pred.csv`) — offline, deterministic.
-- **No API key needed**; no inference; v10 is never used.
+- **Default = `dynamic_full`** — runs the real pipeline (dynamic base → V12B → V13 → unified
+  selector) over your input and writes predictions for **exactly the input qids**. Works on
+  arbitrary/private/unseen test sets.
+- **No API key needed** by default: deterministic parts run (incl. the V13 programmatic
+  arithmetic path); model-dependent V12B/V13 layers are reported `skipped_no_api`. Add
+  `--execute-api --model qwen/qwen3.5-9b-20260310 --budget-usd <N>` for the full layers.
 - **Validates** the output automatically (columns, all qids present, no duplicates, valid
-  labels, row count == dataset).
-- **Prints elapsed time automatically** — every run ends with:
+  labels, row count == input).
+- The current public-best artifact is **V13 79.7**
+  (`outputs/pred_v13_multilayer_candidate_api30_from_v12b.csv`); reproduce it with
+  `--mode public_replay` on the public test.
+- **Prints the resolved mode, V12B/V13 targets+overrides, and elapsed time** — every run ends with:
 
 ```text
 ============================================================
 FINAL INFER COMPLETE
-mode: frozen_csv
-source: outputs/pred_v11_independent_rerun1.csv
+mode: dynamic_full
+source: src.fastmcq_system
 output: pred.csv
-questions: 463
-md5: 69f4e7c990e8c612e7bee53084d13b4d
+questions: <N input qids>
+md5: <md5 of this run's output>
 elapsed_seconds: <float>
 status: PASS
 ============================================================
+```
+
+### Official architecture layers (both enabled by default)
+
+The dynamic system combines two official layers via a unified conservative selector
+(`src/system_candidate_selector.py`):
+- **V12B** option-permutation debiaser (`src/v12b_dynamic_layer.py`) — promoted at 78.83.
+- **V13** multi-layer reasoning (`src/v13_dynamic_layer.py`): **programmatic solver**,
+  **content-first normalizer**, **least-to-most constraint table** — promoted at **79.7**.
+
+Both are **enabled by default** in `dynamic_full`. Without API, model-dependent layers report
+`skipped_no_api`, but the **deterministic V13 programmatic arithmetic path still runs** (e.g.
+"2 + 2" → option with value 4, offline). Legacy `scripts/*_v13_multilayer_*.py` remain offline
+experimental wrappers; the preferred path is `final_infer.py --mode dynamic_full`.
+
+## Recommended private/BTC command WITH API (full V12B + V13 system)
+
+```bash
+python scripts/final_infer.py \
+  --input private_test.json --output pred.csv \
+  --mode dynamic_full --execute-api \
+  --model qwen/qwen3.5-9b-20260310 --budget-usd 5.00 \
+  --enable-v12b --v12b-max-qids 200 --v12b-permutations 6 --v12b-policy conservative \
+  --enable-v13 --v13-max-qids 200 --system-policy conservative --max-overrides 50 \
+  --work-dir scratch/private_dynamic_full_v13 --resume
+```
+
+## Safe API-free private command
+
+```bash
+python scripts/final_infer.py --input private_test.json --output pred.csv --mode dynamic_full --no-api
 ```
 
 ## Other modes (explicit only)
@@ -63,8 +125,11 @@ status: PASS
 ## Protections
 
 `final_infer.py` refuses to overwrite the frozen/locked artifacts
-`outputs/pred_v11_independent_rerun1.csv`, `outputs/pred_v10_full_production_user_run.csv`,
-and `outputs/pred_v8_clean_generalized_from_v7.csv`. Writing `pred.csv` is allowed — that is
+`outputs/pred_v13_multilayer_candidate_api30_from_v12b.csv` (current best, 79.7),
+`outputs/pred_v12b_permutation_candidate_api30.csv` (previous best, 78.83),
+`outputs/pred_v11_independent_rerun1.csv`,
+`outputs/pred_v10_full_production_user_run.csv`, and
+`outputs/pred_v8_clean_generalized_from_v7.csv`. Writing `pred.csv` is allowed — that is
 the intended final export.
 
 ## Validate separately (optional)

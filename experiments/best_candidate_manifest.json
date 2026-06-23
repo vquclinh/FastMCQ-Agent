@@ -1,28 +1,47 @@
 {
-  "production_default": "independent_v11",
-  "recommended_final_csv": "outputs/pred_v11_independent_rerun1.csv",
+  "production_default": "v13_multilayer_dynamic_system",
+  "production_system": "dynamic_full (src/fastmcq_system.py): dynamic base predictor -> official V12B option-permutation debiaser layer -> official V13 multi-layer stack (programmatic_solver / content_first / least_to_most) -> unified src/system_candidate_selector.py. Runs over ANY input and outputs predictions for exactly the input qids. public_replay reproduces the frozen public CSV ONLY when input qids match the public set.",
+  "recommended_final_csv": "outputs/pred_v13_multilayer_candidate_api30_from_v12b.csv",
+  "public_best_artifact_is_universal": false,
+  "production_config": "configs/production_v13_multilayer_7970.json",
   "current_best": {
+    "name": "v13_multilayer_candidate_api30_from_v12b",
+    "file": "outputs/pred_v13_multilayer_candidate_api30_from_v12b.csv",
+    "public_score": 79.7,
+    "architecture": "v13_multilayer_dynamic_system",
+    "do_not_overwrite": true,
+    "md5": "cb02fef569b31e7fb544abab46c0e282",
+    "rows": 463,
+    "generated_by": "scripts/run_v13_multilayer_verifier.py (--execute, from V12B base) + scripts/build_v13_multilayer_candidate.py",
+    "changed_vs_v12b": 9,
+    "changed_qids": {"test_0034": "A->B", "test_0082": "B->D", "test_0103": "E->A",
+                     "test_0123": "B->F", "test_0155": "F->A", "test_0251": "I->H",
+                     "test_0269": "A->I", "test_0388": "A->C", "test_0420": "B->A"},
+    "notes": "V13 multilayer over V12B base; +0.87 public vs V12B (78.83 -> 79.7); programmatic/content-first/least-to-most combined by the unified conservative selector"
+  },
+  "previous_best_v12b": {
+    "name": "v12b_permutation_candidate_api30",
+    "file": "outputs/pred_v12b_permutation_candidate_api30.csv",
+    "public_score": 78.83, "architecture": "v12b_option_permutation_debiaser",
+    "do_not_overwrite": true, "md5": "075646adb4ec7d2db1b234186b091f70", "rows": 463,
+    "notes": "previous best; option-permutation debiaser over v11"
+  },
+  "previous_baseline_v11": {
     "name": "v11_independent_rerun1",
     "file": "outputs/pred_v11_independent_rerun1.csv",
-    "public_score": 78.4,
-    "architecture": "independent_v11",
-    "do_not_overwrite": true,
-    "md5": "69f4e7c990e8c612e7bee53084d13b4d",
-    "rows": 463,
-    "generated_by": "scripts/run_full_v11_independent_submission.py + scripts/repair_v11_independent_run.py",
-    "notes": "true independent v11 (no v10 base); 9 null-answer qids repaired in 2L.30C; beats v10 baseline"
+    "public_score": 78.40, "architecture": "independent_v11",
+    "do_not_overwrite": true, "md5": "69f4e7c990e8c612e7bee53084d13b4d", "rows": 463,
+    "notes": "true independent v11 (no v10 base)"
   },
-  "previous_best": {
+  "fallback_v10": {
     "name": "v10_full_production",
     "file": "outputs/pred_v10_full_production_user_run.csv",
-    "public_score": 77.75,
-    "architecture": "v10",
-    "do_not_overwrite": true,
-    "md5": "c12e32fdf16ee5472e6a791c1e52e86a",
-    "rows": 463,
-    "generated_by": "scripts/run_production_pipeline.py",
-    "preset": "competition_qwen35_9b",
-    "notes": "fallback only; full graph-path production run + safe deterministic overrides"
+    "public_score": 77.75, "architecture": "v10",
+    "do_not_overwrite": true, "md5": "c12e32fdf16ee5472e6a791c1e52e86a", "rows": 463,
+    "notes": "fallback only; never used as a base"
   },
+  "official_layers": ["v12b_option_permutation_debiaser", "v13_programmatic_solver",
+                      "v13_content_first", "v13_least_to_most", "system_candidate_selector"],
+  "score_progression": {"v11": 78.40, "v12b": 78.83, "v13": 79.7},
   "timestamp": "2026-06-23T00:00:00Z"
 }

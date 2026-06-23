@@ -1,5 +1,7 @@
 {
   "architecture": "independent_v11",
+  "status": "SUPERSEDED — historical v11 config (public 78.40). Current production best is V12B 78.83 (configs/production_v12b_permutation_7883.json).",
+  "superseded_by": "configs/production_v12b_permutation_7883.json",
   "current_best_csv": "outputs/pred_v11_independent_rerun1.csv",
   "baseline_v10_csv": "outputs/pred_v10_full_production_user_run.csv",
   "default_mode": "frozen_csv",
