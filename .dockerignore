@@ -17,6 +17,13 @@ env/
 # Harness mount points (provided at runtime, not baked in)
 data/
 output/
+# Local Docker smoke / pull-test scratch dirs (never part of the build context)
+docker_output/
+docker_smoke_data/
+docker_smoke_output/
+docker_smoke_output_api/
+docker_pull_output_no_key/
+docker_pull_output_api/
 # VCS / CI / editor
 .git/
 .gitignore

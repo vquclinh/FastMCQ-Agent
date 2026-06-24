@@ -45,6 +45,40 @@ reproduce the public 79.7 artifact exactly add `--mode public_replay`. See `FINA
 docker build -t fastmcq-final .
 ```
 
+## Safe image (Docker Hub: `vquclinh/fastmcq-agent:no-key`)
+
+The committed repo ships **one** Docker build — the normal safe image (`Dockerfile`). It contains
+**no API key**. Build and run:
+
+```bash
+docker build -t vquclinh/fastmcq-agent:no-key .
+
+docker run --rm \
+  -v "$PWD/data:/data:ro" \
+  -v "$PWD/output:/output" \
+  vquclinh/fastmcq-agent:no-key
+```
+
+With no `OPENROUTER_API_KEY` in the env it runs the offline `production_full_system_noapi`
+profile (still writes `/output/pred.csv`). To enable the API production profile, supply the key
+**at run time** (the key never enters the image or the repo):
+
+```bash
+docker run --rm \
+  -e OPENROUTER_API_KEY="$OPENROUTER_API_KEY" \
+  -v "$PWD/data:/data:ro" \
+  -v "$PWD/output:/output" \
+  vquclinh/fastmcq-agent:no-key
+```
+
+The entrypoint selects `production_full_system` when `OPENROUTER_API_KEY` is present, else
+`production_full_system_noapi`. **Prefer this image** — runtime env injection exposes no secret.
+
+> An *optional* secret-bearing `:api-baked` image (key baked at build time) can be built
+> **locally** for convenience, but it is intentionally **not part of this GitHub repo** (its
+> Dockerfile is git-ignored as local-only) and must never receive a real key in any committed
+> file. Build only a disposable/limited-credit key into it and never publish it.
+
 ## Input / output priority (BTC contract)
 
 The entrypoint and `final_infer.py` resolve I/O in this **exact** order:

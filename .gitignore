@@ -16,6 +16,11 @@ env/
 .env.*
 !.env.example
 
+# Optional API-baked Docker variant — LOCAL-ONLY (secret-bearing image; never committed).
+# Build it locally with `--build-arg OPENROUTER_API_KEY=...`; GitHub keeps only the safe Dockerfile.
+Dockerfile.api
+Dockerfile.api.local
+
 # Local model weights / HF cache / temp (kept outside git; ignore if placed here)
 models/
 .hf-cache/
