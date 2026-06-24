@@ -51,6 +51,10 @@ class FastMCQSystemConfig:
     v12b_max_qids: int | None = None
     v12b_permutations: int = 6
     v13_max_qids: int | None = None
+    # Raw flag spec ('auto' / 'all' / an int string) the resolved cap came from — used only to
+    # format the [FASTMCQ] log (e.g. 'auto(250/2000)' vs 'all(2000)' vs '50'). None -> infer.
+    v12b_max_qids_source: str | None = None
+    v13_max_qids_source: str | None = None
     system_policy: str = "conservative"
     max_overrides: int | None = None
     profile: str | None = None
@@ -88,6 +92,18 @@ def _md5(path):
     return hashlib.md5(Path(path).read_bytes()).hexdigest()
 
 
+def _fmt_cap(resolved, source, n):
+    """Render a max-qids cap for the [FASTMCQ] log.
+    'auto' -> 'auto(<cap>/<N>)' (cap = resolved int, or N if unbounded); None -> 'all(<N>)';
+    an int -> the int as-is."""
+    if (source or "").strip().lower() == "auto":
+        cap = resolved if resolved is not None else n
+        return f"auto({cap}/{n})"
+    if resolved is None:
+        return f"all({n})"
+    return str(resolved)
+
+
 def _label_valid(answer, sample):
     choices = sample.get("choices") or []
     if not choices:
@@ -109,9 +125,10 @@ def run_fastmcq_system(samples, output_csv, config: FastMCQSystemConfig) -> Fast
     wd = config.work_dir
     # Base API use is independent of layer API use. None inherits execute_api.
     base_api = config.execute_api if config.base_execute_api is None else config.base_execute_api
-    # max-qids: None means "all input qids" (never a hardcoded size).
-    v12b_cap = config.v12b_max_qids if config.v12b_max_qids is not None else f"all({len(samples)})"
-    v13_cap = config.v13_max_qids if config.v13_max_qids is not None else f"all({len(samples)})"
+    # max-qids display: 'auto' -> auto(<cap>/<N>); None -> all(<N>); an int -> the int.
+    # (Never a hardcoded size — 'auto' caps derive from the input count: ceil(N/8), min 1.)
+    v12b_cap = _fmt_cap(config.v12b_max_qids, config.v12b_max_qids_source, len(samples))
+    v13_cap = _fmt_cap(config.v13_max_qids, config.v13_max_qids_source, len(samples))
     _log(f"[FASTMCQ] input_count={len(samples)} output={output_csv} work_dir={wd} "
          f"mode={config.mode} profile={config.profile or '-'} "
          f"base_execute_api={base_api} layer_execute_api={config.execute_api} "

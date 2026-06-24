@@ -51,7 +51,7 @@ def test_runs_with_no_input_no_output(monkeypatch):
     monkeypatch.chdir(d)
     rc = mod.main([])                       # no --input, no --output
     assert rc == 0
-    out = Path(d) / "pred.csv"
+    out = Path(d) / "output" / "pred.csv"   # local default (2L.44D): output/pred.csv
     assert out.exists()
     n_input = len(json.loads(Path(_INPUT).read_text()))
     assert len(out.read_text().splitlines()) - 1 == n_input   # one row per input qid
@@ -63,7 +63,7 @@ def test_no_arg_csv_input_autodetected(monkeypatch):
     _qid_csv(Path(d) / "doc_public_test.csv")
     monkeypatch.chdir(d)
     rc = mod.main([])
-    out = Path(d) / "pred.csv"
+    out = Path(d) / "output" / "pred.csv"   # local default (2L.44D): output/pred.csv
     n_input = len(json.loads(Path(_INPUT).read_text()))
     assert rc == 0 and out.exists() and len(out.read_text().splitlines()) - 1 == n_input
 
@@ -140,16 +140,17 @@ def test_input_explicit_and_env(monkeypatch):
 
 def test_output_defaults(monkeypatch):
     mod = _fi()
+    monkeypatch.delenv("OUTPUT_FILE", raising=False)
     monkeypatch.delenv("FASTMCQ_OUTPUT", raising=False)
     assert mod._resolve_output("o.csv") == "o.csv"              # explicit
     monkeypatch.setenv("FASTMCQ_OUTPUT", "envout.csv")
-    assert mod._resolve_output(None) == "envout.csv"           # env
+    assert mod._resolve_output(None) == "envout.csv"           # env (legacy alias)
     monkeypatch.delenv("FASTMCQ_OUTPUT", raising=False)
     monkeypatch.setattr(mod, "_can_create", lambda p: True)    # pretend /output is creatable
-    assert mod._resolve_output(None) == "/output/pred.csv"
-    monkeypatch.setattr(mod, "_can_create", lambda p: False)   # not creatable -> local
+    assert mod._resolve_output(None) == "/output/pred.csv"     # Docker default
+    monkeypatch.setattr(mod, "_can_create", lambda p: False)   # not creatable -> local default
     d = tempfile.mkdtemp(); monkeypatch.chdir(d)
-    assert mod._resolve_output(None) == "pred.csv"
+    assert mod._resolve_output(None) == "output/pred.csv"
 
 
 # --- CSV / global-label validation ------------------------------------------

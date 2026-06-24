@@ -3,18 +3,25 @@
 #   arbitrary test set -> base predictor -> V12B -> V13 -> selector -> output/pred.csv
 #
 # Usage:
-#   bash scripts/run_full_system.sh <test_json_or_csv> [extra final_infer flags...]
+#   bash scripts/run_full_system.sh [<test_json_or_csv>] [extra final_infer flags...]
 #   bash scripts/run_full_system.sh <test_file> --no-api            # fully offline
 #   bash scripts/run_full_system.sh <test_file> --fail-on-quality-guard
 #
-# Profile: production_full_system (dynamic_full; V12B+V13+selector; API needs OPENROUTER_API_KEY).
-# Pass --no-api to force the offline production_full_system_noapi behavior.
+# Input priority  : <test_file> (CLI) > $INPUT_FILE > /data/private_test.csv > /data/public_test.csv
+#                   > /data/private_test.json > /data/public_test.json   (resolved by final_infer.py;
+#                   the positional <test_file> is OPTIONAL — omit it to use $INPUT_FILE / the /data
+#                   defaults).
+# Profile         : OPENROUTER_API_KEY present -> production_full_system (API; dynamic_full;
+#                   V12B+V13+selector); absent -> production_full_system_noapi (offline). Pass
+#                   --no-api to force offline regardless of the key.
 # Final local artifact: output/pred.csv (override dir with FASTMCQ_FINAL_DIR). Timestamped run
 # logs/records stay under scratch/runs/full_system_<ts>/ but are NOT the official artifact.
 set -euo pipefail
 
-INPUT="${1:?usage: bash scripts/run_full_system.sh <test_file> [extra flags...]}"
-shift || true
+# Optional positional input (CLI input wins over everything). If the first arg is a flag or
+# omitted, final_infer.py resolves the input via $INPUT_FILE -> /data defaults (BTC priority).
+INPUT=""
+if [ "${1:-}" ] && [ "${1#-}" = "$1" ]; then INPUT="$1"; shift; fi
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PY="$ROOT/.venv/bin/python"; [ -x "$PY" ] || PY="python"
@@ -34,14 +41,23 @@ for a in "$@"; do
     *) PASS_ARGS+=("$a") ;;
   esac
 done
-PROFILE="production_full_system"
+# Default profile by API-key presence (no secret is baked in); --no-api always forces offline.
+if [ -n "${OPENROUTER_API_KEY:-}" ]; then
+  PROFILE="production_full_system"
+else
+  PROFILE="production_full_system_noapi"
+fi
 [ "$NOAPI" -eq 1 ] && PROFILE="production_full_system_noapi"
+
+# Pass --input only when a CLI input was given; otherwise final_infer resolves it (BTC priority).
+FI_INPUT_ARGS=()
+[ -n "$INPUT" ] && FI_INPUT_ARGS=(--input "$INPUT")
 
 START=$(date +%s)
 set +e
 "$PY" "$ROOT/scripts/final_infer.py" \
   --profile "$PROFILE" \
-  --input "$INPUT" --output "$RUN_OUT" \
+  "${FI_INPUT_ARGS[@]}" --output "$RUN_OUT" \
   --work-dir "$RUN_DIR/work" --resume "${PASS_ARGS[@]}" 2>&1 | tee "$RUN_DIR/run.log"
 rc=${PIPESTATUS[0]}
 set -e

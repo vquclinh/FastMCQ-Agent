@@ -21,9 +21,17 @@ answer label (`A`, `B`, `C`, ...) per question and writes a submission CSV.
 | **Columns** | `qid,answer` |
 | **Labels** | `A, B, C, ...` — sized to each question's number of choices (the public test has 2–11 choices, so labels are **not** hard-coded to A–D). |
 
-Input auto-detection priority inside `/data`:
-`private_test.csv` → `private-test.json` → `public_test.csv` → `public-test.json`
-→ any other `.csv`/`.json` file (sorted). Override with `--input`.
+Input/output priority (exact BTC contract, Phase 2L.44D), resolved by `final_infer.py`:
+
+- **Input:** `--input` (CLI) → `$INPUT_FILE` → `/data/private_test.csv` → `/data/public_test.csv`
+  → `/data/private_test.json` → `/data/public_test.json` → other known names → a lone `/data`
+  file. An explicit `--input`/`$INPUT_FILE` always overrides the `/data/*` defaults.
+- **Output:** `--output` (CLI) → `$OUTPUT_FILE` → `/output/pred.csv` (Docker) → `output/pred.csv`
+  (local).
+
+Override input/output in Docker without changing the command via
+`-e INPUT_FILE=/data/custom.csv -e OUTPUT_FILE=/output/custom.csv`. If no input is found the run
+fails early with a clear message. (`$FASTMCQ_INPUT`/`$FASTMCQ_OUTPUT` remain as legacy aliases.)
 
 ## Project layout
 

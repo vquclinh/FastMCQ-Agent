@@ -1,44 +1,46 @@
 #!/usr/bin/env bash
-# Docker entrypoint (Phase 2L.42A): runs the real DYNAMIC FASTMCQ system over the mounted input
-# and writes the final prediction to /output/pred.csv.
+# Docker entrypoint (Phase 2L.44D): runs the real DYNAMIC FASTMCQ system (dynamic_full:
+# base predictor -> V12B -> V13 -> selector) over the mounted input and writes the final
+# prediction following the EXACT BTC input/output priority contract.
 #
-# BTC I/O contract:
-#   * reads /data/private_test.csv if present, else /data/public_test.csv, else other /data files
-#     (CSV or JSON; auto-detected by final_infer.py). Override with INPUT_FILE=/data/<file>.
-#   * writes /output/pred.csv (columns qid,answer). Override with OUTPUT_FILE=/output/<file>.
+# INPUT priority  : --input (CLI) > $INPUT_FILE > /data/private_test.csv > /data/public_test.csv
+#                   > /data/private_test.json > /data/public_test.json
+# OUTPUT priority : --output (CLI) > $OUTPUT_FILE > /output/pred.csv (Docker) > output/pred.csv (local)
+#   (final_infer.py applies this priority itself; the entrypoint only chooses the profile.)
 #
-# No API key required by default (dynamic base + V12B/V13 deterministic parts; model-dependent
-# layers are skipped_no_api). Add --execute-api --model ... --budget-usd ... for the full layers.
-# Any extra args are forwarded to final_infer.py. Override entrypoint with `--entrypoint bash`.
+# API key         : OPENROUTER_API_KEY present -> API production profile; absent -> offline
+#                   no-api fallback (still writes pred.csv). NO key is baked into the image;
+#                   the evaluator supplies OPENROUTER_API_KEY via the container env when desired.
+#
+# Any extra args are forwarded verbatim to final_infer.py (override entrypoint via `--entrypoint bash`).
 set -euo pipefail
 
 OUT_DIR="${OUT_DIR:-/output}"
 mkdir -p "$OUT_DIR" 2>/dev/null || true
 
-# Optional explicit BTC overrides via env (final_infer also auto-detects when these are unset).
-INPUT_FILE="${INPUT_FILE:-}"
-OUTPUT_FILE="${OUTPUT_FILE:-$OUT_DIR/pred.csv}"
-
-echo "============================================================"
-echo "[entrypoint] FASTMCQ FINAL — dynamic_full (real system, API-free default)"
-echo "[entrypoint] start : $(date -u '+%Y-%m-%dT%H:%M:%SZ')"
-echo "[entrypoint] INPUT_FILE=${INPUT_FILE:-<auto-detect /data>} OUTPUT_FILE=$OUTPUT_FILE"
-echo "[entrypoint] args  : ${*:-<none>}"
-echo "============================================================"
-
-CFG="configs/production/default.json"
-if [ "$#" -eq 0 ]; then
-  # No-arg BTC default: explicit OUTPUT_FILE; INPUT_FILE if provided, else auto-detect /data.
-  if [ -n "$INPUT_FILE" ]; then
-    python scripts/final_infer.py --config "$CFG" --input "$INPUT_FILE" --output "$OUTPUT_FILE"
-  else
-    python scripts/final_infer.py --config "$CFG" --output "$OUTPUT_FILE"
-  fi
+# Choose the production profile by API-key presence (no secret is ever baked into the image).
+if [ -n "${OPENROUTER_API_KEY:-}" ]; then
+  PROFILE="production_full_system"        # dynamic_full + V12B + V13, API on
+  API_STATE="on (OPENROUTER_API_KEY present)"
 else
-  # Forward user args verbatim (e.g. --mode public_replay, --execute-api ...).
-  python scripts/final_infer.py "$@"
+  PROFILE="production_full_system_noapi"  # offline fallback; still writes pred.csv
+  API_STATE="off (no OPENROUTER_API_KEY -> no-api fallback)"
 fi
 
 echo "============================================================"
-echo "[entrypoint] end   : $(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+echo "[entrypoint] FASTMCQ FINAL — dynamic_full (real system)"
+echo "[entrypoint] start  : $(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+echo "[entrypoint] profile: $PROFILE"
+echo "[entrypoint] api    : $API_STATE"
+echo "[entrypoint] input  : ${INPUT_FILE:-<auto: --input > INPUT_FILE > /data/private_test.csv > /data/public_test.csv > .json>}"
+echo "[entrypoint] output : ${OUTPUT_FILE:-<auto: --output > OUTPUT_FILE > /output/pred.csv>}"
+echo "[entrypoint] args   : ${*:-<none>}"
+echo "============================================================"
+
+# final_infer.py enforces the exact I/O priority (reads $INPUT_FILE/$OUTPUT_FILE and the
+# /data defaults). Any CLI flags after --profile override both the profile and env/defaults.
+python scripts/final_infer.py --profile "$PROFILE" "$@"
+
+echo "============================================================"
+echo "[entrypoint] end    : $(date -u '+%Y-%m-%dT%H:%M:%SZ')"
 echo "============================================================"

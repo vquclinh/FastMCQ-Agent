@@ -45,28 +45,77 @@ reproduce the public 79.7 artifact exactly add `--mode public_replay`. See `FINA
 docker build -t fastmcq-final .
 ```
 
+## Input / output priority (BTC contract)
+
+The entrypoint and `final_infer.py` resolve I/O in this **exact** order:
+
+**Input**
+1. `--input <path>` (CLI argument) — wins over everything
+2. `$INPUT_FILE` env var (if set and non-empty)
+3. `/data/private_test.csv`
+4. `/data/public_test.csv`
+5. `/data/private_test.json`
+6. `/data/public_test.json`
+
+**Output**
+1. `--output <path>` (CLI argument)
+2. `$OUTPUT_FILE` env var (if set and non-empty)
+3. Docker default: `/output/pred.csv`
+4. Local default: `output/pred.csv`
+
+An explicitly provided input (CLI `--input` **or** `$INPUT_FILE`) always overrides the
+`/data/*` defaults, even when `/data/private_test.csv` exists.
+
+**API key:** if `OPENROUTER_API_KEY` is present in the container env the entrypoint uses the
+API production profile (`production_full_system`); if missing it falls back to no-api
+(`production_full_system_noapi`) and still writes `pred.csv`. **No key is baked into the image.**
+
+**Layer budget (default):** when no `--v12b-max-qids`/`--v13-max-qids` flags are passed, the
+V12B/V13 caps default to `auto = ceil(input_count / 8)` (minimum 1) — e.g. 3 → 1, 463 → 58,
+2000 → 250. Logs show the resolved value as `auto(<cap>/<N>)`. Pass an integer to cap explicitly
+(`--v12b-max-qids 50`) or `all` to process every input qid.
+
 ## Run — default, no arguments (BTC)
 
-The harness mounts the dataset into `/data` and reads `/output`. **No flags, no API key.**
-The container auto-detects the input (`/data/private_test.csv|json`, `/data/doc_public_test.csv`,
-then `/data/public-test*.json`) and runs the **dynamic_full** system, writing `/output/pred.csv`
-for exactly the input qids:
+The harness mounts the dataset into `/data` and reads `/output`. **No flags needed.**
+The container resolves the input by the priority above (defaulting to `/data/private_test.csv`,
+else `/data/public_test.csv`, else the `.json` equivalents) and runs the **dynamic_full** system,
+writing `/output/pred.csv` for exactly the input qids:
 
 ```bash
-docker run --rm -v "$PWD/data:/data" -v "$PWD/output:/output" fastmcq-final
-# -> resolved mode: dynamic_full (API-free by default); /output/pred.csv has one row per input qid;
+docker run --rm \
+  -v "$PWD/data:/data:ro" \
+  -v "$PWD/output:/output" \
+  <dockerhub_username>/fastmcq-final:latest
+# (locally built image: use `fastmcq-final` in place of <dockerhub_username>/fastmcq-final:latest)
+# -> resolved mode: dynamic_full; /output/pred.csv has one row per input qid;
 #    prints resolved mode + V12B/V13 targets/overrides + elapsed_seconds + status: PASS; validated.
 ```
 
+### Advanced — override input/output via env
+
+Point the run at a custom input and/or output without changing the command shape:
+
+```bash
+docker run --rm \
+  -e INPUT_FILE=/data/custom_test.csv \
+  -e OUTPUT_FILE=/output/custom_pred.csv \
+  -v "$PWD/data:/data:ro" \
+  -v "$PWD/output:/output" \
+  <dockerhub_username>/fastmcq-final:latest
+```
+
+If the runner passes a CLI input path instead (`docker run ... <image> --input /data/custom.csv`),
+that path overrides all default `/data/*` paths and `$INPUT_FILE`.
+
 This is the **real system** (works on private/unseen qids), not a public-frozen replay. **V12B
-and V13 are both official layers, enabled by default.** To call the model for the full layers,
-pass `--execute-api --model qwen/qwen3.5-9b-20260310 --budget-usd <N>` (requires
-`OPENROUTER_API_KEY`); without API the deterministic parts run and model-dependent layers are
+and V13 are both official layers, enabled by default.** With `OPENROUTER_API_KEY` set the full
+model layers run; without it the deterministic parts run and model-dependent layers are
 `skipped_no_api`. To reproduce the public **79.7** artifact exactly, pass `--mode public_replay`
 (only valid when input qids match the public set).
 
-Any args passed to `docker run ... fastmcq-final <args>` are forwarded to `final_infer.py`
-(e.g. `... fastmcq-final --mode v10`). To run an arbitrary command, override the entrypoint
+Any args passed to `docker run ... <image> <args>` are forwarded to `final_infer.py`
+(e.g. `... <image> --mode v10`). To run an arbitrary command, override the entrypoint
 with `--entrypoint bash`.
 
 ## Run — explicit source CSV (still frozen_csv, offline)

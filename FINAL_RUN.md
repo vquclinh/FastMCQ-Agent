@@ -86,12 +86,23 @@ python scripts/final_infer.py --input public-test_1780368312.json --output pred.
 python scripts/final_infer.py
 ```
 
-Resolution order — **input**: `--input` → `$FASTMCQ_INPUT` →
-`/data/doc_public_test.csv` → `/data/private_test.csv` → `/data/public-test*.json` →
-the same names in the current directory → a lone `.csv`/`.json` in `/data`. **output**:
-`--output` → `$FASTMCQ_OUTPUT` → `/output/pred.csv` (if `/output` exists/creatable) →
-`./pred.csv`. A qid-only CSV (BTC `doc_public_test.csv`) is supported; when the input has
-no choices, answers are validated against the global label space `A–K`.
+Resolution order (exact BTC contract, Phase 2L.44D) — **input**: `--input` (CLI) →
+`$INPUT_FILE` (then legacy `$FASTMCQ_INPUT`) → `/data/private_test.csv` →
+`/data/public_test.csv` → `/data/private_test.json` → `/data/public_test.json` → other known
+names in the current directory → a lone `.csv`/`.json` in `/data`. An explicit input (CLI
+`--input` or `$INPUT_FILE`) always wins over the `/data/*` defaults, even when
+`/data/private_test.csv` exists. **output**: `--output` (CLI) → `$OUTPUT_FILE` (then legacy
+`$FASTMCQ_OUTPUT`) → `/output/pred.csv` (Docker default, when `/output` exists/creatable) →
+`output/pred.csv` (local default). If no input is found the run fails early with a clear message
+listing the expected defaults and the `--input`/`$INPUT_FILE` overrides. A qid-only CSV (BTC
+`doc_public_test.csv`) is supported; when the input has no choices, answers are validated
+against the global label space `A–K`.
+
+**Layer budget (default):** without explicit `--v12b-max-qids`/`--v13-max-qids` flags, the
+V12B/V13 caps default to `auto = ceil(input_count / 8)` (minimum 1) — e.g. 3 → 1, 463 → 58,
+2000 → 250 — shown in logs as `auto(<cap>/<N>)`. This is the production default used by
+`run_full_system.sh` and the Docker entrypoint. Pass an integer to cap explicitly, or `all` to
+process every input qid.
 
 ## What it does
 

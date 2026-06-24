@@ -17,6 +17,7 @@ import argparse
 import hashlib
 import importlib.util
 import json
+import math
 import os
 import shutil
 import sys
@@ -41,14 +42,19 @@ _PROTECTED_NAMES = {"pred_v13_multilayer_candidate_api30_from_v12b.csv",
 # test has 2–11 choices (labels A–K), so the frozen winner legitimately uses up to 'K';
 # validating against A–H would wrongly reject valid 'I'/'J'/'K' answers.
 _GLOBAL_LABELS = set("ABCDEFGHIJK")
-# Input autodetect order (BTC: doc_public_test.csv / private_test.csv under /data first).
+# Input autodetect order — the exact BTC /data fallback contract (Phase 2L.44D):
+#   /data/private_test.csv -> /data/public_test.csv -> /data/private_test.json
+#   -> /data/public_test.json, then other known names, then the cwd equivalents.
+# Only used when neither --input nor $INPUT_FILE is provided.
 _INPUT_CANDIDATES = (
-    # BTC names first (private before public), CSV and JSON, under /data then cwd.
-    "/data/private_test.csv", "/data/private_test.json",
-    "/data/public_test.csv", "/data/public_test.json",
+    # 1) BTC /data defaults, EXACT priority: private before public, CSV before JSON.
+    "/data/private_test.csv", "/data/public_test.csv",
+    "/data/private_test.json", "/data/public_test.json",
+    # 2) Other /data variants (back-compat, never the documented default).
     "/data/doc_public_test.csv", "/data/doc_public_test.json",
     "/data/public-test.json", "/data/public-test.csv", "/data/public-test_1780368312.json",
-    "private_test.csv", "private_test.json", "public_test.csv", "public_test.json",
+    # 3) Current-directory equivalents for local runs (same private-before-public order).
+    "private_test.csv", "public_test.csv", "private_test.json", "public_test.json",
     "doc_public_test.csv", "public-test_1780368312.json", "public-test.json",
 )
 
@@ -69,10 +75,19 @@ def _repo_path(p):
 
 
 def _resolve_input(explicit):
-    """Resolve the test input path: --input -> $FASTMCQ_INPUT -> known names -> lone /data file."""
+    """Resolve the test input path with the EXACT BTC priority (Phase 2L.44D):
+        1. --input <path> (CLI)               — wins over everything
+        2. $INPUT_FILE (then legacy $FASTMCQ_INPUT), if set and non-empty
+        3. /data/private_test.csv
+        4. /data/public_test.csv
+        5. /data/private_test.json
+        6. /data/public_test.json
+    then other known names and a lone /data file. Fails clearly when nothing is found."""
     if explicit:
         return explicit
-    env = os.environ.get("FASTMCQ_INPUT")
+    # INPUT_FILE is the canonical BTC env var; FASTMCQ_INPUT kept as a back-compat alias.
+    # Empty string ("" set but blank) is treated as unset.
+    env = os.environ.get("INPUT_FILE") or os.environ.get("FASTMCQ_INPUT")
     if env:
         return env
     for cand in _INPUT_CANDIDATES:
@@ -84,22 +99,33 @@ def _resolve_input(explicit):
                         if p.suffix.lower() in (".csv", ".json")])
         if len(found) == 1:
             return str(found[0])
-    raise SystemExit("REFUSING: no input found. Pass --input, set $FASTMCQ_INPUT, or place "
-                     "doc_public_test.csv / private_test.csv / public-test*.json under /data "
-                     "or the current directory.")
+    raise SystemExit(
+        "REFUSING: no input file found. Expected one of (in priority order):\n"
+        "  1. --input <path> (CLI argument)\n"
+        "  2. $INPUT_FILE (or legacy $FASTMCQ_INPUT), if set and non-empty\n"
+        "  3. /data/private_test.csv\n"
+        "  4. /data/public_test.csv\n"
+        "  5. /data/private_test.json\n"
+        "  6. /data/public_test.json\n"
+        "Pass --input or set INPUT_FILE to override the /data defaults.")
 
 
 def _resolve_output(explicit):
-    """Resolve the output path: --output -> $FASTMCQ_OUTPUT -> /output/pred.csv -> ./pred.csv."""
+    """Resolve the output path with the EXACT priority (Phase 2L.44D):
+        1. --output <path> (CLI)               — wins over everything
+        2. $OUTPUT_FILE (then legacy $FASTMCQ_OUTPUT), if set and non-empty
+        3. Docker default: /output/pred.csv    (when /output exists or is creatable)
+        4. Local default:  output/pred.csv"""
     if explicit:
         return explicit
-    env = os.environ.get("FASTMCQ_OUTPUT")
+    # OUTPUT_FILE is the canonical BTC env var; FASTMCQ_OUTPUT kept as a back-compat alias.
+    env = os.environ.get("OUTPUT_FILE") or os.environ.get("FASTMCQ_OUTPUT")
     if env:
         return env
     out = Path("/output")
     if out.is_dir() or _can_create("/output"):
         return "/output/pred.csv"
-    return "pred.csv"
+    return "output/pred.csv"
 
 
 def _can_create(path):
@@ -255,13 +281,24 @@ def _public_replay(args, config):
     return "public_replay", src, n
 
 
-def _resolve_maxq(v):
+def _resolve_maxq(v, n_input=None):
     """Resolve a max-qids flag value to an int cap, or None meaning 'all input qids'.
-    Accepts None / 'all' / '' -> None; an int or numeric string -> int. Never hardcodes a size."""
+    Accepts:
+      * None / '' / 'all'  -> None (every input qid)
+      * 'auto' (default)   -> ceil(n_input / 8), minimum 1 (cost-aware cap derived from the
+                              input size; NEVER a hardcoded count)
+      * an int / numeric   -> that int
+    `n_input` is the resolved input qid count, required only for 'auto'."""
     if v is None:
         return None
-    if isinstance(v, str) and v.strip().lower() in ("all", ""):
-        return None
+    if isinstance(v, str):
+        s = v.strip().lower()
+        if s in ("", "all"):
+            return None
+        if s == "auto":
+            if not n_input or n_input < 1:
+                return 1
+            return max(1, math.ceil(n_input / 8))
     return int(v)
 
 
@@ -269,10 +306,12 @@ def _dynamic_full(args, config):
     """The real production system: run the full dynamic architecture over the given input."""
     from src.fastmcq_system import run_fastmcq_system, FastMCQSystemConfig
     samples = load_dataset(args.input)
+    n_input = len(samples)
     cfg = FastMCQSystemConfig(
         mode="dynamic_full", enable_v12b=args.enable_v12b, enable_v13=args.enable_v13,
-        v12b_policy=args.v12b_policy, v12b_max_qids=_resolve_maxq(args.v12b_max_qids),
-        v12b_permutations=args.v12b_permutations, v13_max_qids=_resolve_maxq(args.v13_max_qids),
+        v12b_policy=args.v12b_policy, v12b_max_qids=_resolve_maxq(args.v12b_max_qids, n_input),
+        v12b_permutations=args.v12b_permutations, v13_max_qids=_resolve_maxq(args.v13_max_qids, n_input),
+        v12b_max_qids_source=str(args.v12b_max_qids), v13_max_qids_source=str(args.v13_max_qids),
         system_policy=args.system_policy, max_overrides=args.max_overrides,
         profile=getattr(args, "profile", None),
         model=args.model or config.get("model"),
@@ -357,9 +396,11 @@ def _apply_profile(args, raw_argv):
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="Final inference entrypoint (dynamic_full default)")
     ap.add_argument("--input", default=None,
-                    help="test file; if omitted: $FASTMCQ_INPUT -> /data/private_test.* / doc_public_test.* etc.")
+                    help="test file; priority: --input -> $INPUT_FILE -> /data/private_test.csv "
+                         "-> /data/public_test.csv -> .json equivalents")
     ap.add_argument("--output", default=None,
-                    help="output CSV; if omitted: $FASTMCQ_OUTPUT -> /output/pred.csv -> ./pred.csv")
+                    help="output CSV; priority: --output -> $OUTPUT_FILE -> /output/pred.csv (Docker) "
+                         "-> output/pred.csv (local)")
     ap.add_argument("--profile", default=None,
                     help="named run profile from configs/profiles/run_profiles.json (CLI flags override it)")
     ap.add_argument("--mode", default="dynamic_full",
@@ -381,14 +422,16 @@ def main(argv=None) -> int:
     # V12B / V13 layer toggles.
     ap.add_argument("--enable-v12b", dest="enable_v12b", action="store_true", default=True)
     ap.add_argument("--disable-v12b", dest="enable_v12b", action="store_false")
-    ap.add_argument("--v12b-max-qids", default="all",
-                    help="int, or 'all' (default) = every input qid; never hardcode a size")
+    ap.add_argument("--v12b-max-qids", default="auto",
+                    help="int, 'all' = every input qid, or 'auto' (default) = ceil(input_count/8) "
+                         "min 1; never hardcode a size")
     ap.add_argument("--v12b-permutations", type=int, default=6)
     ap.add_argument("--v12b-policy", choices=["conservative", "balanced"], default="conservative")
     ap.add_argument("--enable-v13", dest="enable_v13", action="store_true", default=True)
     ap.add_argument("--disable-v13", dest="enable_v13", action="store_false")
-    ap.add_argument("--v13-max-qids", default="all",
-                    help="int, or 'all' (default) = every input qid; never hardcode a size")
+    ap.add_argument("--v13-max-qids", default="auto",
+                    help="int, 'all' = every input qid, or 'auto' (default) = ceil(input_count/8) "
+                         "min 1; never hardcode a size")
     ap.add_argument("--system-policy", choices=["conservative", "balanced"], default="conservative")
     ap.add_argument("--max-overrides", type=int, default=None)
     # Legacy flags (v11_independent regeneration).
