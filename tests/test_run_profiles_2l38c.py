@@ -16,7 +16,7 @@ _ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_ROOT))
 
 _PUBLIC = str(_ROOT / "public-test_1780368312.json")
-_V13 = str(_ROOT / "outputs" / "pred_v13_multilayer_candidate_api30_from_v12b.csv")
+_V13 = str(_ROOT / "output" / "pred_v13_multilayer_candidate_api30_from_v12b.csv")
 _PROFILES = json.loads((_ROOT / "configs" / "run_profiles.json").read_text())
 _WRAPPERS = ["run_public_replay.sh", "run_dynamic_noapi.sh", "run_public_api100.sh",
              "run_private_noapi.sh", "run_private_api200.sh", "run_public_api50.sh"]

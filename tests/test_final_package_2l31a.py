@@ -17,8 +17,8 @@ sys.path.insert(0, str(_ROOT))
 _INPUT = str(_ROOT / "public-test_1780368312.json")
 # Current production best (promoted in 2L.36A): V12B option-permutation debiaser (78.83).
 # Current production best (promoted in 2L.38A): V13 multi-layer dynamic system (79.7).
-_BEST = "outputs/pred_v13_multilayer_candidate_api30_from_v12b.csv"
-_V10 = "outputs/pred_v10_full_production_user_run.csv"
+_BEST = "output/pred_v13_multilayer_candidate_api30_from_v12b.csv"
+_V10 = "output/pred_v10_full_production_user_run.csv"
 
 
 def _load(name):
@@ -75,7 +75,7 @@ def test_dry_run_writes_nothing():
 def test_refuses_protected_output_names():
     mod = _load("final_infer.py")
     # frozen best / v10 / v8 are still refused; pred.csv is NOT protected (final export).
-    for name in (_BEST, _V10, "outputs/pred_v8_clean_generalized_from_v7.csv"):
+    for name in (_BEST, _V10, "output/pred_v8_clean_generalized_from_v7.csv"):
         try:
             mod.main(["--input", _INPUT, "--output", name, "--mode", "frozen_csv"])
             assert False, name
@@ -156,7 +156,7 @@ def test_production_audit_do_not_freeze_on_md5_mismatch():
 def test_production_audit_refuses_non_scratch():
     mod = _load("audit_production_candidate.py")
     try:
-        mod.main(["--input", _INPUT, "--candidate", _BEST, "--output-dir", "outputs/x"])
+        mod.main(["--input", _INPUT, "--candidate", _BEST, "--output-dir", "output/x"])
         assert False
     except SystemExit as e:
         assert "scratch/" in str(e)

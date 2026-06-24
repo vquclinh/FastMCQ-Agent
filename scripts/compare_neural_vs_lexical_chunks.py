@@ -11,7 +11,7 @@ Usage:
         --input public-test_1780368312.json \
         --method reranker --model-path /mnt/vquclinh/models/<local_reranker> \
         --max-samples 30 --top-k 4 --candidate-top-k 12 \
-        --output outputs/neural_vs_lexical_reranker_chunk_report.jsonl
+        --output output/neural_vs_lexical_reranker_chunk_report.jsonl
 """
 
 from __future__ import annotations
@@ -52,7 +52,7 @@ def main(argv=None) -> int:
     ap.add_argument("--top-k", type=int, default=4)
     ap.add_argument("--candidate-top-k", type=int, default=12)
     ap.add_argument("--max-chars", type=int, default=4500)
-    ap.add_argument("--output", default="outputs/neural_vs_lexical_chunk_report.jsonl")
+    ap.add_argument("--output", default="output/neural_vs_lexical_chunk_report.jsonl")
     args = ap.parse_args(argv)
 
     # Fail gracefully if the neural backend is not usable — no work, clear reason.

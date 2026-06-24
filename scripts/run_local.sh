@@ -8,7 +8,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 INPUT="${1:-public-test_1780368312.json}"
-OUTPUT="${2:-outputs/pred.csv}"
+OUTPUT="${2:-output/pred.csv}"
 
 echo ">> Inspecting dataset"
 python run.py --input "$INPUT" --output "$OUTPUT" || python3 run.py --input "$INPUT" --output "$OUTPUT"

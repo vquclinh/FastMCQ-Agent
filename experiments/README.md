@@ -9,12 +9,12 @@ that we might submit (or learn from) gets one row in
 1. Build or tweak a solver.
 2. Generate predictions:
    ```bash
-   python run.py --input public-test_1780368312.json --output outputs/pred.csv
+   python run.py --input public-test_1780368312.json --output output/pred.csv
    ```
 3. Validate the submission:
    ```bash
    python scripts/validate_submission.py \
-     --input public-test_1780368312.json --submission outputs/pred.csv
+     --input public-test_1780368312.json --submission output/pred.csv
    ```
 4. (Re)profile the data if it changed:
    ```bash
@@ -47,4 +47,4 @@ that we might submit (or learn from) gets one row in
 - **Always validate before logging.** Only log `local_validation=PASS` runs as
   submission candidates; record `FAIL` runs too if they are informative.
 - **Keep `version` tags sortable and descriptive** so the log reads as a history.
-- Large prediction CSVs live in `outputs/` (git-ignored); reference them by path.
+- Large prediction CSVs live in `output/` (git-ignored); reference them by path.

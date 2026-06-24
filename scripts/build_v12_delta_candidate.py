@@ -3,7 +3,7 @@
 
 Starts from the frozen v11 winner and applies *only* high-confidence, independently-supported
 answer overrides. Everything else is left exactly as v11. The output is a SHADOW candidate
-(``outputs/pred_v12_delta_candidate.csv``) — it is NOT the production default and NEVER
+(``output/pred_v12_delta_candidate.csv``) — it is NOT the production default and NEVER
 overwrites the frozen best or ``pred.csv``.
 
 Override gates (a proposed label != current must pass ALL applicable safety checks):
@@ -155,7 +155,7 @@ def main(argv=None) -> int:
     ap.add_argument("--input", required=True)
     ap.add_argument("--current", required=True)
     ap.add_argument("--candidates", required=True)
-    ap.add_argument("--output", default="outputs/pred_v12_delta_candidate.csv")
+    ap.add_argument("--output", default="output/pred_v12_delta_candidate.csv")
     ap.add_argument("--review-dir", default="scratch/v12_delta_verifier/review")
     ap.add_argument("--max-overrides", type=int, default=None)
     ap.add_argument("--policy", choices=["conservative", "balanced"], default="conservative")

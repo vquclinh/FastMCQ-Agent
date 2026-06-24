@@ -155,7 +155,7 @@ def _audit_fixture(d, dec_rows, sub_rows=None):
     (wd / "v11_independent_candidates.jsonl").write_text(json.dumps({"qid": "q1"}) + "\n")
     sub = None
     if sub_rows is not None:
-        sub = Path(d) / "outputs" / "sub.csv"; sub.parent.mkdir(parents=True)
+        sub = Path(d) / "output" / "sub.csv"; sub.parent.mkdir(parents=True)
         with open(sub, "w", newline="") as fh:
             w = csv.DictWriter(fh, fieldnames=["qid", "answer"]); w.writeheader(); w.writerows(sub_rows)
     return str(inp), str(wd), (str(sub) if sub else None)

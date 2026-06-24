@@ -4,21 +4,26 @@ The image runs the real **dynamic_full** system by default (dynamic base → V12
 unified selector) over the mounted input and writes `/output/pred.csv` for exactly the input
 qids. **No API key is required by default** (deterministic parts run; model-dependent layers are
 `skipped_no_api`). The current public-best artifact is **V13 multi-layer 79.7**
-(`outputs/pred_v13_multilayer_candidate_api30_from_v12b.csv`, +0.87 over V12B 78.83, +1.30 over
+(`output/pred_v13_multilayer_candidate_api30_from_v12b.csv`, +0.87 over V12B 78.83, +1.30 over
 v11 78.40); reproduce it exactly with `--mode public_replay` on the public test.
 
-## Simplest local commands (run profiles — no Docker)
+## Official local command (use this)
+
+```bash
+bash scripts/run_full_system.sh <test_file>          # full system; needs OPENROUTER_API_KEY
+bash scripts/run_full_system.sh <test_file> --no-api # fully offline
+```
+Runs base → V12B → V13 → selector end-to-end and writes the final local artifact to
+**`output/pred.csv`** (Docker writes **`/output/pred.csv`**). Logs/records under
+`scratch/runs/full_system_<ts>/`.
+
+### Legacy / research diagnostics only (not the main workflow)
 
 ```bash
 bash scripts/run_public_replay.sh public-test_1780368312.json   # reproduce the 79.7 artifact
 bash scripts/run_dynamic_noapi.sh public-test_1780368312.json   # full dynamic system, no API
 bash scripts/run_public_api50.sh public-test_1780368312.json    # medium API pilot (caps 50 qids)
-bash scripts/run_private_api200.sh private_test.json            # recommended private/BTC API run
-```
-Each prints elapsed time + output md5 and logs under `scratch/runs/`. Full/explicit form:
-
-```bash
-python scripts/final_infer.py --input public-test_1780368312.json --output pred.csv
+python scripts/final_infer.py --input public-test_1780368312.json --output pred.csv  # explicit form
 ```
 Runs `dynamic_full` (V12B + V13, API-free) and writes validated `pred.csv` for exactly the
 input qids; prints resolved mode + V12B/V13 overrides + `elapsed_seconds` + `status: PASS`. To
@@ -27,12 +32,12 @@ reproduce the public 79.7 artifact exactly add `--mode public_replay`. See `FINA
 ## What ships in the image
 
 - Source (`src/`, `scripts/`), `configs/production_v13_multilayer_7970.json`, `requirements.txt`.
-- Required final CSVs under `outputs/`: `pred_v13_multilayer_candidate_api30_from_v12b.csv`
+- Required final CSVs under `output/`: `pred_v13_multilayer_candidate_api30_from_v12b.csv`
   (current best, 79.7), `pred_v12b_permutation_candidate_api30.csv` (previous best, 78.83),
   `pred_v11_independent_rerun1.csv`, and `pred_v10_full_production_user_run.csv` (fallback only).
 - **Excluded** by `.dockerignore`: `.env`/secrets/keys, `scratch/`, `experiments/`, `docs/`,
   `.git/`, notebooks, `*.log`, `*.jsonl`, model weights/caches, and the non-final
-  `outputs/pred.csv` / `outputs/pred_v11_full_adaptive_test.csv`.
+  `output/pred.csv` / `output/pred_v11_full_adaptive_test.csv`.
 
 ## Build
 
@@ -71,7 +76,7 @@ docker run --rm -v "$PWD/data:/data" -v "$PWD/output:/output" fastmcq-final \
   python scripts/final_infer.py \
     --input /data/public-test.json \
     --output /output/pred.csv --allow-pred-csv \
-    --mode frozen_csv --source-csv outputs/pred_v13_multilayer_candidate_api30_from_v12b.csv
+    --mode frozen_csv --source-csv output/pred_v13_multilayer_candidate_api30_from_v12b.csv
 ```
 
 ## Run — v11_independent rerun (EXPERIMENTAL; API key + budget REQUIRED)

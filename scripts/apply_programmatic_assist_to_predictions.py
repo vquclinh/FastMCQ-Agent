@@ -11,11 +11,11 @@ sheet — purely deterministic patching of frozen v6b predictions.
 Usage:
     python scripts/apply_programmatic_assist_to_predictions.py \
       --input public-test_1780368312.json \
-      --base-pred outputs/pred_v6b_qwen_rerank_calc_verifier_fast.csv \
-      --base-log outputs/run_v6b_qwen_rerank_calc_verifier_fast.jsonl \
-      --output outputs/pred_v7_programmatic_assist_from_v6b.csv \
-      --log-path outputs/run_v7_programmatic_assist_from_v6b.jsonl \
-      --diff outputs/programmatic_assist_diff.csv
+      --base-pred output/pred_v6b_qwen_rerank_calc_verifier_fast.csv \
+      --base-log output/run_v6b_qwen_rerank_calc_verifier_fast.jsonl \
+      --output output/pred_v7_programmatic_assist_from_v6b.csv \
+      --log-path output/run_v7_programmatic_assist_from_v6b.jsonl \
+      --diff output/programmatic_assist_diff.csv
 """
 
 from __future__ import annotations

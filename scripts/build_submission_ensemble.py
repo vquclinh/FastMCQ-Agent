@@ -4,7 +4,7 @@
 Merges several full submission candidate CSVs against the v10 base by an explicit voting
 strategy (majority / at_least_two / non_v10_consensus). Overrides v10 only when the
 strategy is satisfied; otherwise keeps v10. Uses NO ground truth and NO qid hardcoding.
-Writes the ensemble under outputs/ and a diff + summary under scratch/. Do NOT run in a
+Writes the ensemble under output/ and a diff + summary under scratch/. Do NOT run in a
 coding phase.
 """
 
@@ -28,8 +28,8 @@ _STRATEGIES = ("majority", "at_least_two", "non_v10_consensus")
 
 def _require_outputs(path):
     p = str(path).replace("\\", "/")
-    if "/outputs/" not in p and not p.startswith("outputs/"):
-        raise SystemExit(f"REFUSING: ensemble must be written under outputs/ (got {path})")
+    if "/output/" not in p and not p.startswith("output/"):
+        raise SystemExit(f"REFUSING: ensemble must be written under output/ (got {path})")
     if Path(path).name in _PROTECTED_NAMES:
         raise SystemExit(f"REFUSING to overwrite a protected/locked file: {Path(path).name}")
     guard_output(path)
@@ -69,7 +69,7 @@ def _decide(v10, votes, strategy):
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="Merge submission candidates into an ensemble (human-run)")
     ap.add_argument("--input", required=True)
-    ap.add_argument("--base-pred", default="outputs/pred_v10_full_production_user_run.csv")
+    ap.add_argument("--base-pred", default="output/pred_v10_full_production_user_run.csv")
     ap.add_argument("--candidates", nargs="+", required=True)
     ap.add_argument("--output", required=True)
     ap.add_argument("--review-dir", required=True)

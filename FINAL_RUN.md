@@ -18,7 +18,26 @@
 - `auto` — resolves to `public_replay` only with `--allow-public-replay` **and** an exact public
   qid match; otherwise `dynamic_full`. Never replays public answers onto unseen qids.
 
-## Short commands (run profiles — recommended)
+## Official command (use this)
+
+One command runs the full production system end-to-end (base → V12B → V13 → selector) over any
+test set and writes the final local artifact to **`output/pred.csv`**:
+
+```bash
+bash scripts/run_full_system.sh <test_file>          # API run (needs OPENROUTER_API_KEY)
+bash scripts/run_full_system.sh <test_file> --no-api # fully offline
+```
+
+- Final local artifact: **`output/pred.csv`**. Docker final artifact: **`/output/pred.csv`**.
+- Timestamped logs/records live under `scratch/runs/full_system_<ts>/` (run.log,
+  work/progress.json, work/v12b_dynamic_records.jsonl, work/v13_dynamic_records.jsonl,
+  pred.csv) — these are NOT the official artifact.
+- Profile: `production_full_system` (API; `--no-api` → `production_full_system_noapi`). Prints an
+  answer-distribution quality report and warns on a degenerate (>70% one label) distribution;
+  add `--fail-on-quality-guard` to refuse promoting `output/pred.csv` when degenerate.
+- A failed run never overwrites an existing `output/pred.csv`.
+
+## Short commands (run profiles — research diagnostics)
 
 Profiles live in `configs/run_profiles.json`; the wrappers create a timestamped run dir under
 `scratch/runs/`, tee a `run.log`, and print elapsed time + output path + md5.
@@ -27,6 +46,7 @@ Profiles live in `configs/run_profiles.json`; the wrappers create a timestamped 
 bash scripts/run_public_replay.sh public-test_1780368312.json   # reproduce the 79.7 public artifact
 bash scripts/run_dynamic_noapi.sh public-test_1780368312.json   # full dynamic system, no API
 bash scripts/run_public_api50.sh public-test_1780368312.json    # medium API pilot (caps 50 qids, $2.50)
+bash scripts/run_public_layer_api50.sh public-test_1780368312.json  # layer-only API: base no-API, V12B/V13 API ($1.50)
 bash scripts/run_public_api100.sh public-test_1780368312.json   # quick API system check (caps 100 qids)
 bash scripts/run_private_api200.sh private_test.json            # recommended BTC/private API run
 bash scripts/run_private_noapi.sh private_test.json             # private, no API
@@ -84,7 +104,7 @@ no choices, answers are validated against the global label space `A–K`.
 - **Validates** the output automatically (columns, all qids present, no duplicates, valid
   labels, row count == input).
 - The current public-best artifact is **V13 79.7**
-  (`outputs/pred_v13_multilayer_candidate_api30_from_v12b.csv`); reproduce it with
+  (`output/pred_v13_multilayer_candidate_api30_from_v12b.csv`); reproduce it with
   `--mode public_replay` on the public test.
 - **Prints the resolved mode, V12B/V13 targets+overrides, and elapsed time** — every run ends with:
 
@@ -147,11 +167,11 @@ python scripts/final_infer.py --input private_test.json --output pred.csv --mode
 ## Protections
 
 `final_infer.py` refuses to overwrite the frozen/locked artifacts
-`outputs/pred_v13_multilayer_candidate_api30_from_v12b.csv` (current best, 79.7),
-`outputs/pred_v12b_permutation_candidate_api30.csv` (previous best, 78.83),
-`outputs/pred_v11_independent_rerun1.csv`,
-`outputs/pred_v10_full_production_user_run.csv`, and
-`outputs/pred_v8_clean_generalized_from_v7.csv`. Writing `pred.csv` is allowed — that is
+`output/pred_v13_multilayer_candidate_api30_from_v12b.csv` (current best, 79.7),
+`output/pred_v12b_permutation_candidate_api30.csv` (previous best, 78.83),
+`output/pred_v11_independent_rerun1.csv`,
+`output/pred_v10_full_production_user_run.csv`, and
+`output/pred_v8_clean_generalized_from_v7.csv`. Writing `pred.csv` is allowed — that is
 the intended final export.
 
 ## Validate separately (optional)

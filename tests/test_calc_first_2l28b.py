@@ -175,7 +175,7 @@ def test_analyzer_classifies_and_refuses_outputs():
     assert (out / "pilot_failure_analysis.md").exists()
     try:
         mod.main(["--input", str(inp), "--base-pred", str(base), "--pilot-qids", str(pq),
-                  "--pilot-candidates", str(cands), "--output-dir", "outputs/fa"])
+                  "--pilot-candidates", str(cands), "--output-dir", "output/fa"])
         assert False
     except SystemExit as e:
         assert "scratch/" in str(e)

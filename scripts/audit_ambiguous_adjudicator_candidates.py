@@ -4,10 +4,10 @@
 Usage:
     python scripts/audit_ambiguous_adjudicator_candidates.py \
       --input public-test_1780368312.json \
-      --base-pred outputs/pred_v7_programmatic_assist_from_v6b.csv \
-      --base-log outputs/run_v6b_qwen_rerank_calc_verifier_fast.jsonl \
-      --risk-csv outputs/first100_consensus_risk_audit.csv \
-      --output outputs/ambiguous_adjudicator_candidates.csv
+      --base-pred output/pred_v7_programmatic_assist_from_v6b.csv \
+      --base-log output/run_v6b_qwen_rerank_calc_verifier_fast.jsonl \
+      --risk-csv output/first100_consensus_risk_audit.csv \
+      --output output/ambiguous_adjudicator_candidates.csv
 """
 
 from __future__ import annotations
@@ -34,7 +34,7 @@ def main(argv=None) -> int:
     ap.add_argument("--base-pred", required=True)
     ap.add_argument("--base-log", default=None)
     ap.add_argument("--risk-csv", default=None)
-    ap.add_argument("--output", default="outputs/ambiguous_adjudicator_candidates.csv")
+    ap.add_argument("--output", default="output/ambiguous_adjudicator_candidates.csv")
     args = ap.parse_args(argv)
 
     samples = load_samples(args.input)

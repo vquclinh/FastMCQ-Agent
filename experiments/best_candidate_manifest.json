@@ -1,12 +1,12 @@
 {
   "production_default": "v13_multilayer_dynamic_system",
   "production_system": "dynamic_full (src/fastmcq_system.py): dynamic base predictor -> official V12B option-permutation debiaser layer -> official V13 multi-layer stack (programmatic_solver / content_first / least_to_most) -> unified src/system_candidate_selector.py. Runs over ANY input and outputs predictions for exactly the input qids. public_replay reproduces the frozen public CSV ONLY when input qids match the public set.",
-  "recommended_final_csv": "outputs/pred_v13_multilayer_candidate_api30_from_v12b.csv",
+  "recommended_final_csv": "output/pred_v13_multilayer_candidate_api30_from_v12b.csv",
   "public_best_artifact_is_universal": false,
   "production_config": "configs/production_v13_multilayer_7970.json",
   "current_best": {
     "name": "v13_multilayer_candidate_api30_from_v12b",
-    "file": "outputs/pred_v13_multilayer_candidate_api30_from_v12b.csv",
+    "file": "output/pred_v13_multilayer_candidate_api30_from_v12b.csv",
     "public_score": 79.7,
     "architecture": "v13_multilayer_dynamic_system",
     "do_not_overwrite": true,
@@ -21,21 +21,21 @@
   },
   "previous_best_v12b": {
     "name": "v12b_permutation_candidate_api30",
-    "file": "outputs/pred_v12b_permutation_candidate_api30.csv",
+    "file": "output/pred_v12b_permutation_candidate_api30.csv",
     "public_score": 78.83, "architecture": "v12b_option_permutation_debiaser",
     "do_not_overwrite": true, "md5": "075646adb4ec7d2db1b234186b091f70", "rows": 463,
     "notes": "previous best; option-permutation debiaser over v11"
   },
   "previous_baseline_v11": {
     "name": "v11_independent_rerun1",
-    "file": "outputs/pred_v11_independent_rerun1.csv",
+    "file": "output/pred_v11_independent_rerun1.csv",
     "public_score": 78.40, "architecture": "independent_v11",
     "do_not_overwrite": true, "md5": "69f4e7c990e8c612e7bee53084d13b4d", "rows": 463,
     "notes": "true independent v11 (no v10 base)"
   },
   "fallback_v10": {
     "name": "v10_full_production",
-    "file": "outputs/pred_v10_full_production_user_run.csv",
+    "file": "output/pred_v10_full_production_user_run.csv",
     "public_score": 77.75, "architecture": "v10",
     "do_not_overwrite": true, "md5": "c12e32fdf16ee5472e6a791c1e52e86a", "rows": 463,
     "notes": "fallback only; never used as a base"

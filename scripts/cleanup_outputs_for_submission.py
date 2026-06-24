@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Clean temporary/diagnostic artifacts from outputs/ (DRY-RUN by default).
+"""Clean temporary/diagnostic artifacts from output/ (DRY-RUN by default).
 
 Keeps the real run/submission files (an explicit allow-list) and removes only
 proposal/candidate/audit/diagnostic artifacts matching known temporary patterns.
-NEVER deletes outside ``outputs/``; NEVER deletes a protected final output; default
+NEVER deletes outside ``output/``; NEVER deletes a protected final output; default
 is dry-run (requires ``--execute`` to delete). Touches no source/tests/docs/scripts.
 """
 
@@ -13,7 +13,7 @@ import argparse
 import fnmatch
 from pathlib import Path
 
-OUTPUTS = Path("outputs")
+OUTPUTS = Path("output")
 
 # Final run/submission outputs that must always be kept.
 KEEP = {
@@ -61,7 +61,7 @@ def _classify():
 
 
 def main(argv=None) -> int:
-    ap = argparse.ArgumentParser(description="Clean temporary outputs/ artifacts (dry-run default)")
+    ap = argparse.ArgumentParser(description="Clean temporary output/ artifacts (dry-run default)")
     ap.add_argument("--execute", action="store_true", default=False,
                     help="actually delete (default = dry-run, deletes nothing)")
     ap.add_argument("--dry-run", action="store_true", default=False,
@@ -84,12 +84,12 @@ def main(argv=None) -> int:
     if not dry_run:
         for n in delete:
             target = OUTPUTS / n
-            # Defense-in-depth: never touch a protected name or anything outside outputs/.
+            # Defense-in-depth: never touch a protected name or anything outside output/.
             if n in KEEP:
                 continue
             rp = target.resolve()
             if OUTPUTS.resolve() not in rp.parents:
-                print(f"  SKIP (outside outputs/): {n}")
+                print(f"  SKIP (outside output/): {n}")
                 continue
             try:
                 target.unlink()

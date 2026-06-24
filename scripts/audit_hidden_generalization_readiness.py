@@ -10,7 +10,7 @@ base LLM answer is needed, no network is contacted, and NO prediction is written
 Usage:
     python scripts/audit_hidden_generalization_readiness.py \
       --input public-test_1780368312.json \
-      --output outputs/hidden_generalization_readiness_audit.csv
+      --output output/hidden_generalization_readiness_audit.csv
 """
 
 from __future__ import annotations
@@ -32,7 +32,7 @@ _FIELDS = ["qid", "branch", "fireable_safe_rule", "rule_id", "reason"]
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="Hidden-test generalization readiness (no API)")
     ap.add_argument("--input", required=True)
-    ap.add_argument("--output", default="outputs/hidden_generalization_readiness_audit.csv")
+    ap.add_argument("--output", default="output/hidden_generalization_readiness_audit.csv")
     args = ap.parse_args(argv)
 
     samples = load_samples(args.input)

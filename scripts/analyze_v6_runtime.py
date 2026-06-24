@@ -7,7 +7,7 @@ external answer sheet, no qid is used for any decision (qids are printed only to
 locate slow samples). Writes nothing.
 
 Usage:
-    python scripts/analyze_v6_runtime.py --log outputs/run_v6_qwen_rerank_calc_verifier.jsonl
+    python scripts/analyze_v6_runtime.py --log output/run_v6_qwen_rerank_calc_verifier.jsonl
 """
 
 from __future__ import annotations

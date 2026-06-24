@@ -11,9 +11,9 @@ Usage:
     python scripts/compare_v7_programmatic_assist_pseudo.py \
       --public-test public-test_1780368312.json \
       --external-sheet scratch/first100_external_3llm.csv \
-      --v6b outputs/pred_v6b_qwen_rerank_calc_verifier_fast.csv \
-      --v7 outputs/pred_v7_programmatic_assist_from_v6b.csv \
-      --v7-log outputs/run_v7_programmatic_assist_from_v6b.jsonl
+      --v6b output/pred_v6b_qwen_rerank_calc_verifier_fast.csv \
+      --v7 output/pred_v7_programmatic_assist_from_v6b.csv \
+      --v7-log output/run_v7_programmatic_assist_from_v6b.jsonl
 """
 
 from __future__ import annotations

@@ -15,6 +15,26 @@ import time
 from src.model_policy import assert_allowed_llm_model
 
 
+def _valid_messages(messages) -> bool:
+    """True iff ``messages`` is a non-empty prompt: a non-empty/whitespace string, or a
+    non-empty list of {role, content} dicts with at least one non-empty content."""
+    if messages is None:
+        return False
+    if isinstance(messages, str):
+        return bool(messages.strip())
+    if isinstance(messages, (list, tuple)):
+        if not messages:
+            return False
+        ok = False
+        for m in messages:
+            if not isinstance(m, dict):
+                return False
+            if str(m.get("content") or "").strip():
+                ok = True
+        return ok
+    return False
+
+
 class SelectiveAPIClient:
     def __init__(self, model: str, *, client=None, temperature: float = 0.0,
                  max_tokens: int = 768, max_retries: int = 2):
@@ -36,6 +56,13 @@ class SelectiveAPIClient:
 
     def chat(self, messages, *, temperature=None, max_tokens=None):
         """Make one chat call (guarded, retried). Returns (content, usage_dict)."""
+        # Defensive guard (raised BEFORE the retry loop so it is not swallowed/retried):
+        # never send an empty/invalid prompt to the API.
+        if not _valid_messages(messages):
+            raise ValueError(
+                "empty prompt passed to SelectiveAPIClient.chat: expected a non-empty "
+                "messages list [{'role','content'}, ...] or a non-empty string; got "
+                f"{type(messages).__name__}")
         assert_allowed_llm_model(self.model)   # re-assert on every call
         client = self._ensure_client()
         temp = self.temperature if temperature is None else temperature

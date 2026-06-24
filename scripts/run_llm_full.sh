@@ -10,8 +10,8 @@ cd "$(dirname "$0")/.."
 MODEL_PATH="${1:-}"
 SCORE_MODE="${2:-label_plus_choice}"
 INPUT="${3:-public-test_1780368312.json}"
-OUTPUT="outputs/pred_llm.csv"
-LOG="outputs/run_debug.jsonl"
+OUTPUT="output/pred_llm.csv"
+LOG="output/run_debug.jsonl"
 
 if [[ -z "$MODEL_PATH" ]]; then
   echo "ERROR: provide a local model path." >&2

@@ -4,7 +4,7 @@
 Builds a real full-run submission candidate from adaptive API candidates under an explicit
 override POLICY (conservative / balanced / aggressive), using the existing
 consistency-guarded ranker. Refuses pilot inputs, partial runs, and protected output
-names. Uses NO ground truth and NO qid hardcoding. Writes the candidate under outputs/ and
+names. Uses NO ground truth and NO qid hardcoding. Writes the candidate under output/ and
 a diff + summary under scratch/. Do NOT run in a coding phase.
 """
 
@@ -35,8 +35,8 @@ _POLICIES = ("conservative", "balanced", "aggressive")
 
 def _require_outputs(path):
     p = str(path).replace("\\", "/")
-    if "/outputs/" not in p and not p.startswith("outputs/"):
-        raise SystemExit(f"REFUSING: candidate must be written under outputs/ (got {path})")
+    if "/output/" not in p and not p.startswith("output/"):
+        raise SystemExit(f"REFUSING: candidate must be written under output/ (got {path})")
     if Path(path).name in _PROTECTED_NAMES:
         raise SystemExit(f"REFUSING to overwrite a protected/locked file: {Path(path).name}")
     guard_output(path)
@@ -86,7 +86,7 @@ def _policy_allows(policy, *, deterministic, has_evidence, risk, model_only):
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="Build a policy-gated submission variant (human-run)")
     ap.add_argument("--input", required=True)
-    ap.add_argument("--base-pred", default="outputs/pred_v10_full_production_user_run.csv")
+    ap.add_argument("--base-pred", default="output/pred_v10_full_production_user_run.csv")
     ap.add_argument("--api-candidates", required=True)
     ap.add_argument("--output", required=True)
     ap.add_argument("--review-dir", required=True)

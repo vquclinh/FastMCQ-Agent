@@ -111,7 +111,7 @@ From `docs/DATASET_PROFILE.md` (auto-generated; 463 samples):
  (baseline)  prompting → generate →          prompting(mode=score) →
              output_parser → label           score " A.<text>" continuations →
                                               best avg log-prob → label
-                  │            │ (per-sample debug → run_logger → outputs/run_debug.jsonl)
+                  │            │ (per-sample debug → run_logger → output/run_debug.jsonl)
                   └─────┬──────┘
                         │ labels (dynamic A..K), fallback to A
                         ▼
@@ -175,7 +175,7 @@ Component notes:
 
 ## F. What has NOT been done yet
 
-- **No real LLM inference has ever been run.** `outputs/run_debug.jsonl` is empty.
+- **No real LLM inference has ever been run.** `output/run_debug.jsonl` is empty.
 - **No leaderboard score is known** for any solver (all `leaderboard_score` cells blank).
 - **No model selected or packaged.** No weights in the repo or image.
 - **No quantization / batching / vLLM / llama.cpp backend.**

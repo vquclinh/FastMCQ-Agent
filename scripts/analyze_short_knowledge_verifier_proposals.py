@@ -11,8 +11,8 @@ nothing.
 
 Usage:
     python scripts/analyze_short_knowledge_verifier_proposals.py \
-      --proposals outputs/short_knowledge_verifier_proposals_25.csv \
-      --risk-csv outputs/first100_consensus_risk_audit.csv
+      --proposals output/short_knowledge_verifier_proposals_25.csv \
+      --risk-csv output/first100_consensus_risk_audit.csv
 """
 
 from __future__ import annotations

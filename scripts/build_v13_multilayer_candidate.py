@@ -3,7 +3,7 @@
 
 Starts from the frozen v11 winner and overrides a qid only when multiple independent layers
 agree (or a deterministic programmatic proof is unique). Output is a SHADOW candidate
-(``outputs/pred_v13_multilayer_candidate.csv``); never overwrites the frozen best, v10, v8, or
+(``output/pred_v13_multilayer_candidate.csv``); never overwrites the frozen best, v10, v8, or
 pred.csv.
 
 Conservative acceptance (proposed label must differ from current and be valid for the sample):
@@ -144,7 +144,7 @@ def main(argv=None) -> int:
     ap.add_argument("--current", required=True)
     ap.add_argument("--candidates", required=True)
     ap.add_argument("--v12b-records", default=None)
-    ap.add_argument("--output", default="outputs/pred_v13_multilayer_candidate.csv")
+    ap.add_argument("--output", default="output/pred_v13_multilayer_candidate.csv")
     ap.add_argument("--review-dir", default="scratch/v13_multilayer/review")
     ap.add_argument("--policy", choices=["conservative", "balanced"], default="conservative")
     ap.add_argument("--max-overrides", type=int, default=None)

@@ -1,6 +1,6 @@
 {
   "architecture": "v13_multilayer_dynamic_system",
-  "current_best_csv": "outputs/pred_v13_multilayer_candidate_api30_from_v12b.csv",
+  "current_best_csv": "output/pred_v13_multilayer_candidate_api30_from_v12b.csv",
   "current_best_public_score": 79.7,
   "current_best_md5": "cb02fef569b31e7fb544abab46c0e282",
   "production_mode": "dynamic_full",
@@ -10,14 +10,14 @@
   "enable_v12b_default": true,
   "enable_v13_default": true,
   "previous_best_v12b": {
-    "file": "outputs/pred_v12b_permutation_candidate_api30.csv",
+    "file": "output/pred_v12b_permutation_candidate_api30.csv",
     "public_score": 78.83, "md5": "075646adb4ec7d2db1b234186b091f70"
   },
   "previous_baseline_v11": {
-    "file": "outputs/pred_v11_independent_rerun1.csv",
+    "file": "output/pred_v11_independent_rerun1.csv",
     "public_score": 78.40, "md5": "69f4e7c990e8c612e7bee53084d13b4d"
   },
-  "baseline_v10_csv": "outputs/pred_v10_full_production_user_run.csv",
+  "baseline_v10_csv": "output/pred_v10_full_production_user_run.csv",
   "fallback_v10_md5": "c12e32fdf16ee5472e6a791c1e52e86a",
   "model": "qwen/qwen3.5-9b-20260310",
   "no_v10_base": true,
@@ -31,12 +31,12 @@
     "test_0420": "B->A"
   },
   "protected_outputs": [
-    "outputs/pred_v13_multilayer_candidate_api30_from_v12b.csv",
-    "outputs/pred_v12b_permutation_candidate_api30.csv",
-    "outputs/pred_v11_independent_rerun1.csv",
-    "outputs/pred_v10_full_production_user_run.csv",
-    "outputs/pred_v8_clean_generalized_from_v7.csv",
-    "outputs/pred.csv"
+    "output/pred_v13_multilayer_candidate_api30_from_v12b.csv",
+    "output/pred_v12b_permutation_candidate_api30.csv",
+    "output/pred_v11_independent_rerun1.csv",
+    "output/pred_v10_full_production_user_run.csv",
+    "output/pred_v8_clean_generalized_from_v7.csv",
+    "output/pred.csv"
   ],
   "notes": [
     "CURRENT PRODUCTION BEST: V13 multi-layer reasoning candidate, public 79.7 (+0.87 over V12B 78.83, +1.30 over v11 78.40).",

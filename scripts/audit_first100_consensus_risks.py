@@ -18,11 +18,11 @@ Usage:
     python scripts/audit_first100_consensus_risks.py \
       --public-test public-test_1780368312.json \
       --external-sheet <first100_external_sheet.csv> \
-      --v6 outputs/pred_v6_qwen_rerank_calc_verifier.csv \
-      --v6-log outputs/run_v6_qwen_rerank_calc_verifier.jsonl \
-      --v6b outputs/pred_v6b_qwen_rerank_calc_verifier_fast.csv \
-      --v6b-log outputs/run_v6b_qwen_rerank_calc_verifier_fast.jsonl \
-      --output outputs/first100_consensus_risk_audit.csv
+      --v6 output/pred_v6_qwen_rerank_calc_verifier.csv \
+      --v6-log output/run_v6_qwen_rerank_calc_verifier.jsonl \
+      --v6b output/pred_v6b_qwen_rerank_calc_verifier_fast.csv \
+      --v6b-log output/run_v6b_qwen_rerank_calc_verifier_fast.jsonl \
+      --output output/first100_consensus_risk_audit.csv
 """
 
 from __future__ import annotations
@@ -144,7 +144,7 @@ def main(argv=None) -> int:
     ap.add_argument("--v6-log", default=None)
     ap.add_argument("--v6b", required=True)
     ap.add_argument("--v6b-log", default=None)
-    ap.add_argument("--output", default="outputs/first100_consensus_risk_audit.csv")
+    ap.add_argument("--output", default="output/first100_consensus_risk_audit.csv")
     ap.add_argument("--n", type=int, default=100)
     args = ap.parse_args(argv)
 

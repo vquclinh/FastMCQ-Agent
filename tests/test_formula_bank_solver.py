@@ -286,8 +286,8 @@ def _load_apply():
 def test_apply_refuses_protected_output():
     mod = _load_apply()
     try:
-        mod.main(["--input", "x", "--base-pred", "y", "--output", "outputs/pred.csv",
-                  "--log-path", "outputs/z.jsonl", "--diff", "outputs/d.csv"])
+        mod.main(["--input", "x", "--base-pred", "y", "--output", "output/pred.csv",
+                  "--log-path", "output/z.jsonl", "--diff", "output/d.csv"])
         assert False, "should refuse protected output"
     except SystemExit as e:
         assert "REFUSING" in str(e) or e.code != 0
@@ -295,7 +295,7 @@ def test_apply_refuses_protected_output():
 
 def test_apply_stops_when_changes_exceed_max():
     inp = _ROOT / "public-test_1780368312.json"
-    base = _ROOT / "outputs" / "pred_v8_clean_generalized_from_v7.csv"
+    base = _ROOT / "output" / "pred_v8_clean_generalized_from_v7.csv"
     if not (inp.exists() and base.exists()):
         return
     mod = _load_apply()

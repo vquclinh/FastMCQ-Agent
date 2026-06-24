@@ -5,7 +5,7 @@ Thin, DRY-RUN-BY-DEFAULT wrapper over ``run_adaptive_selective_api``. It treats 
 ``pilot_qids.csv`` (qid + recommended_layer columns) as the plan and reuses the exact
 adaptive logic, but writes pilot-prefixed artifacts (``pilot_api_candidates.jsonl/.csv``,
 ``pilot_run_summary.json/.md``). Refuses non-scratch output; ``--dry-run``/``--execute``
-mutually exclusive; model policy enforced by the delegate. No outputs/ writes ever.
+mutually exclusive; model policy enforced by the delegate. No output/ writes ever.
 """
 
 from __future__ import annotations

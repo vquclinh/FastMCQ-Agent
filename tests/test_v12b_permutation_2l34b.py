@@ -19,7 +19,7 @@ _ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_ROOT))
 
 _INPUT = str(_ROOT / "public-test_1780368312.json")
-_V11 = str(_ROOT / "outputs" / "pred_v11_independent_rerun1.csv")
+_V11 = str(_ROOT / "output" / "pred_v11_independent_rerun1.csv")
 
 
 def _load(script):
@@ -90,9 +90,9 @@ def test_selector_validates_and_no_change_on_empty(tmp_path):
 
 def test_selector_refuses_protected_outputs():
     sel = _load("build_v12b_permutation_candidate")
-    for prot in ("outputs/pred_v11_independent_rerun1.csv", "outputs/pred.csv",
-                 "outputs/pred_v10_full_production_user_run.csv",
-                 "outputs/pred_v8_clean_generalized_from_v7.csv"):
+    for prot in ("output/pred_v11_independent_rerun1.csv", "output/pred.csv",
+                 "output/pred_v10_full_production_user_run.csv",
+                 "output/pred_v8_clean_generalized_from_v7.csv"):
         try:
             sel.main(["--input", _INPUT, "--current", _V11,
                       "--permutation-records", str(_ROOT / "nope.jsonl"), "--output", prot])

@@ -4,7 +4,7 @@
 For every question, builds a candidate pool (answer factory) and ranks it. Emits a
 proposal ONLY where the ranked selection differs from the v10 base answer. Writes
 candidate JSONL + proposal CSV + review Markdown under the output dir. Never writes a
-submission CSV, never modifies outputs/. No qid hardcoding, no answer table.
+submission CSV, never modifies output/. No qid hardcoding, no answer table.
 
 Usage: see Phase 2L.25 Part K.
 """
@@ -37,7 +37,7 @@ def _guard_scratch(path):
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="Build v11 answer-factory proposals (no API)")
     ap.add_argument("--input", required=True)
-    ap.add_argument("--base-pred", default="outputs/pred_v10_full_production_user_run.csv")
+    ap.add_argument("--base-pred", default="output/pred_v10_full_production_user_run.csv")
     ap.add_argument("--v10-log", default=None)
     ap.add_argument("--output-dir", default="scratch/answer_factory_2l25")
     args = ap.parse_args(argv)
@@ -102,7 +102,7 @@ def main(argv=None) -> int:
     print(f"by source: {dict(source_ct)}")
     print(f"candidates: {cand_path}")
     print(f"proposals : {prop_path}")
-    print("NOTE: no submission CSV written; outputs/ untouched.")
+    print("NOTE: no submission CSV written; output/ untouched.")
     print("=" * 64)
     return 0
 

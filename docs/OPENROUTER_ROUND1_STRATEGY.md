@@ -131,19 +131,19 @@ pip install -r requirements-openrouter.txt    # httpx + python-dotenv (langgraph
 # Smoke (first 3 samples) — once the key is set:
 python run.py --solver openrouter_graph \
   --input public-test_1780368312.json \
-  --output outputs/pred_phase2k0_openrouter_graph_limit3.csv \
-  --limit 3 --save-raw --log-path outputs/run_phase2k0_openrouter_graph_limit3.jsonl
+  --output output/pred_phase2k0_openrouter_graph_limit3.csv \
+  --limit 3 --save-raw --log-path output/run_phase2k0_openrouter_graph_limit3.jsonl
 python scripts/validate_submission.py \
   --input public-test_1780368312.json \
-  --submission outputs/pred_phase2k0_openrouter_graph_limit3.csv
+  --submission output/pred_phase2k0_openrouter_graph_limit3.csv
 
 # Full public run (later, when explicitly approved):
 python run.py --solver openrouter_graph \
   --input public-test_1780368312.json \
-  --output outputs/pred_openrouter_full.csv \
-  --save-raw --log-path outputs/run_openrouter_full.jsonl
+  --output output/pred_openrouter_full.csv \
+  --save-raw --log-path output/run_openrouter_full.jsonl
 python scripts/validate_submission.py \
-  --input public-test_1780368312.json --submission outputs/pred_openrouter_full.csv
+  --input public-test_1780368312.json --submission output/pred_openrouter_full.csv
 ```
 
 Useful flags: `--openrouter-model`, `--openrouter-temperature`,

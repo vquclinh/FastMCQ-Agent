@@ -130,7 +130,7 @@ Chunk-selection smoke (no OpenRouter, no CSV):
 python scripts/compare_neural_vs_lexical_chunks.py --input public-test_1780368312.json \
   --method embedding --model-path models/bge-m3 \
   --max-samples 30 --top-k 4 --candidate-top-k 12 \
-  --output outputs/neural_vs_lexical_bge_m3_chunk_report.jsonl
+  --output output/neural_vs_lexical_bge_m3_chunk_report.jsonl
 ```
 
 ## Performance & model caching (Phase 2L.12)

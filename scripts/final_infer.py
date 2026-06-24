@@ -43,10 +43,13 @@ _PROTECTED_NAMES = {"pred_v13_multilayer_candidate_api30_from_v12b.csv",
 _GLOBAL_LABELS = set("ABCDEFGHIJK")
 # Input autodetect order (BTC: doc_public_test.csv / private_test.csv under /data first).
 _INPUT_CANDIDATES = (
-    "/data/doc_public_test.csv", "/data/private_test.csv",
-    "/data/public-test.json", "/data/public-test_1780368312.json",
-    "doc_public_test.csv", "private_test.csv",
-    "public-test_1780368312.json", "public-test.json",
+    # BTC names first (private before public), CSV and JSON, under /data then cwd.
+    "/data/private_test.csv", "/data/private_test.json",
+    "/data/public_test.csv", "/data/public_test.json",
+    "/data/doc_public_test.csv", "/data/doc_public_test.json",
+    "/data/public-test.json", "/data/public-test.csv", "/data/public-test_1780368312.json",
+    "private_test.csv", "private_test.json", "public_test.csv", "public_test.json",
+    "doc_public_test.csv", "public-test_1780368312.json", "public-test.json",
 )
 
 
@@ -252,17 +255,29 @@ def _public_replay(args, config):
     return "public_replay", src, n
 
 
+def _resolve_maxq(v):
+    """Resolve a max-qids flag value to an int cap, or None meaning 'all input qids'.
+    Accepts None / 'all' / '' -> None; an int or numeric string -> int. Never hardcodes a size."""
+    if v is None:
+        return None
+    if isinstance(v, str) and v.strip().lower() in ("all", ""):
+        return None
+    return int(v)
+
+
 def _dynamic_full(args, config):
     """The real production system: run the full dynamic architecture over the given input."""
     from src.fastmcq_system import run_fastmcq_system, FastMCQSystemConfig
     samples = load_dataset(args.input)
     cfg = FastMCQSystemConfig(
         mode="dynamic_full", enable_v12b=args.enable_v12b, enable_v13=args.enable_v13,
-        v12b_policy=args.v12b_policy, v12b_max_qids=args.v12b_max_qids,
-        v12b_permutations=args.v12b_permutations, v13_max_qids=args.v13_max_qids,
+        v12b_policy=args.v12b_policy, v12b_max_qids=_resolve_maxq(args.v12b_max_qids),
+        v12b_permutations=args.v12b_permutations, v13_max_qids=_resolve_maxq(args.v13_max_qids),
         system_policy=args.system_policy, max_overrides=args.max_overrides,
+        profile=getattr(args, "profile", None),
         model=args.model or config.get("model"),
         budget_usd=args.budget_usd, execute_api=args.execute_api,
+        base_execute_api=args.base_execute_api,
         work_dir=args.work_dir or "scratch/fastmcq_run", resume=args.resume)
     report = run_fastmcq_system(samples, args.output, cfg)
     print(f"[final_infer] base predictions : {report.base_predictions_count}")
@@ -296,6 +311,7 @@ _PROFILE_FLAGS = {
     "mode": ["--mode"],
     "allow_public_replay": ["--allow-public-replay"],
     "execute_api": ["--execute-api", "--no-api"],
+    "base_execute_api": ["--base-execute-api", "--no-base-api"],
     "enable_v12b": ["--enable-v12b", "--disable-v12b"],
     "enable_v13": ["--enable-v13", "--disable-v13"],
     "model": ["--model"],
@@ -359,15 +375,20 @@ def main(argv=None) -> int:
     # API gating for dynamic_full: no-api by default; --execute-api to call the model.
     ap.add_argument("--execute-api", dest="execute_api", action="store_true", default=False)
     ap.add_argument("--no-api", dest="execute_api", action="store_false")
+    # Independent control of the BASE predictor's API use (None -> inherit --execute-api).
+    ap.add_argument("--base-execute-api", dest="base_execute_api", action="store_true", default=None)
+    ap.add_argument("--no-base-api", dest="base_execute_api", action="store_false")
     # V12B / V13 layer toggles.
     ap.add_argument("--enable-v12b", dest="enable_v12b", action="store_true", default=True)
     ap.add_argument("--disable-v12b", dest="enable_v12b", action="store_false")
-    ap.add_argument("--v12b-max-qids", type=int, default=None)
+    ap.add_argument("--v12b-max-qids", default="all",
+                    help="int, or 'all' (default) = every input qid; never hardcode a size")
     ap.add_argument("--v12b-permutations", type=int, default=6)
     ap.add_argument("--v12b-policy", choices=["conservative", "balanced"], default="conservative")
     ap.add_argument("--enable-v13", dest="enable_v13", action="store_true", default=True)
     ap.add_argument("--disable-v13", dest="enable_v13", action="store_false")
-    ap.add_argument("--v13-max-qids", type=int, default=None)
+    ap.add_argument("--v13-max-qids", default="all",
+                    help="int, or 'all' (default) = every input qid; never hardcode a size")
     ap.add_argument("--system-policy", choices=["conservative", "balanced"], default="conservative")
     ap.add_argument("--max-overrides", type=int, default=None)
     # Legacy flags (v11_independent regeneration).

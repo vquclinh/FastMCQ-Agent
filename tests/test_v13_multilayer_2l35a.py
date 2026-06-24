@@ -16,7 +16,7 @@ from src import content_first_answerer as CF
 from src import least_to_most_constraint_solver as LTM
 
 _INPUT = str(_ROOT / "public-test_1780368312.json")
-_V11 = str(_ROOT / "outputs" / "pred_v11_independent_rerun1.csv")
+_V11 = str(_ROOT / "output" / "pred_v11_independent_rerun1.csv")
 
 
 def _load(script):
@@ -166,8 +166,8 @@ def test_selector_rejects_weak_single_source():
 
 def test_selector_refuses_protected_outputs():
     sel = _load("build_v13_multilayer_candidate")
-    for prot in ("outputs/pred_v11_independent_rerun1.csv", "outputs/pred.csv",
-                 "outputs/pred_v10_full_production_user_run.csv"):
+    for prot in ("output/pred_v11_independent_rerun1.csv", "output/pred.csv",
+                 "output/pred_v10_full_production_user_run.csv"):
         try:
             sel.main(["--input", _INPUT, "--current", _V11,
                       "--candidates", str(_ROOT / "nope.jsonl"), "--output", prot])

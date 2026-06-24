@@ -3,7 +3,7 @@
 
 Starts from the frozen v11 winner and overrides a qid ONLY when the mapped-back answer is
 stable across option permutations (i.e. position-bias resistant). Output is a SHADOW candidate
-(``outputs/pred_v12b_permutation_candidate.csv``); it never overwrites the frozen best, v10,
+(``output/pred_v12b_permutation_candidate.csv``); it never overwrites the frozen best, v10,
 v8, or pred.csv.
 
 Conservative override:
@@ -97,7 +97,7 @@ def main(argv=None) -> int:
     ap.add_argument("--input", required=True)
     ap.add_argument("--current", required=True)
     ap.add_argument("--permutation-records", required=True)
-    ap.add_argument("--output", default="outputs/pred_v12b_permutation_candidate.csv")
+    ap.add_argument("--output", default="output/pred_v12b_permutation_candidate.csv")
     ap.add_argument("--review-dir", default="scratch/v12b_option_permutation/review")
     ap.add_argument("--policy", choices=["conservative", "balanced"], default="conservative")
     ap.add_argument("--max-overrides", type=int, default=None)

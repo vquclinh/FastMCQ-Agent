@@ -19,7 +19,7 @@ sys.path.insert(0, str(_ROOT))
 
 _INPUT = str(_ROOT / "public-test_1780368312.json")
 # Current production best (promoted in 2L.36A): V12B option-permutation debiaser (78.83).
-_BEST = str(_ROOT / "outputs" / "pred_v12b_permutation_candidate_api30.csv")
+_BEST = str(_ROOT / "output" / "pred_v12b_permutation_candidate_api30.csv")
 
 
 def _fi():
@@ -120,13 +120,15 @@ def test_no_detectable_input_prints_timing_and_clear_error(monkeypatch):
 
 # --- input/output resolution units ------------------------------------------
 
-def test_input_autodetect_prefers_doc_over_private(monkeypatch):
+def test_input_autodetect_prefers_private_test(monkeypatch):
+    # BTC priority (2L.42A): private_test.csv is auto-detected before public/doc variants.
     mod = _fi()
     d = tempfile.mkdtemp()
     _qid_csv(Path(d) / "doc_public_test.csv")
+    _qid_csv(Path(d) / "public_test.csv")
     _qid_csv(Path(d) / "private_test.csv")
     monkeypatch.chdir(d)
-    assert Path(mod._resolve_input(None)).name == "doc_public_test.csv"
+    assert Path(mod._resolve_input(None)).name == "private_test.csv"
 
 
 def test_input_explicit_and_env(monkeypatch):
@@ -173,8 +175,8 @@ def test_global_label_validation_when_no_choices():
 
 def test_frozen_best_and_v10_still_protected():
     mod = _fi()
-    for name in ("outputs/pred_v11_independent_rerun1.csv",
-                 "outputs/pred_v10_full_production_user_run.csv"):
+    for name in ("output/pred_v11_independent_rerun1.csv",
+                 "output/pred_v10_full_production_user_run.csv"):
         try:
             mod.main(["--input", _INPUT, "--output", name])
             assert False, name

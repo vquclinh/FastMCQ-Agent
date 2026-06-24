@@ -19,6 +19,10 @@ from src import programmatic_solver_layer as PS
 from src import content_first_answerer as CF
 from src import least_to_most_constraint_solver as LTM
 
+def _log(msg):
+    print(msg, flush=True)
+
+
 _MULTI_COND_HINTS = ("đúng", "sai", "phát biểu", "chọn câu", "không đúng", "ngoại trừ",
                      "statement", "which of the following", "true", "false", "except")
 _CONTENT_HINTS = ("tục ngữ", "thành ngữ", "nghĩa", "định nghĩa", "là gì", "thuật ngữ",
@@ -152,12 +156,70 @@ def _interpret_api(layer, sample, parsed):
     return None, None, None, False, "unknown_layer"
 
 
+def _generic_verifier_prompt(sample):
+    """Safe fallback prompt for unknown layer names (never empty)."""
+    choices = sample.get("choices") or []
+    labels = labels_for(len(choices))
+    opts = "\n".join(f"{lab}. {txt}" for lab, txt in zip(labels, choices))
+    return ("Answer the multiple-choice question. Return a SINGLE JSON object only: "
+            '{"selected_label": "<one option letter>", "selected_option_text": "<verbatim>", '
+            '"confidence": 0..1}.\n\nQuestion:\n'
+            f"{sample.get('question','')}\n\nOptions:\n{opts}\n\nJSON:")
+
+
 def _prompt(layer, sample, route):
+    """Return the raw prompt text for a layer (may be empty if the builder produced nothing)."""
     if layer == "programmatic_solver":
         return PS.build_programmatic_prompt(sample, PS.classify_programmatic_domain(sample))
     if layer == "content_first":
         return CF.build_content_first_prompt(sample, route)
-    return LTM.build_ltm_constraint_prompt(sample, route)
+    if layer == "least_to_most":
+        return LTM.build_ltm_constraint_prompt(sample, route)
+    return _generic_verifier_prompt(sample)   # unknown layer -> safe generic prompt
+
+
+def build_messages(layer, sample, route):
+    """Return (messages_list, prompt_len) or (None, 0) if the prompt is empty/invalid.
+    Never returns an empty/whitespace prompt to the API."""
+    text = (_prompt(layer, sample, route) or "").strip()
+    if not text:
+        return None, 0
+    return [{"role": "user", "content": text}], len(text)
+
+
+def _result_to_record(r: "V13LayerResult") -> dict:
+    return {"qid": r.qid, "layer": r.layer, "proposed_answer": r.proposed_answer,
+            "proposed_option_text": r.proposed_option_text, "accept": r.accept,
+            "confidence": r.confidence, "reason": r.reason, "evidence": r.evidence,
+            "metadata": r.metadata}
+
+
+def _record_to_result(rec: dict) -> "V13LayerResult":
+    return V13LayerResult(
+        qid=rec.get("qid"), layer=rec.get("layer"), proposed_answer=rec.get("proposed_answer"),
+        proposed_option_text=rec.get("proposed_option_text"), accept=bool(rec.get("accept")),
+        confidence=rec.get("confidence"), reason=rec.get("reason") or "",
+        evidence=rec.get("evidence") or "", metadata=rec.get("metadata") or {})
+
+
+def _load_completed(path):
+    """Load completed V13 records keyed by (qid, layer). Tolerates partial/corrupt last line."""
+    done = {}
+    if not Path(path).exists():
+        return done
+    with open(path, encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                rec = json.loads(line)
+            except Exception:
+                continue   # skip a partial/corrupt trailing line
+            key = (rec.get("qid"), rec.get("layer"))
+            if key[0] and key[1]:
+                done[key] = rec
+    return done
 
 
 def run_v13_layer(samples, base_predictions, targets, *, model=None, execute_api=False,
@@ -171,41 +233,65 @@ def run_v13_layer(samples, base_predictions, targets, *, model=None, execute_api
         client = SelectiveAPIClient(model=model)
 
     work = Path(work_dir); work.mkdir(parents=True, exist_ok=True)
-    results, raw = [], []
-    for t in targets:
-        s = by_qid.get(t.qid)
-        if not s:
-            continue
-        for layer in t.target_layers:
-            if not execute_api:
-                # Deterministic-only path: programmatic arithmetic may run offline.
-                if layer == "programmatic_solver":
-                    det = _deterministic_programmatic(s)
-                    if det and det[0] != t.current_answer and is_valid_label(det[0], s):
-                        results.append(V13LayerResult(
-                            t.qid, layer, det[0], det[1], True, 1.0,
-                            "deterministic_arithmetic", f"value={det[2]}",
-                            {"mode": "deterministic_no_api"}))
-                        continue
-                    if det:
-                        results.append(V13LayerResult(
-                            t.qid, layer, det[0], det[1], False, 1.0,
-                            "deterministic_matches_current", f"value={det[2]}",
-                            {"mode": "deterministic_no_api"}))
-                        continue
-                results.append(V13LayerResult(t.qid, layer, None, None, False, None,
-                                              "skipped_no_api", "", {"mode": "no_api"}))
+    rec_path = work / "v13_dynamic_records.jsonl"
+
+    # Resume: load completed (qid, layer) units; reopen the JSONL in append mode.
+    completed = _load_completed(rec_path) if resume else {}
+    if resume and completed:
+        _log(f"[V13] resume loaded={len(completed)} skipped={len(completed)}")
+    fh = open(rec_path, "a" if (resume and completed) else "w", encoding="utf-8")
+
+    def _emit(result):
+        fh.write(json.dumps(_result_to_record(result), ensure_ascii=False) + "\n")
+        fh.flush()
+
+    total = sum(len(t.target_layers) for t in targets)
+    results, idx = [], 0
+    try:
+        for t in targets:
+            s = by_qid.get(t.qid)
+            if not s:
                 continue
-            # API path.
-            content, _u = client.chat(_prompt(layer, s, t.route))
-            parsed = client.parse_json(content) or {}
-            lab, text, evid, valid, reason = _interpret_api(layer, s, parsed)
-            accept = bool(valid and lab and lab != t.current_answer and is_valid_label(lab, s))
-            results.append(V13LayerResult(
-                t.qid, layer, lab, text, accept, parsed.get("confidence"),
-                reason or "ok", str(evid or "")[:200], {"mode": "api"}))
-            raw.append({"qid": t.qid, "layer": layer, "proposed": lab, "accept": accept})
-    if raw:
-        (work / "v13_dynamic_records.jsonl").write_text(
-            "\n".join(json.dumps(r, ensure_ascii=False) for r in raw), encoding="utf-8")
+            for layer in t.target_layers:
+                idx += 1
+                key = (t.qid, layer)
+                if key in completed:                 # resume: reuse, do not re-call/duplicate
+                    results.append(_record_to_result(completed[key]))
+                    continue
+
+                if not execute_api:
+                    if layer == "programmatic_solver":
+                        det = _deterministic_programmatic(s)
+                        if det and det[0] != t.current_answer and is_valid_label(det[0], s):
+                            r = V13LayerResult(t.qid, layer, det[0], det[1], True, 1.0,
+                                               "deterministic_arithmetic", f"value={det[2]}",
+                                               {"mode": "deterministic_no_api"})
+                            results.append(r); _emit(r); continue
+                        if det:
+                            r = V13LayerResult(t.qid, layer, det[0], det[1], False, 1.0,
+                                               "deterministic_matches_current", f"value={det[2]}",
+                                               {"mode": "deterministic_no_api"})
+                            results.append(r); _emit(r); continue
+                    r = V13LayerResult(t.qid, layer, None, None, False, None,
+                                       "skipped_no_api", "", {"mode": "no_api"})
+                    results.append(r); _emit(r); continue
+
+                # API path: build + validate the prompt BEFORE any call.
+                messages, plen = build_messages(layer, s, t.route)
+                if messages is None:
+                    _log(f"[V13] skip qid={t.qid} layer={layer} reason=empty_prompt")
+                    r = V13LayerResult(t.qid, layer, None, None, False, None,
+                                       "skipped_empty_prompt", "", {"mode": "api"})
+                    results.append(r); _emit(r); continue
+                _log(f"[V13] {idx}/{total} qid={t.qid} layer={layer} prompt_len={plen}")
+                content, _u = client.chat(messages)
+                parsed = client.parse_json(content) or {}
+                lab, text, evid, valid, reason = _interpret_api(layer, s, parsed)
+                accept = bool(valid and lab and lab != t.current_answer and is_valid_label(lab, s))
+                r = V13LayerResult(t.qid, layer, lab, text, accept, parsed.get("confidence"),
+                                   reason or "ok", str(evid or "")[:200], {"mode": "api"})
+                results.append(r); _emit(r)
+    finally:
+        fh.close()
+    _log(f"[V13] done records={len(results)} path={rec_path}")
     return results

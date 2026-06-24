@@ -103,12 +103,12 @@ def test_repair_detects_none_label_dry_run(monkeypatch):
     d = tempfile.mkdtemp()
     inp, wd = _work(d, [{"qid": "q1", "final_answer": "A", "final_source": "formula_bank", "note": ""},
                         {"qid": "q2", "final_answer": "", "final_source": "none", "note": "no candidates"}])
-    rc = mod.main(["--input", inp, "--work-dir", wd, "--output", f"{d}/outputs/r.csv",
+    rc = mod.main(["--input", inp, "--work-dir", wd, "--output", f"{d}/output/r.csv",
                    "--model", "qwen/qwen3.5-9b-20260310", "--dry-run"])
     assert rc == 0
     rep = json.loads((Path(wd) / "v11_independent_repair_report.json").read_text())
     assert rep["none_labels"] == 1 and rep["broken_total"] == 1
-    assert not Path(f"{d}/outputs/r.csv").exists()     # no outputs in dry-run
+    assert not Path(f"{d}/output/r.csv").exists()     # no outputs in dry-run
 
 
 def test_repair_refuses_v10_usage_in_source():
@@ -122,7 +122,7 @@ def test_repair_execute_requires_ack():
     inp, wd = _work(d, [{"qid": "q1", "final_answer": "A", "final_source": "x", "note": ""},
                         {"qid": "q2", "final_answer": "A", "final_source": "x", "note": ""}])
     try:
-        mod.main(["--input", inp, "--work-dir", wd, "--output", f"{d}/outputs/r.csv",
+        mod.main(["--input", inp, "--work-dir", wd, "--output", f"{d}/output/r.csv",
                   "--model", "qwen/qwen3.5-9b-20260310", "--execute"])
         assert False
     except SystemExit as e:
@@ -141,11 +141,11 @@ def test_repair_execute_reuses_candidate_and_validates(monkeypatch):
                      {"qid": "q2", "final_answer": "", "final_source": "none", "note": "no candidates"}],
                     cands=[{"qid": "q2", "agent": "route_specialist", "answer": "B",
                             "parse_status": "ok", "confidence": 0.8, "evidence": "x"}])
-    rc = mod.main(["--input", inp, "--work-dir", wd, "--output", f"{d}/outputs/r.csv",
+    rc = mod.main(["--input", inp, "--work-dir", wd, "--output", f"{d}/output/r.csv",
                    "--model", "qwen/qwen3.5-9b-20260310", "--execute",
                    "--i-understand-this-writes-outputs"])
     assert rc == 0
-    pred = {r["qid"]: r["answer"] for r in csv.DictReader(open(f"{d}/outputs/r.csv"))}
+    pred = {r["qid"]: r["answer"] for r in csv.DictReader(open(f"{d}/output/r.csv"))}
     assert set(pred) == {"q1", "q2"} and pred["q2"] == "B" and pred["q1"] == "A"
 
 
@@ -154,7 +154,7 @@ def test_repair_protected_output_rejected():
     d = tempfile.mkdtemp()
     inp, wd = _work(d, [{"qid": "q1", "final_answer": "A", "final_source": "x", "note": ""}])
     try:
-        mod.main(["--input", inp, "--work-dir", wd, "--output", "outputs/pred.csv",
+        mod.main(["--input", inp, "--work-dir", wd, "--output", "output/pred.csv",
                   "--model", "qwen/qwen3.5-9b-20260310", "--dry-run"])
         assert False
     except SystemExit as e:
@@ -166,7 +166,7 @@ def test_repair_disallowed_model_rejected():
     d = tempfile.mkdtemp()
     inp, wd = _work(d, [{"qid": "q1", "final_answer": "A", "final_source": "x", "note": ""}])
     try:
-        mod.main(["--input", inp, "--work-dir", wd, "--output", f"{d}/outputs/r.csv",
+        mod.main(["--input", inp, "--work-dir", wd, "--output", f"{d}/output/r.csv",
                   "--model", "claude-3-opus", "--dry-run"])
         assert False
     except ValueError:

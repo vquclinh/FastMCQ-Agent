@@ -42,13 +42,13 @@ def _is_production_source(name: str) -> bool:
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="Candidate disagreement review (no API)")
     ap.add_argument("--input", required=True)
-    ap.add_argument("--baseline", default="outputs/pred.csv")
+    ap.add_argument("--baseline", default="output/pred.csv")
     ap.add_argument("--candidate", action="append", default=[], help="candidate CSV (repeatable)")
     ap.add_argument("--base-log", default=None)
     ap.add_argument("--v8-log", default=None)
     ap.add_argument("--v9-log", default=None)
     ap.add_argument("--production-log", default=None)
-    ap.add_argument("--output", default="outputs/candidate_disagreement_review.csv")
+    ap.add_argument("--output", default="output/candidate_disagreement_review.csv")
     args = ap.parse_args(argv)
 
     samples = {s.get("qid"): s for s in load_samples(args.input)}

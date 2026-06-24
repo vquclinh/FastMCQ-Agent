@@ -6,7 +6,7 @@ from v11's own candidates (deterministic tools + evidence packs + allowed-model 
 + a direct fallback) and selects one final answer per qid via the independent selector. It
 has NO ``--base-pred`` and never reads v10 for generation; ``--compare-pred`` is read only
 AFTER all decisions are finalized, for a report. DRY-RUN BY DEFAULT. Writes the final CSV
-under outputs/ and logs/summaries under the work-dir. Enforces the model policy, refuses
+under output/ and logs/summaries under the work-dir. Enforces the model policy, refuses
 protected output names, requires explicit acknowledgement, and validates the output.
 """
 
@@ -44,8 +44,8 @@ _DEFAULT_COST_PER_CALL_USD = 0.002
 
 def _require_outputs(path):
     p = str(path).replace("\\", "/")
-    if "/outputs/" not in p and not p.startswith("outputs/"):
-        raise SystemExit(f"REFUSING: --output must be under outputs/ (got {path})")
+    if "/output/" not in p and not p.startswith("output/"):
+        raise SystemExit(f"REFUSING: --output must be under output/ (got {path})")
     if Path(path).name in _PROTECTED_NAMES:
         raise SystemExit(f"REFUSING to overwrite a protected/locked file: {Path(path).name}")
     guard_output(path)

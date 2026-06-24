@@ -35,7 +35,7 @@ def _fixture(d, n=2):
 
 def _base_args(d, inp, base, plan, **over):
     a = {"--input": inp, "--base-pred": base, "--plan": plan,
-         "--work-dir": f"{d}/scratch/wd", "--output": f"{d}/outputs/sub.csv",
+         "--work-dir": f"{d}/scratch/wd", "--output": f"{d}/output/sub.csv",
          "--mode": "cheap", "--model": "qwen/qwen3.5-9b-20260310"}
     a.update(over)
     out = []
@@ -54,7 +54,7 @@ def test_dry_run_no_api_no_outputs(monkeypatch):
     d = tempfile.mkdtemp(); inp, base, plan = _fixture(d)
     rc = mod.main(_base_args(d, inp, base, plan) + ["--dry-run"])
     assert rc == 0
-    assert not Path(f"{d}/outputs/sub.csv").exists()
+    assert not Path(f"{d}/output/sub.csv").exists()
 
 
 # --- guards -------------------------------------------------------------------
@@ -73,7 +73,7 @@ def test_protected_output_name_rejected():
     mod = _load("run_full_adaptive_submission.py")
     d = tempfile.mkdtemp(); inp, base, plan = _fixture(d)
     try:
-        mod.main(_base_args(d, inp, base, plan, **{"--output": "outputs/pred.csv"}) + ["--dry-run"])
+        mod.main(_base_args(d, inp, base, plan, **{"--output": "output/pred.csv"}) + ["--dry-run"])
         assert False
     except SystemExit as e:
         assert "protected" in str(e).lower()
@@ -96,14 +96,14 @@ def test_output_must_be_under_outputs():
         mod.main(_base_args(d, inp, base, plan, **{"--output": f"{d}/scratch/sub.csv"}) + ["--dry-run"])
         assert False
     except SystemExit as e:
-        assert "outputs/" in str(e)
+        assert "output/" in str(e)
 
 
 def test_work_dir_must_be_under_scratch():
     mod = _load("run_full_adaptive_submission.py")
     d = tempfile.mkdtemp(); inp, base, plan = _fixture(d)
     try:
-        mod.main(_base_args(d, inp, base, plan, **{"--work-dir": f"{d}/outputs/wd"}) + ["--dry-run"])
+        mod.main(_base_args(d, inp, base, plan, **{"--work-dir": f"{d}/output/wd"}) + ["--dry-run"])
         assert False
     except SystemExit as e:
         assert "scratch/" in str(e)
@@ -154,7 +154,7 @@ def test_execute_calls_generation_then_build_in_order(monkeypatch):
     rc = mod.main(_base_args(d, inp, base, plan) + ["--execute", "--i-understand-this-writes-outputs"])
     assert rc == 0
     assert calls == ["adaptive", "variant"]            # generation BEFORE build
-    pred = {r["qid"]: r["answer"] for r in csv.DictReader(open(f"{d}/outputs/sub.csv"))}
+    pred = {r["qid"]: r["answer"] for r in csv.DictReader(open(f"{d}/output/sub.csv"))}
     assert set(pred) == {"q1", "q2"}                   # validated full output
 
 

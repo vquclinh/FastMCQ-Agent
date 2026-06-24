@@ -17,6 +17,32 @@ from src.mcq_permutation_debiaser import (
     build_option_permutations, map_permuted_answer_to_original,
     summarize_permutation_votes, select_permutation_override)
 
+
+def _log(msg):
+    print(msg, flush=True)
+
+
+def _load_completed_v12b(path):
+    """Load completed V12B records keyed by (qid, permutation_id) for resume. Tolerates a
+    partial/corrupt trailing line."""
+    done = {}
+    if not Path(path).exists():
+        return done
+    with open(path, encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                rec = json.loads(line)
+            except Exception:
+                continue
+            key = (rec.get("original_qid"), rec.get("permutation_id"))
+            if key[0] and key[1]:
+                done[key] = rec
+    return done
+
+
 _MULTI_COND_HINTS = ("đúng", "sai", "phát biểu", "chọn câu", "không đúng", "ngoại trừ",
                      "statement", "which of the following", "true", "false", "except")
 _WEAK_SOURCE_TOKENS = ("fallback", "weak", "single_source", "api:", "dynamic_api")
@@ -122,32 +148,51 @@ def run_v12b_layer(samples, base_predictions, targets, *, model=None, execute_ap
 
     work = Path(work_dir); work.mkdir(parents=True, exist_ok=True)
     rec_path = work / "v12b_dynamic_records.jsonl"
-    results, all_records = [], []
-    for t in targets:
-        s = by_qid.get(t.qid)
-        if not s or len(s.get("choices") or []) < 2:
-            results.append(V12BLayerResult(t.qid, None, False, "no_choices", {}, 0, None, {}))
-            continue
-        records = []
-        for perm in build_option_permutations(s, n=permutations):
-            content, _u = client.chat(_prompt(perm, s.get("question", "")))
-            parsed = client.parse_json(content) or {}
-            res = map_permuted_answer_to_original(
-                s, perm, parsed.get("selected_label"), parsed.get("selected_option_text"),
-                parsed.get("label_matches_option"))
-            rec = {"original_qid": t.qid, "permutation_id": perm.permutation_id,
-                   "mapped_original_label": res.mapped_original_label,
-                   "parse_status": "ok" if parsed else "parse_error",
-                   "label_option_match": res.label_option_match, "valid": res.valid,
-                   "confidence": parsed.get("confidence")}
-            records.append(rec); all_records.append(rec)
-        summ = summarize_permutation_votes(t.qid, cur.get(t.qid, ""), records)
-        dec = select_permutation_override(summ, policy=policy)
-        results.append(V12BLayerResult(
-            qid=t.qid, proposed_answer=dec.proposed_answer, accept=dec.accept,
-            reason=dec.reason, vote_counts=summ.vote_counts, valid_votes=summ.valid_records,
-            records_path=str(rec_path), metadata={"priority_score": t.priority_score}))
-    with rec_path.open("w", encoding="utf-8") as f:
-        for r in all_records:
-            f.write(json.dumps(r, ensure_ascii=False) + "\n")
+
+    # Resume: load completed (qid, permutation_id) units; reopen JSONL in append mode.
+    completed = _load_completed_v12b(rec_path) if resume else {}
+    if resume and completed:
+        _log(f"[V12B] resume loaded={len(completed)} skipped={len(completed)}")
+    fh = open(rec_path, "a" if (resume and completed) else "w", encoding="utf-8")
+
+    def _emit(rec):
+        fh.write(json.dumps(rec, ensure_ascii=False) + "\n")
+        fh.flush()
+
+    n_recs = 0
+    results = []
+    try:
+        for t in targets:
+            s = by_qid.get(t.qid)
+            if not s or len(s.get("choices") or []) < 2:
+                results.append(V12BLayerResult(t.qid, None, False, "no_choices", {}, 0, None, {}))
+                continue
+            perms = build_option_permutations(s, n=permutations)
+            records = []
+            for j, perm in enumerate(perms, start=1):
+                key = (t.qid, perm.permutation_id)
+                if key in completed:                 # resume: reuse, do not re-call/duplicate
+                    records.append(completed[key])
+                    continue
+                _log(f"[V12B] qid={t.qid} permutation={j}/{len(perms)}")
+                content, _u = client.chat(_prompt(perm, s.get("question", "")))
+                parsed = client.parse_json(content) or {}
+                res = map_permuted_answer_to_original(
+                    s, perm, parsed.get("selected_label"), parsed.get("selected_option_text"),
+                    parsed.get("label_matches_option"))
+                rec = {"original_qid": t.qid, "permutation_id": perm.permutation_id,
+                       "mapped_original_label": res.mapped_original_label,
+                       "parse_status": "ok" if parsed else "parse_error",
+                       "label_option_match": res.label_option_match, "valid": res.valid,
+                       "confidence": parsed.get("confidence")}
+                records.append(rec); _emit(rec); n_recs += 1
+            summ = summarize_permutation_votes(t.qid, cur.get(t.qid, ""), records)
+            dec = select_permutation_override(summ, policy=policy)
+            results.append(V12BLayerResult(
+                qid=t.qid, proposed_answer=dec.proposed_answer, accept=dec.accept,
+                reason=dec.reason, vote_counts=summ.vote_counts, valid_votes=summ.valid_records,
+                records_path=str(rec_path), metadata={"priority_score": t.priority_score}))
+    finally:
+        fh.close()
+    _log(f"[V12B] done records={n_recs} path={rec_path}")
     return results

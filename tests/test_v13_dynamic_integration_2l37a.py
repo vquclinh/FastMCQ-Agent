@@ -21,7 +21,7 @@ from src.fastmcq_system import run_fastmcq_system, FastMCQSystemConfig
 
 _PUBLIC = str(_ROOT / "public-test_1780368312.json")
 # public_replay now reproduces the V13 79.7 artifact (promoted in 2L.38A).
-_V12B = str(_ROOT / "outputs" / "pred_v13_multilayer_candidate_api30_from_v12b.csv")
+_V12B = str(_ROOT / "output" / "pred_v13_multilayer_candidate_api30_from_v12b.csv")
 
 
 def _md5(p):

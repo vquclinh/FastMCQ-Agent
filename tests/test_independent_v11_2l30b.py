@@ -35,7 +35,7 @@ def _fixture(d, n=2):
 
 def _args(d, inp, **over):
     a = {"--input": inp, "--work-dir": f"{d}/scratch/wd",
-         "--output": f"{d}/outputs/v11.csv", "--mode": "cheap",
+         "--output": f"{d}/output/v11.csv", "--mode": "cheap",
          "--model": "qwen/qwen3.5-9b-20260310"}
     a.update(over)
     out = []
@@ -57,7 +57,7 @@ def test_runner_has_no_base_pred_arg():
 def test_runner_rejects_base_pred_flag():
     mod = _load(); d = tempfile.mkdtemp(); inp = _fixture(d)
     try:
-        mod.main(_args(d, inp, **{"--base-pred": "outputs/pred_v10_full_production_user_run.csv"})
+        mod.main(_args(d, inp, **{"--base-pred": "output/pred_v10_full_production_user_run.csv"})
                  + ["--dry-run"])
         assert False
     except SystemExit:
@@ -88,7 +88,7 @@ def test_dry_run_no_api_no_outputs(monkeypatch):
                         lambda *a, **k: (_ for _ in ()).throw(AssertionError("no API in dry-run")))
     mod = _load(); d = tempfile.mkdtemp(); inp = _fixture(d)
     rc = mod.main(_args(d, inp) + ["--dry-run"])
-    assert rc == 0 and not Path(f"{d}/outputs/v11.csv").exists()
+    assert rc == 0 and not Path(f"{d}/output/v11.csv").exists()
 
 
 def test_execute_requires_ack():
@@ -102,7 +102,7 @@ def test_execute_requires_ack():
 
 def test_protected_output_rejected():
     mod = _load(); d = tempfile.mkdtemp(); inp = _fixture(d)
-    for name in ("outputs/pred.csv", "outputs/pred_v10_full_production_user_run.csv"):
+    for name in ("output/pred.csv", "output/pred_v10_full_production_user_run.csv"):
         try:
             mod.main(_args(d, inp, **{"--output": name}) + ["--dry-run"])
             assert False
@@ -125,13 +125,13 @@ def test_output_must_be_under_outputs():
         mod.main(_args(d, inp, **{"--output": f"{d}/scratch/x.csv"}) + ["--dry-run"])
         assert False
     except SystemExit as e:
-        assert "outputs/" in str(e)
+        assert "output/" in str(e)
 
 
 def test_work_dir_must_be_under_scratch():
     mod = _load(); d = tempfile.mkdtemp(); inp = _fixture(d)
     try:
-        mod.main(_args(d, inp, **{"--work-dir": f"{d}/outputs/wd"}) + ["--dry-run"])
+        mod.main(_args(d, inp, **{"--work-dir": f"{d}/output/wd"}) + ["--dry-run"])
         assert False
     except SystemExit as e:
         assert "scratch/" in str(e)

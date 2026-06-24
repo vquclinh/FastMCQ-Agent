@@ -8,8 +8,8 @@ default. Never reads the external answer sheet; never invents legal sources.
 Dry-run (default; NO API):
     python scripts/run_law_admin_verifier_sample.py \
       --input public-test_1780368312.json \
-      --base-pred outputs/pred_v7_programmatic_assist_from_v6b.csv \
-      --base-log outputs/run_v6b_qwen_rerank_calc_verifier_fast.jsonl \
+      --base-pred output/pred_v7_programmatic_assist_from_v6b.csv \
+      --base-log output/run_v6b_qwen_rerank_calc_verifier_fast.jsonl \
       --max-calls 7
 """
 
@@ -59,8 +59,8 @@ def main(argv=None) -> int:
     ap.add_argument("--max-calls", type=int, default=7)
     ap.add_argument("--allow-override", action="store_true", default=False)
     ap.add_argument("--execute", action="store_true", default=False)
-    ap.add_argument("--output-jsonl", default="outputs/law_admin_verifier_dryrun.jsonl")
-    ap.add_argument("--output-csv", default="outputs/law_admin_verifier_dryrun.csv")
+    ap.add_argument("--output-jsonl", default="output/law_admin_verifier_dryrun.jsonl")
+    ap.add_argument("--output-csv", default="output/law_admin_verifier_dryrun.csv")
     args = ap.parse_args(argv)
 
     guard_output(args.output_jsonl); guard_output(args.output_csv)

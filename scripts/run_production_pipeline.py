@@ -38,12 +38,12 @@ from src.solver_factory import build_solver  # noqa: E402
 
 # Protected LOCAL output names that must not be overwritten without --allow-overwrite-protected.
 _PROTECTED_LOCAL = {
-    "outputs/pred.csv", "outputs/pred_v2_calc_rerank.csv",
-    "outputs/pred_v6_qwen_rerank_calc_verifier.csv",
-    "outputs/pred_v6b_qwen_rerank_calc_verifier_fast.csv",
-    "outputs/pred_v7_programmatic_assist_from_v6b.csv",
-    "outputs/pred_v8_clean_generalized_from_v7.csv",
-    "outputs/pred_v9_formula_bank_from_v8_clean.csv",
+    "output/pred.csv", "output/pred_v2_calc_rerank.csv",
+    "output/pred_v6_qwen_rerank_calc_verifier.csv",
+    "output/pred_v6b_qwen_rerank_calc_verifier_fast.csv",
+    "output/pred_v7_programmatic_assist_from_v6b.csv",
+    "output/pred_v8_clean_generalized_from_v7.csv",
+    "output/pred_v9_formula_bank_from_v8_clean.csv",
 }
 
 # The single stable competition preset. Expands to base-solver + deterministic layers.

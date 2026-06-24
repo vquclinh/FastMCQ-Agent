@@ -5,7 +5,7 @@ Collapses the two-step workflow (adaptive candidate generation → policy varian
 into a single production command. DRY-RUN BY DEFAULT (`--dry-run`/`--execute` mutually
 exclusive). On `--execute` it (1) runs the full adaptive selective API into the work-dir,
 (2) builds the real submission candidate under the chosen policy, (3) writes the final CSV
-to outputs/ and all summaries/diffs under the work-dir. It reuses the existing adaptive
+to output/ and all summaries/diffs under the work-dir. It reuses the existing adaptive
 runner and variant builder verbatim — no duplicated ranking/solver logic. Enforces the
 model policy, refuses protected output names, requires an explicit acknowledgement, and
 validates the output format. No qid hardcoding, no ground truth.
@@ -42,8 +42,8 @@ def _load_script(name):
 
 def _require_outputs(path):
     p = str(path).replace("\\", "/")
-    if "/outputs/" not in p and not p.startswith("outputs/"):
-        raise SystemExit(f"REFUSING: --output must be under outputs/ (got {path})")
+    if "/output/" not in p and not p.startswith("output/"):
+        raise SystemExit(f"REFUSING: --output must be under output/ (got {path})")
     if Path(path).name in _PROTECTED_NAMES:
         raise SystemExit(f"REFUSING to overwrite a protected/locked file: {Path(path).name}")
     guard_output(path)
@@ -66,7 +66,7 @@ def _validate_output(output, samples):
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="One-command full adaptive submission runner")
     ap.add_argument("--input", required=True)
-    ap.add_argument("--base-pred", default="outputs/pred_v10_full_production_user_run.csv")
+    ap.add_argument("--base-pred", default="output/pred_v10_full_production_user_run.csv")
     ap.add_argument("--v10-log", default=None)
     ap.add_argument("--plan", required=True)
     ap.add_argument("--work-dir", default="scratch/full_adaptive_v11_final")

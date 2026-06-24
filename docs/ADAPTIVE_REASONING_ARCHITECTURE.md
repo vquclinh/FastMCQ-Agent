@@ -170,7 +170,7 @@ OFF by default.
 
 ## v7 remains current best until v8 is explicitly built
 
-`outputs/pred_v7_programmatic_assist_from_v6b.csv` (v6b + 2 safe deterministic
+`output/pred_v7_programmatic_assist_from_v6b.csv` (v6b + 2 safe deterministic
 calculation overrides, validated PASS) is the current best candidate. A v8 will be
 built only in a later phase, after reviewing proposal batches, into a NEW file and
 A/B'd vs v7 — no leaderboard claim without validation.

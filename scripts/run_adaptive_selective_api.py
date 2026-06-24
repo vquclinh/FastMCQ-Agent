@@ -6,7 +6,7 @@ accuracy plan, skips ``tool_only`` questions, and for the rest picks agents/temp
 per the question's recommended layer (cheap: challenger+option_elimination @temp 0,
 judge only on disagreement; rich: all 4 agents @temp 0,0.2, judge on conflict;
 evidence_pack: API only if the offline evidence pack is weak). Enforces the model
-policy, writes only under ``scratch/``, and never touches outputs/. No qid hardcoding.
+policy, writes only under ``scratch/``, and never touches output/. No qid hardcoding.
 """
 
 from __future__ import annotations
@@ -115,7 +115,7 @@ def main(argv=None) -> int:
         print(f"scheduled (mode) : {len(scheduled)}  layers={sorted(mode_layers)}")
         print(f"upper-bound calls: {upper}   est. cost USD: {est_cost:.2f}"
               + (f"   budget={args.budget_usd}" if args.budget_usd else ""))
-        print("Pass --execute to run (human-initiated). No outputs/ writes ever.")
+        print("Pass --execute to run (human-initiated). No output/ writes ever.")
         print("=" * 64)
         return 0
 

@@ -64,7 +64,7 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="Audit the production candidate (no API, no truth)")
     ap.add_argument("--input", required=True)
     ap.add_argument("--candidate", required=True)
-    ap.add_argument("--baseline", default="outputs/pred_v10_full_production_user_run.csv")
+    ap.add_argument("--baseline", default="output/pred_v10_full_production_user_run.csv")
     ap.add_argument("--output-dir", default="scratch/production_candidate_audit")
     args = ap.parse_args(argv)
     _guard_scratch(args.output_dir)

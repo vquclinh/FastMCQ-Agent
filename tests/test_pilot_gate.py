@@ -59,7 +59,7 @@ def test_selector_refuses_non_scratch():
     mod = _load("select_adaptive_pilot_qids.py")
     d = tempfile.mkdtemp()
     try:
-        mod.main(["--plan", _plan(d), "--output", "outputs/pilot.csv"])
+        mod.main(["--plan", _plan(d), "--output", "output/pilot.csv"])
         assert False
     except SystemExit as e:
         assert "scratch/" in str(e)
@@ -104,7 +104,7 @@ def test_pilot_runner_refuses_outputs_and_mutual_exclusive():
     mod = _load("run_adaptive_pilot.py")
     d = tempfile.mkdtemp(); inp, base, pq = _pilot_qids(d)
     try:
-        mod.main(["--input", inp, "--base-pred", base, "--pilot-qids", pq, "--output-dir", "outputs/x"])
+        mod.main(["--input", inp, "--base-pred", base, "--pilot-qids", pq, "--output-dir", "output/x"])
         assert False
     except SystemExit as e:
         assert "scratch/" in str(e)
@@ -173,7 +173,7 @@ def test_report_refuses_outputs():
     d = tempfile.mkdtemp(); inp, base, pq, cands = _report_fixture(d)
     try:
         mod.main(["--input", inp, "--base-pred", base, "--pilot-qids", pq,
-                  "--pilot-candidates", cands, "--output-dir", "outputs/rep"])
+                  "--pilot-candidates", cands, "--output-dir", "output/rep"])
         assert False
     except SystemExit as e:
         assert "scratch/" in str(e)
@@ -199,7 +199,7 @@ def test_full_builder_refuses_pilot_input():
     d = tempfile.mkdtemp(); inp, base, cands = _full_fixture(d, name="pilot_api_candidates.jsonl")
     try:
         mod.main(["--input", inp, "--base-pred", base, "--api-candidates", cands,
-                  "--output", "outputs/cand_x.csv", "--i-understand-this-writes-outputs"])
+                  "--output", "output/cand_x.csv", "--i-understand-this-writes-outputs"])
         assert False
     except SystemExit as e:
         assert "pilot" in str(e).lower()
@@ -211,7 +211,7 @@ def test_full_builder_refuses_partial_run():
     inp, base, cands = _full_fixture(d, n_samples=100, n_cov=10)   # 10% coverage
     try:
         mod.main(["--input", inp, "--base-pred", base, "--api-candidates", cands,
-                  "--output", "outputs/cand_x.csv", "--i-understand-this-writes-outputs",
+                  "--output", "output/cand_x.csv", "--i-understand-this-writes-outputs",
                   "--min-coverage", "0.8"])
         assert False
     except SystemExit as e:
@@ -224,7 +224,7 @@ def test_full_builder_requires_outputs_path_and_ack():
     # missing ack
     try:
         mod.main(["--input", inp, "--base-pred", base, "--api-candidates", cands,
-                  "--output", "outputs/cand_x.csv"])
+                  "--output", "output/cand_x.csv"])
         assert False
     except SystemExit as e:
         assert "acknowledge" in str(e).lower() or "i-understand" in str(e).lower()
@@ -234,11 +234,11 @@ def test_full_builder_requires_outputs_path_and_ack():
                   "--output", "scratch/cand_x.csv", "--i-understand-this-writes-outputs"])
         assert False
     except SystemExit as e:
-        assert "outputs/" in str(e)
+        assert "output/" in str(e)
     # protected pred name
     try:
         mod.main(["--input", inp, "--base-pred", base, "--api-candidates", cands,
-                  "--output", "outputs/pred.csv", "--i-understand-this-writes-outputs"])
+                  "--output", "output/pred.csv", "--i-understand-this-writes-outputs"])
         assert False
     except SystemExit as e:
         assert "protected" in str(e).lower()

@@ -127,7 +127,7 @@ def _load(name):
 def test_v11_generator_refuses_non_scratch_output():
     mod = _load("build_v11_answer_factory_proposals.py")
     try:
-        mod.main(["--input", "x", "--output-dir", "outputs/foo"])
+        mod.main(["--input", "x", "--output-dir", "output/foo"])
         assert False, "should refuse non-scratch output dir"
     except SystemExit as e:
         assert "scratch/" in str(e)
@@ -136,7 +136,7 @@ def test_v11_generator_refuses_non_scratch_output():
 def test_selective_planner_refuses_non_scratch_output():
     mod = _load("plan_selective_multicandidate_api.py")
     try:
-        mod.main(["--input", "x", "--output-dir", "outputs/foo"])
+        mod.main(["--input", "x", "--output-dir", "output/foo"])
         assert False
     except SystemExit as e:
         assert "scratch/" in str(e)

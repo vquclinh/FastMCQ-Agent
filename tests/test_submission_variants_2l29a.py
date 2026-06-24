@@ -49,7 +49,7 @@ def test_variant_refuses_pilot_input():
     cands = _consensus_candidates(d, name="pilot_api_candidates.jsonl")
     try:
         mod.main(["--input", inp, "--base-pred", base, "--api-candidates", cands,
-                  "--output", f"{d}/outputs/v11.csv", "--review-dir", f"{d}/scratch/r",
+                  "--output", f"{d}/output/v11.csv", "--review-dir", f"{d}/scratch/r",
                   "--i-understand-this-writes-outputs"])
         assert False
     except SystemExit as e:
@@ -62,7 +62,7 @@ def test_variant_refuses_protected_name_and_path_and_ack():
     # missing ack
     try:
         mod.main(["--input", inp, "--base-pred", base, "--api-candidates", cands,
-                  "--output", f"{d}/outputs/v11.csv", "--review-dir", f"{d}/scratch/r"])
+                  "--output", f"{d}/output/v11.csv", "--review-dir", f"{d}/scratch/r"])
         assert False
     except SystemExit as e:
         assert "i-understand" in str(e).lower() or "acknowledge" in str(e).lower()
@@ -73,11 +73,11 @@ def test_variant_refuses_protected_name_and_path_and_ack():
                   "--i-understand-this-writes-outputs"])
         assert False
     except SystemExit as e:
-        assert "outputs/" in str(e)
+        assert "output/" in str(e)
     # protected name
     try:
         mod.main(["--input", inp, "--base-pred", base, "--api-candidates", cands,
-                  "--output", "outputs/pred.csv", "--review-dir", f"{d}/scratch/r",
+                  "--output", "output/pred.csv", "--review-dir", f"{d}/scratch/r",
                   "--i-understand-this-writes-outputs"])
         assert False
     except SystemExit as e:
@@ -89,7 +89,7 @@ def test_variant_conservative_le_aggressive():
     d = tempfile.mkdtemp(); inp, base = _dataset(d); cands = _consensus_candidates(d)
 
     def _run(policy):
-        out = f"{d}/outputs/{policy}.csv"
+        out = f"{d}/output/{policy}.csv"
         mod.main(["--input", inp, "--base-pred", base, "--api-candidates", cands,
                   "--output", out, "--review-dir", f"{d}/scratch/{policy}",
                   "--policy", policy, "--min-coverage", "0.5", "--max-total-overrides", "100",
@@ -115,7 +115,7 @@ def test_ensemble_at_least_two():
     c1 = _cand_csv(d, "c1.csv", {"q1": "B", "q2": "C"})
     c2 = _cand_csv(d, "c2.csv", {"q1": "B", "q2": "A"})
     c3 = _cand_csv(d, "c3.csv", {"q1": "A", "q2": "A"})
-    out = f"{d}/outputs/ens.csv"
+    out = f"{d}/output/ens.csv"
     rc = mod.main(["--input", inp, "--base-pred", base, "--candidates", c1, c2, c3,
                    "--output", out, "--review-dir", f"{d}/scratch/ens",
                    "--strategy", "at_least_two", "--i-understand-this-writes-outputs"])
@@ -131,7 +131,7 @@ def test_ensemble_validates_rowcount_and_labels():
     short = _cand_csv(d, "short.csv", {"q1": "B"})          # missing q2
     try:
         mod.main(["--input", inp, "--base-pred", base, "--candidates", short,
-                  "--output", f"{d}/outputs/e.csv", "--review-dir", f"{d}/scratch/e",
+                  "--output", f"{d}/output/e.csv", "--review-dir", f"{d}/scratch/e",
                   "--i-understand-this-writes-outputs"])
         assert False
     except SystemExit as e:
@@ -139,7 +139,7 @@ def test_ensemble_validates_rowcount_and_labels():
     bad = _cand_csv(d, "bad.csv", {"q1": "Z", "q2": "A"})   # invalid label
     try:
         mod.main(["--input", inp, "--base-pred", base, "--candidates", bad,
-                  "--output", f"{d}/outputs/e.csv", "--review-dir", f"{d}/scratch/e",
+                  "--output", f"{d}/output/e.csv", "--review-dir", f"{d}/scratch/e",
                   "--i-understand-this-writes-outputs"])
         assert False
     except SystemExit as e:
@@ -168,7 +168,7 @@ def test_audit_refuses_outputs():
     d = tempfile.mkdtemp(); inp, base = _dataset(d)
     c1 = _cand_csv(d, "c1.csv", {"q1": "B", "q2": "A"})
     try:
-        mod.main(["--input", inp, "--base-pred", base, "--candidates", c1, "--output-dir", "outputs/a"])
+        mod.main(["--input", inp, "--base-pred", base, "--candidates", c1, "--output-dir", "output/a"])
         assert False
     except SystemExit as e:
         assert "scratch/" in str(e)

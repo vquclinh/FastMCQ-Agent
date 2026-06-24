@@ -18,8 +18,8 @@ from src.adaptive_proposal_common import override_gate  # noqa: E402
 from src.evidence_sufficiency import compute_evidence_sufficiency  # noqa: E402
 
 _INPUT = str(_ROOT / "public-test_1780368312.json")
-_PRED = str(_ROOT / "outputs" / "pred_v7_programmatic_assist_from_v6b.csv")
-_LOG = str(_ROOT / "outputs" / "run_v6b_qwen_rerank_calc_verifier_fast.jsonl")
+_PRED = str(_ROOT / "output" / "pred_v7_programmatic_assist_from_v6b.csv")
+_LOG = str(_ROOT / "output" / "run_v6b_qwen_rerank_calc_verifier_fast.jsonl")
 _HAVE_DATA = Path(_INPUT).exists() and Path(_PRED).exists() and Path(_LOG).exists()
 
 

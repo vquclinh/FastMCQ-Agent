@@ -151,5 +151,5 @@ which family matched, whether it is a safe override, and the extracted values â€
 
 A v5 run keeps the chosen OpenRouter config and the expanded calculation override:
 deterministic answers for the matched calculation samples, LLM for the rest. Run
-into a **new** file (`outputs/pred_v5_calc_taxonomy.csv`) and A/B-compare against
+into a **new** file (`output/pred_v5_calc_taxonomy.csv`) and A/B-compare against
 v1/v2 before adopting â€” no leaderboard claim without validation.

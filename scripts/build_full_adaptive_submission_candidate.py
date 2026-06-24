@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Full-run adaptive submission candidate builder (Phase 2L.28A — FOR LATER HUMAN USE).
 
-This is the ONLY script permitted to write a real candidate CSV under ``outputs/``. It
+This is the ONLY script permitted to write a real candidate CSV under ``output/``. It
 refuses pilot inputs and partial runs, ranks the full candidate set with the
 consistency-guarded ranker under explicit review-policy gates, validates the output
 format, and writes a review diff under ``scratch/``. It uses NO ground truth and NO qid
@@ -30,8 +30,8 @@ _PRED_FIELDS = ["qid", "answer"]
 
 def _require_outputs(path):
     p = str(path).replace("\\", "/")
-    if "/outputs/" not in p and not p.startswith("outputs/"):
-        raise SystemExit(f"REFUSING: full candidate must be written under outputs/ (got {path})")
+    if "/output/" not in p and not p.startswith("output/"):
+        raise SystemExit(f"REFUSING: full candidate must be written under output/ (got {path})")
     guard_output(path)  # never overwrite a protected pred file
 
 
@@ -60,9 +60,9 @@ def _load_jsonl(path):
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="Build FULL adaptive submission candidate (human-run only)")
     ap.add_argument("--input", required=True)
-    ap.add_argument("--base-pred", default="outputs/pred_v10_full_production_user_run.csv")
+    ap.add_argument("--base-pred", default="output/pred_v10_full_production_user_run.csv")
     ap.add_argument("--api-candidates", required=True, help="FULL adaptive candidate JSONL (not pilot)")
-    ap.add_argument("--output", required=True, help="real candidate CSV path under outputs/")
+    ap.add_argument("--output", required=True, help="real candidate CSV path under output/")
     ap.add_argument("--review-dir", default="scratch/full_adaptive_candidate")
     ap.add_argument("--min-coverage", type=float, default=0.80,
                     help="require API candidates covering >= this fraction of dataset qids")
@@ -71,7 +71,7 @@ def main(argv=None) -> int:
     ap.add_argument("--max-total-overrides", type=int, default=50)
     ap.add_argument("--min-evidence-score", type=float, default=1.0)
     ap.add_argument("--i-understand-this-writes-outputs", action="store_true", default=False,
-                    help="explicit human acknowledgement required to write under outputs/")
+                    help="explicit human acknowledgement required to write under output/")
     args = ap.parse_args(argv)
 
     if not args.i_understand_this_writes_outputs:

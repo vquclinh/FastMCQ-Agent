@@ -10,8 +10,8 @@ sheet, no qid-based decisions (qids only align with the v6b log).
 Usage:
     python scripts/audit_adaptive_orchestrator_trace.py \
       --input public-test_1780368312.json \
-      --v6b-log outputs/run_v6b_qwen_rerank_calc_verifier_fast.jsonl \
-      --output outputs/adaptive_orchestrator_trace_audit.csv
+      --v6b-log output/run_v6b_qwen_rerank_calc_verifier_fast.jsonl \
+      --output output/adaptive_orchestrator_trace_audit.csv
 """
 
 from __future__ import annotations
@@ -52,7 +52,7 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="Adaptive orchestrator trace-only audit (no API)")
     ap.add_argument("--input", required=True)
     ap.add_argument("--v6b-log", default=None)
-    ap.add_argument("--output", default="outputs/adaptive_orchestrator_trace_audit.csv")
+    ap.add_argument("--output", default="output/adaptive_orchestrator_trace_audit.csv")
     args = ap.parse_args(argv)
 
     samples = _load(args.input)

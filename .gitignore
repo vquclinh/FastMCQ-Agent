@@ -32,14 +32,14 @@ htmlcov/
 # EXCEPTIONS: the required final-package artifacts are tracked so a git clone/package can
 # build & run without regenerating them — the winning v11 submission (production default)
 # and the v10 fallback. The runtime export (pred.csv) and experimental candidates stay ignored.
-outputs/*
-!outputs/.gitkeep
+output/*
+!output/.gitkeep
 # Official tracked frozen artifacts (current best + previous bests + fallback):
-!outputs/pred_v13_multilayer_candidate_api30_from_v12b.csv
-!outputs/pred_v12b_permutation_candidate_api30.csv
-!outputs/pred_v11_independent_rerun1.csv
-!outputs/pred_v10_full_production_user_run.csv
-!outputs/pred_v8_clean_generalized_from_v7.csv
+!output/pred_v13_multilayer_candidate_api30_from_v12b.csv
+!output/pred_v12b_permutation_candidate_api30.csv
+!output/pred_v11_independent_rerun1.csv
+!output/pred_v10_full_production_user_run.csv
+!output/pred_v8_clean_generalized_from_v7.csv
 
 # Data dropped in by the harness at runtime (keep the dir, ignore contents)
 data/*

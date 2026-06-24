@@ -11,8 +11,8 @@ answer).
 Usage:
     python scripts/audit_calculation_solver_on_public.py \
       --input public-test_1780368312.json \
-      --v6b-log outputs/run_v6b_qwen_rerank_calc_verifier_fast.jsonl \
-      --output outputs/calculation_solver_2l14b_audit.csv
+      --v6b-log output/run_v6b_qwen_rerank_calc_verifier_fast.jsonl \
+      --output output/calculation_solver_2l14b_audit.csv
 """
 
 from __future__ import annotations
@@ -55,7 +55,7 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="Deterministic calculation-solver public audit (no network)")
     ap.add_argument("--input", required=True)
     ap.add_argument("--v6b-log", default=None)
-    ap.add_argument("--output", default="outputs/calculation_solver_2l14b_audit.csv")
+    ap.add_argument("--output", default="output/calculation_solver_2l14b_audit.csv")
     args = ap.parse_args(argv)
 
     samples = _load(args.input)

@@ -1,7 +1,7 @@
 """Per-sample debug logging for solver runs.
 
 Writes one JSON object per sample to a JSONL file (default
-``outputs/run_debug.jsonl``). This is **debug** output only — it never touches
+``output/run_debug.jsonl``). This is **debug** output only — it never touches
 ``pred.csv``. Solvers append records via :meth:`RunLogger.record`; ``run.py``
 also writes a final run-report line with overall timing and config.
 

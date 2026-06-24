@@ -9,7 +9,7 @@ are printed solely to locate samples).
 
 Usage:
     python scripts/inventory_calculation_families.py --input public-test_1780368312.json
-    python scripts/inventory_calculation_families.py --input <file> --jsonl outputs/calc_family_inventory.jsonl
+    python scripts/inventory_calculation_families.py --input <file> --jsonl output/calc_family_inventory.jsonl
 """
 
 from __future__ import annotations

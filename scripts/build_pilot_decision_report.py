@@ -4,7 +4,7 @@
 For each pilot qid, builds the candidate pool (v10 base + offline tool candidates + API
 candidates + any judge candidate), runs the consistency-guarded ranker, and records the
 final adaptive decision. Produces a human decision report with a proceed/revise/stop
-recommendation. NEVER writes a submission CSV and NEVER writes under outputs/.
+recommendation. NEVER writes a submission CSV and NEVER writes under output/.
 """
 
 from __future__ import annotations
@@ -62,7 +62,7 @@ def _classify(decision_rec, selected, v10, had_conflict):
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="Build pilot decision report (no API)")
     ap.add_argument("--input", required=True)
-    ap.add_argument("--base-pred", default="outputs/pred_v10_full_production_user_run.csv")
+    ap.add_argument("--base-pred", default="output/pred_v10_full_production_user_run.csv")
     ap.add_argument("--pilot-qids", required=True)
     ap.add_argument("--pilot-candidates", required=True)
     ap.add_argument("--output-dir", default="scratch/adaptive_pilot_2l28")

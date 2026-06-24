@@ -9,8 +9,8 @@ Never reads the external answer sheet.
 Dry-run (default; NO API):
     python scripts/run_selective_self_consistency_sample.py \
       --input public-test_1780368312.json \
-      --candidates outputs/self_consistency_candidates.csv \
-      --base-pred outputs/pred_v7_programmatic_assist_from_v6b.csv \
+      --candidates output/self_consistency_candidates.csv \
+      --base-pred output/pred_v7_programmatic_assist_from_v6b.csv \
       --max-calls 20
 """
 
@@ -53,8 +53,8 @@ def main(argv=None) -> int:
     ap.add_argument("--temperature", type=float, default=0.2)
     ap.add_argument("--max-calls", type=int, default=20)
     ap.add_argument("--execute", action="store_true", default=False)
-    ap.add_argument("--output-jsonl", default="outputs/selective_self_consistency_dryrun.jsonl")
-    ap.add_argument("--output-csv", default="outputs/selective_self_consistency_dryrun.csv")
+    ap.add_argument("--output-jsonl", default="output/selective_self_consistency_dryrun.jsonl")
+    ap.add_argument("--output-csv", default="output/selective_self_consistency_dryrun.csv")
     args = ap.parse_args(argv)
 
     guard_output(args.output_jsonl); guard_output(args.output_csv)

@@ -125,7 +125,7 @@ def test_runner_dry_run_execute_mutually_exclusive():
 def test_runner_refuses_non_scratch_output():
     mod = _load("run_selective_multicandidate_api.py")
     try:
-        mod.main(["--input", "x", "--base-pred", "y", "--plan", "z", "--output-dir", "outputs/foo"])
+        mod.main(["--input", "x", "--base-pred", "y", "--plan", "z", "--output-dir", "output/foo"])
         assert False
     except SystemExit as e:
         assert "scratch/" in str(e)
@@ -172,7 +172,7 @@ def test_runner_fake_execute_writes_jsonl_and_resume(monkeypatch):
 def test_v11_builder_refuses_outputs_path():
     mod = _load("build_v11_from_api_candidates.py")
     try:
-        mod.main(["--input", "x", "--api-candidates", "y", "--output-dir", "outputs/foo"])
+        mod.main(["--input", "x", "--api-candidates", "y", "--output-dir", "output/foo"])
         assert False
     except SystemExit as e:
         assert "scratch/" in str(e)

@@ -96,7 +96,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--device", default=None, help="device: auto | cpu | cuda")
     parser.add_argument("--limit", type=int, default=None, help="only run the first N samples (smoke testing)")
     parser.add_argument("--resume", default=None, help="existing prediction CSV; skip qids already present")
-    parser.add_argument("--save-raw", action="store_true", default=None, help="log raw outputs/scores to the debug log")
+    parser.add_argument("--save-raw", action="store_true", default=None, help="log raw output/scores to the debug log")
     parser.add_argument("--log-path", default=None, help="debug JSONL log path (per-sample metadata)")
     return parser.parse_args(argv)
 

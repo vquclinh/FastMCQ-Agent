@@ -12,7 +12,7 @@ from __future__ import annotations
 import argparse
 
 _INPUT = "public-test_1780368312.json"
-_V10 = "outputs/pred_v10_full_production_user_run.csv"
+_V10 = "output/pred_v10_full_production_user_run.csv"
 _V10LOG = "scratch/v10_full_production/run_v10_full_production_user_run.jsonl"
 _PLAN = "scratch/accuracy_engine_2l27/overall_accuracy_plan.csv"
 
@@ -46,7 +46,7 @@ v10 baseline: {_V10} (public 77.75) — never overwrite.
 .venv/bin/python scripts/build_submission_variant.py \\
   --input {_INPUT} --base-pred {_V10} \\
   --api-candidates scratch/full_adaptive_v11a/adaptive_api_candidates.jsonl \\
-  --output outputs/pred_v11a_conservative.csv \\
+  --output output/pred_v11a_conservative.csv \\
   --review-dir scratch/v11a_conservative_review --plan {_PLAN} \\
   --policy conservative --max-total-overrides 40 --max-model-only-overrides 0 \\
   --min-coverage 0.90 --i-understand-this-writes-outputs
@@ -61,7 +61,7 @@ v10 baseline: {_V10} (public 77.75) — never overwrite.
 .venv/bin/python scripts/build_submission_variant.py \\
   --input {_INPUT} --base-pred {_V10} \\
   --api-candidates scratch/full_adaptive_v11b/adaptive_api_candidates.jsonl \\
-  --output outputs/pred_v11b_balanced.csv \\
+  --output output/pred_v11b_balanced.csv \\
   --review-dir scratch/v11b_balanced_review --plan {_PLAN} \\
   --policy balanced --max-total-overrides 60 --max-model-only-overrides 0 \\
   --min-coverage 0.90 --i-understand-this-writes-outputs
@@ -70,7 +70,7 @@ v10 baseline: {_V10} (public 77.75) — never overwrite.
 .venv/bin/python scripts/build_submission_variant.py \\
   --input {_INPUT} --base-pred {_V10} \\
   --api-candidates scratch/full_adaptive_v11b/adaptive_api_candidates.jsonl \\
-  --output outputs/pred_v11c_aggressive.csv \\
+  --output output/pred_v11c_aggressive.csv \\
   --review-dir scratch/v11c_aggressive_review --plan {_PLAN} \\
   --policy aggressive --max-total-overrides 80 --max-model-only-overrides 0 \\
   --min-coverage 0.90 --i-understand-this-writes-outputs
@@ -78,17 +78,17 @@ v10 baseline: {_V10} (public 77.75) — never overwrite.
 # 7) Build ENSEMBLE (at_least_two)
 .venv/bin/python scripts/build_submission_ensemble.py \\
   --input {_INPUT} --base-pred {_V10} \\
-  --candidates outputs/pred_v11a_conservative.csv outputs/pred_v11b_balanced.csv \\
-               outputs/pred_v11c_aggressive.csv \\
-  --output outputs/pred_v11_ensemble.csv \\
+  --candidates output/pred_v11a_conservative.csv output/pred_v11b_balanced.csv \\
+               output/pred_v11c_aggressive.csv \\
+  --output output/pred_v11_ensemble.csv \\
   --review-dir scratch/v11_ensemble_review --strategy at_least_two \\
   --max-total-overrides 60 --i-understand-this-writes-outputs
 
 # 8) Audit ALL variants vs v10
 .venv/bin/python scripts/audit_submission_variants.py \\
   --input {_INPUT} --base-pred {_V10} \\
-  --candidates outputs/pred_v11a_conservative.csv outputs/pred_v11b_balanced.csv \\
-               outputs/pred_v11c_aggressive.csv outputs/pred_v11_ensemble.csv \\
+  --candidates output/pred_v11a_conservative.csv output/pred_v11b_balanced.csv \\
+               output/pred_v11c_aggressive.csv output/pred_v11_ensemble.csv \\
   --plan {_PLAN} --output-dir scratch/submission_variant_audit
 ================================================================
 Pick ONE candidate to submit after reviewing diffs. Keep v10 as fallback.

@@ -121,7 +121,7 @@ without downloading anything.
 
 Per-sample JSONL debug records (qid, answer, solver, shape, #choices, elapsed,
 optional raw output/scores, fallback reason) go to `--log-path`
-(default `outputs/run_debug.jsonl`) — **never** to `pred.csv`. `run.py` appends a
+(default `output/run_debug.jsonl`) — **never** to `pred.csv`. `run.py` appends a
 summary record and prints totals; `scripts/benchmark_runtime.py` reports
 p50/p90/p95 and a per-shape breakdown.
 

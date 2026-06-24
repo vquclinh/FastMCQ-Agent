@@ -20,7 +20,8 @@ _CHOICE_COLUMN_RE = re.compile(
 )
 
 # Columns that are never choices.
-_NON_CHOICE_COLUMNS = {"qid", "id", "question", "answer", "label", "choices"}
+_NON_CHOICE_COLUMNS = {"qid", "id", "question", "text", "prompt", "content",
+                       "answer", "label", "choices"}
 
 
 def load_dataset(path: str | Path) -> list[dict]:
@@ -62,7 +63,8 @@ def _load_csv(path: Path) -> list[dict]:
 def _normalize(row: dict, index: int) -> dict:
     """Normalise one raw record into ``{qid, question, choices}`` (plus extras)."""
     qid = row.get("qid") or row.get("id") or f"q_{index:04d}"
-    question = row.get("question") or row.get("text") or ""
+    question = (row.get("question") or row.get("text") or row.get("prompt")
+                or row.get("content") or "")
     choices = _extract_choices(row)
     return {"qid": str(qid), "question": str(question), "choices": choices}
 

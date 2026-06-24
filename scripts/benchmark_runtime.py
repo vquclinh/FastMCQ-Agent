@@ -5,7 +5,7 @@ Reads the per-sample records written by ``RunLogger`` and prints total time,
 average, and percentiles (p50/p90/p95), with a per-question-shape breakdown.
 
 Usage:
-    python scripts/benchmark_runtime.py --log-path outputs/run_debug.jsonl
+    python scripts/benchmark_runtime.py --log-path output/run_debug.jsonl
 """
 
 from __future__ import annotations
@@ -55,7 +55,7 @@ def _report_times(label: str, times: list[float]) -> None:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Benchmark runtime from a debug log")
-    parser.add_argument("--log-path", default="outputs/run_debug.jsonl")
+    parser.add_argument("--log-path", default="output/run_debug.jsonl")
     args = parser.parse_args(argv)
 
     log_path = Path(args.log_path)

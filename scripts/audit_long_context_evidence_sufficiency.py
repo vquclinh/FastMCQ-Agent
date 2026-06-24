@@ -9,9 +9,9 @@ no qid-based decisions, no prediction written.
 Usage:
     python scripts/audit_long_context_evidence_sufficiency.py \
       --input public-test_1780368312.json \
-      --base-log outputs/run_v6b_qwen_rerank_calc_verifier_fast.jsonl \
-      --risk-csv outputs/first100_consensus_risk_audit.csv \
-      --output outputs/long_context_evidence_sufficiency_audit.csv
+      --base-log output/run_v6b_qwen_rerank_calc_verifier_fast.jsonl \
+      --risk-csv output/first100_consensus_risk_audit.csv \
+      --output output/long_context_evidence_sufficiency_audit.csv
 """
 
 from __future__ import annotations
@@ -41,7 +41,7 @@ def main(argv=None) -> int:
     ap.add_argument("--input", required=True)
     ap.add_argument("--base-log", required=True)
     ap.add_argument("--risk-csv", default=None)
-    ap.add_argument("--output", default="outputs/long_context_evidence_sufficiency_audit.csv")
+    ap.add_argument("--output", default="output/long_context_evidence_sufficiency_audit.csv")
     args = ap.parse_args(argv)
 
     samples = load_samples(args.input)

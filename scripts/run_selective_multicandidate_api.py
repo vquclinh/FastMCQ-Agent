@@ -5,7 +5,7 @@ DRY-RUN BY DEFAULT. ``--dry-run`` and ``--execute`` are mutually exclusive; with
 ``--execute`` no API call is made (it prints the plan + an upper-bound call count and
 exits). With ``--execute`` it runs the selected agents on the planned qids, writing
 candidate records to JSONL after every qid (crash-safe resume). The competition model
-policy is asserted before any call. Writes only under ``scratch/``; never to outputs/.
+policy is asserted before any call. Writes only under ``scratch/``; never to output/.
 
 See the audit for exact human-run commands.
 """
@@ -94,7 +94,7 @@ def main(argv=None) -> int:
         print(f"upper-bound calls: {upper_bound_calls}")
         print(f"est. cost (USD) : {est_cost:.2f} (@ {args.cost_per_call_usd}/call)"
               + (f"  budget={args.budget_usd}" if args.budget_usd else ""))
-        print("Pass --execute to run (human-initiated). No outputs/ writes ever.")
+        print("Pass --execute to run (human-initiated). No output/ writes ever.")
         print("=" * 64)
         return 0
 

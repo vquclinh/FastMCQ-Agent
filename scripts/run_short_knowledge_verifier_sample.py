@@ -15,8 +15,8 @@ Never uses the external 3-LLM sheet. Never overwrites protected prediction files
 Dry-run (default; NO API):
     python scripts/run_short_knowledge_verifier_sample.py \
       --input public-test_1780368312.json \
-      --base-pred outputs/pred_v7_programmatic_assist_from_v6b.csv \
-      --base-log outputs/run_v6b_qwen_rerank_calc_verifier_fast.jsonl \
+      --base-pred output/pred_v7_programmatic_assist_from_v6b.csv \
+      --base-log output/run_v6b_qwen_rerank_calc_verifier_fast.jsonl \
       --max-calls 5
 """
 
@@ -90,8 +90,8 @@ def main(argv=None) -> int:
                     help="first-100 risk CSV — used ONLY for prioritization/reporting")
     ap.add_argument("--prioritize-risk", action="store_true", default=False,
                     help="order candidates P0/P1-first then low-confidence (ordering only)")
-    ap.add_argument("--output-jsonl", default="outputs/short_knowledge_verifier_sample_dryrun.jsonl")
-    ap.add_argument("--output-csv", default="outputs/short_knowledge_verifier_sample_dryrun.csv")
+    ap.add_argument("--output-jsonl", default="output/short_knowledge_verifier_sample_dryrun.jsonl")
+    ap.add_argument("--output-csv", default="output/short_knowledge_verifier_sample_dryrun.csv")
     args = ap.parse_args(argv)
 
     for p in (args.output_jsonl, args.output_csv):

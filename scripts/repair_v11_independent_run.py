@@ -6,7 +6,7 @@ finds qids with missing / None / invalid labels (and duplicate qids), and repair
 WITHOUT v10: first by reusing a valid parsed candidate from the JSONL, else (only with
 ``--execute``) by a direct allowed-model fallback, else a deterministic first-label last
 resort. DRY-RUN reports how many qids need repair + estimated API calls. Writes the repaired
-decisions + report under the work-dir; the final CSV under outputs/ only with explicit
+decisions + report under the work-dir; the final CSV under output/ only with explicit
 acknowledgement. Refuses protected output names. No qid hardcoding, no ground truth.
 """
 
@@ -34,8 +34,8 @@ _SOURCE_PRIORITY = ("calculation_solver", "route_specialist", "challenger", "opt
 
 def _require_outputs(path):
     p = str(path).replace("\\", "/")
-    if "/outputs/" not in p and not p.startswith("outputs/"):
-        raise SystemExit(f"REFUSING: --output must be under outputs/ (got {path})")
+    if "/output/" not in p and not p.startswith("output/"):
+        raise SystemExit(f"REFUSING: --output must be under output/ (got {path})")
     if Path(path).name in _PROTECTED_NAMES:
         raise SystemExit(f"REFUSING to overwrite a protected/locked file: {Path(path).name}")
     guard_output(path)

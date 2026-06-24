@@ -129,13 +129,13 @@ def _load(name):
 
 def test_scripts_refuse_outputs_dir():
     for name, args in (("build_overall_accuracy_plan.py",
-                        ["--input", "x", "--base-pred", "y", "--output-dir", "outputs/z"]),
+                        ["--input", "x", "--base-pred", "y", "--output-dir", "output/z"]),
                        ("audit_selective_runner_behavior.py",
-                        ["--api-candidates", "x", "--output-dir", "outputs/z"])):
+                        ["--api-candidates", "x", "--output-dir", "output/z"])):
         mod = _load(name)
         try:
             mod.main(args)
-            assert False, f"{name} should refuse outputs/"
+            assert False, f"{name} should refuse output/"
         except SystemExit as e:
             assert "scratch/" in str(e)
 

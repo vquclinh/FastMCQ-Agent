@@ -22,6 +22,10 @@ try:
 except Exception:  # pragma: no cover - router optional
     route_question = None
 
+def _log(msg):
+    print(msg, flush=True)
+
+
 # Global label space used only when a sample carries no choices (qid-only CSV).
 _GLOBAL_LABELS = list("ABCDEFGHIJK")
 
@@ -78,37 +82,34 @@ def predict_base_answers(samples, *, model=None, execute_api=False, budget_usd=N
         client = SelectiveAPIClient(model=model)
 
     preds = []
-    for s in samples:
+    n = len(samples)
+    for i, s in enumerate(samples, start=1):
         qid = s.get("qid")
         choices = s.get("choices") or []
         labels = labels_for(len(choices)) if choices else []
         route = _route(s)
 
         if not choices:
-            preds.append(BasePrediction(qid, _fallback_label(_GLOBAL_LABELS),
-                                        "dynamic_fallback_nochoices", None, route,
-                                        "no_choices;weak", {}))
-            continue
-
-        fb = solve_formula_bank_sample(s)
-        if fb is not None and fb.selected_answer in labels:
-            preds.append(BasePrediction(
-                qid, fb.selected_answer, f"formula_bank:{fb.rule_id}",
-                float(fb.confidence), route, "deterministic_match",
-                {"matched_option_text": fb.matched_option_text}))
-            continue
-
-        if execute_api and client is not None:
-            ans = _api_answer(s, labels, client)
-            if ans:
-                preds.append(BasePrediction(qid, ans, "dynamic_api", 0.6, route,
-                                            "single_source_model", {"model": model}))
-                continue
-
-        # Conservative fallback — valid label, explicitly weak/high-risk.
-        preds.append(BasePrediction(qid, _fallback_label(labels), "dynamic_fallback", None,
-                                    route, "no_deterministic_solver;weak"
-                                    + (";no_api" if not execute_api else ";api_unparsed"), {}))
+            pred = BasePrediction(qid, _fallback_label(_GLOBAL_LABELS),
+                                  "dynamic_fallback_nochoices", None, route, "no_choices;weak", {})
+        else:
+            fb = solve_formula_bank_sample(s)
+            if fb is not None and fb.selected_answer in labels:
+                pred = BasePrediction(qid, fb.selected_answer, f"formula_bank:{fb.rule_id}",
+                                      float(fb.confidence), route, "deterministic_match",
+                                      {"matched_option_text": fb.matched_option_text})
+            elif execute_api and client is not None and (_a := _api_answer(s, labels, client)):
+                pred = BasePrediction(qid, _a, "dynamic_api", 0.6, route,
+                                      "single_source_model", {"model": model})
+            else:
+                # Conservative fallback — valid label, explicitly weak/high-risk.
+                pred = BasePrediction(qid, _fallback_label(labels), "dynamic_fallback", None, route,
+                                      "no_deterministic_solver;weak"
+                                      + (";no_api" if not execute_api else ";api_unparsed"), {})
+        preds.append(pred)
+        cat = ("formula_bank" if pred.source.startswith("formula_bank")
+               else "api" if pred.source == "dynamic_api" else "fallback")
+        _log(f"[BASE] {i}/{n} qid={qid} source={cat}")
     return preds
 
 

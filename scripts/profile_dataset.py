@@ -393,7 +393,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--input", required=True, help="dataset JSON/CSV")
     parser.add_argument("--sample-submission", default=None, help="optional sample submission CSV")
     parser.add_argument("--output-md", default="docs/DATASET_PROFILE.md")
-    parser.add_argument("--output-json", default="outputs/dataset_profile.json")
+    parser.add_argument("--output-json", default="output/dataset_profile.json")
     args = parser.parse_args(argv)
 
     input_path = Path(args.input)

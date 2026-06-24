@@ -17,7 +17,7 @@ sys.path.insert(0, str(_ROOT))
 _INPUT = str(_ROOT / "public-test_1780368312.json")
 # Current production best (promoted in 2L.36A): V12B option-permutation debiaser (78.83).
 # Current production best (promoted in 2L.38A): V13 multi-layer dynamic system (79.7).
-_BEST = "outputs/pred_v13_multilayer_candidate_api30_from_v12b.csv"
+_BEST = "output/pred_v13_multilayer_candidate_api30_from_v12b.csv"
 
 
 def _final_infer():
@@ -87,9 +87,9 @@ def test_pred_csv_basename_allowed():
 
 def test_frozen_best_and_v10_still_protected():
     mod = _final_infer()
-    for name in ("outputs/pred_v11_independent_rerun1.csv",
-                 "outputs/pred_v10_full_production_user_run.csv",
-                 "outputs/pred_v8_clean_generalized_from_v7.csv"):
+    for name in ("output/pred_v11_independent_rerun1.csv",
+                 "output/pred_v10_full_production_user_run.csv",
+                 "output/pred_v8_clean_generalized_from_v7.csv"):
         try:
             mod.main(["--input", _INPUT, "--output", name])
             assert False, name
@@ -101,7 +101,7 @@ def test_v10_is_not_default():
     d = tempfile.mkdtemp(); out = f"{d}/pred.csv"
     rc, txt = _run_short(out)
     assert "v10" not in txt.lower().split("source:")[1].split("\n")[0]  # source line is not v10
-    assert _md5(out) != _md5(_ROOT / "outputs/pred_v10_full_production_user_run.csv")
+    assert _md5(out) != _md5(_ROOT / "output/pred_v10_full_production_user_run.csv")
 
 
 def test_short_command_makes_no_api_call(monkeypatch):
@@ -118,7 +118,7 @@ def test_failure_prints_elapsed(monkeypatch):
     buf = io.StringIO()
     try:
         with redirect_stdout(buf):
-            mod.main(["--input", _INPUT, "--output", "outputs/pred_v11_independent_rerun1.csv"])
+            mod.main(["--input", _INPUT, "--output", "output/pred_v11_independent_rerun1.csv"])
     except SystemExit:
         pass
     out = buf.getvalue()

@@ -125,8 +125,8 @@ Enable on a slice first, e.g.:
   --openrouter-temperature 0 --openrouter-max-tokens 1024 \
   --calculation-solver --evidence-reranker --mcq-verifier \
   --input public-test_1780368312.json --limit 20 \
-  --output outputs/pred_v3_verifier_smoke.csv --save-raw \
-  --log-path outputs/run_v3_verifier_smoke.jsonl
+  --output output/pred_v3_verifier_smoke.csv --save-raw \
+  --log-path output/run_v3_verifier_smoke.jsonl
 ```
 
 Inspect `verifier_*` fields, then scale up — A/B against the v1/v2 leaderboard

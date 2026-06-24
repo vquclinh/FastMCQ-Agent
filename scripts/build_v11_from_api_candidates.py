@@ -4,7 +4,7 @@
 Loads v10 as base, merges the offline tool/card candidate pool with the API candidate
 records (and optional pairwise-judge results), ranks with ``answer_ranker.select_answer``,
 and emits proposals ONLY where the selection differs from v10. Writes to scratch only;
-refuses any path under outputs/. Does NOT promote to pred.csv. No qid hardcoding.
+refuses any path under output/. Does NOT promote to pred.csv. No qid hardcoding.
 """
 
 from __future__ import annotations
@@ -52,7 +52,7 @@ def _load_api_candidates(path):
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="Build v11 from API candidates (no API)")
     ap.add_argument("--input", required=True)
-    ap.add_argument("--base-pred", default="outputs/pred_v10_full_production_user_run.csv")
+    ap.add_argument("--base-pred", default="output/pred_v10_full_production_user_run.csv")
     ap.add_argument("--api-candidates", required=True,
                     help="candidate JSONL: api_candidates.jsonl OR adaptive_api_candidates.jsonl")
     ap.add_argument("--output-dir", default="scratch/selective_multicandidate_2l26")
@@ -124,7 +124,7 @@ def main(argv=None) -> int:
     print("=" * 64)
     print(f"questions: {len(samples)}   proposed overrides: {len(proposals)}")
     print(f"proposals: {outdir / 'v11_api_ranked_proposals.csv'}")
-    print("NOTE: not promoted to pred.csv; outputs/ untouched.")
+    print("NOTE: not promoted to pred.csv; output/ untouched.")
     print("=" * 64)
     return 0
 

@@ -35,7 +35,7 @@ def _guard_scratch(path):
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="Plan selective multi-candidate API qids (no API)")
     ap.add_argument("--input", required=True)
-    ap.add_argument("--base-pred", default="outputs/pred_v10_full_production_user_run.csv")
+    ap.add_argument("--base-pred", default="output/pred_v10_full_production_user_run.csv")
     ap.add_argument("--v10-log", default=None)
     ap.add_argument("--factory-review", default=None, help="answer_factory_proposals.csv (optional)")
     ap.add_argument("--output-dir", default="scratch/answer_factory_2l25")

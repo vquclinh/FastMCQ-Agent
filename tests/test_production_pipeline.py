@@ -62,14 +62,14 @@ def test_runner_does_not_read_prediction_files():
     for name in ("pred_v7", "pred_v8", "pred_v9"):
         for m in _re.finditer(name, src):
             ctx = src[max(0, m.start() - 60): m.start()]
-            assert "_PROTECTED_LOCAL" in src and "/" in ctx or "outputs/" in ctx, \
+            assert "_PROTECTED_LOCAL" in src and "/" in ctx or "output/" in ctx, \
                 f"{name} referenced outside the protected set"
 
 
 def test_runner_refuses_protected_output():
     m = _load_runner()
     try:
-        m.main(["--input", "x.json", "--output", "outputs/pred.csv", "--preset",
+        m.main(["--input", "x.json", "--output", "output/pred.csv", "--preset",
                 "competition_qwen35_9b"])
         assert False, "should refuse protected output"
     except SystemExit as e:

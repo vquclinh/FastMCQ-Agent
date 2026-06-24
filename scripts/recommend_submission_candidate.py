@@ -23,7 +23,7 @@ def main(argv=None) -> int:
     ap.add_argument("--review", required=True)
     ap.add_argument("--known-score", action="append", default=[], help="name=score (repeatable)")
     ap.add_argument("--baseline-name", default="v8_clean")
-    ap.add_argument("--output", default="outputs/submission_candidate_recommendation.md")
+    ap.add_argument("--output", default="output/submission_candidate_recommendation.md")
     args = ap.parse_args(argv)
 
     known = {}

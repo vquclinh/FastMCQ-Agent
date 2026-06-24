@@ -100,8 +100,8 @@ def test_clean_v8_refuses_protected_output():
     mod = _load("apply_clean_generalized_fixes_to_predictions.py")
     try:
         mod.main(["--input", "x", "--base-pred", "y",
-                  "--output", "outputs/pred.csv",          # protected
-                  "--log-path", "outputs/z.jsonl", "--diff", "outputs/d.csv"])
+                  "--output", "output/pred.csv",          # protected
+                  "--log-path", "output/z.jsonl", "--diff", "output/d.csv"])
         assert False, "should have refused protected output"
     except SystemExit as e:
         assert "REFUSING" in str(e) or e.code != 0
@@ -119,7 +119,7 @@ def test_clean_v8_no_external_sheet_or_api():
 
 def test_cleanup_dry_run_deletes_nothing():
     mod = _load("cleanup_outputs_for_submission.py")
-    # Create a temp diagnostic file under outputs/ matching a temp pattern.
+    # Create a temp diagnostic file under output/ matching a temp pattern.
     marker = mod.OUTPUTS / "zzz_tmp_candidates.csv"
     marker.write_text("qid\n")
     try:
@@ -144,7 +144,7 @@ def test_cleanup_keep_list_protects_final_outputs():
 def test_cleanup_only_targets_outputs_dir():
     mod = _load("cleanup_outputs_for_submission.py")
     src = (_ROOT / "scripts" / "cleanup_outputs_for_submission.py").read_text()
-    assert 'OUTPUTS = Path("outputs")' in src
+    assert 'OUTPUTS = Path("output")' in src
     assert "OUTPUTS.resolve() not in rp.parents" in src   # outside-outputs guard
 
 

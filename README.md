@@ -44,7 +44,7 @@ FASTMCQ-AGENT/
 │   └── validate_submission.py
 ├── tests/                 # label + data_io tests (pytest or standalone)
 ├── data/                  # (runtime) harness mounts dataset here
-├── outputs/               # (runtime) local prediction outputs
+├── output/               # (runtime) local prediction outputs
 └── docs/                  # hackaithon.pdf, METHOD.md, AUDIT_INITIAL_SETUP.md
 ```
 
@@ -55,27 +55,31 @@ runs over any input — public, private, unseen, or larger sets — and outputs 
 exactly the input qids: dynamic base predictor → official **V12B** option-permutation debiaser →
 official **V13** multi-layer reasoning (programmatic / content-first / least-to-most) → unified
 selector. **Both V12B and V13 are enabled by default.** The frozen public artifact
-`outputs/pred_v13_multilayer_candidate_api30_from_v12b.csv` (public **79.7**; +0.87 over V12B
+`output/pred_v13_multilayer_candidate_api30_from_v12b.csv` (public **79.7**; +0.87 over V12B
 78.83, +1.30 over v11 78.40) is the current public-best CSV for **leaderboard reproducibility
 only** (`--mode public_replay`), not the universal private solution. The default command is
 API-free, validates automatically, and prints the resolved mode + V12B/V13 targets/overrides +
 elapsed time.
 
-**Short commands (run profiles — recommended):**
+**Official command (use this):**
+
+```bash
+bash scripts/run_full_system.sh <test_file>          # full system; needs OPENROUTER_API_KEY
+bash scripts/run_full_system.sh <test_file> --no-api # fully offline
+```
+
+Runs base → V12B → V13 → selector end-to-end over any test set and writes the final local
+artifact to **`output/pred.csv`** (Docker: **`/output/pred.csv`**). Timestamped logs/records go
+under `scratch/runs/full_system_<ts>/`. A degenerate-distribution warning is printed; add
+`--fail-on-quality-guard` to refuse promotion when one label exceeds 70%.
+
+**Legacy / research diagnostics only** (not the main workflow):
 
 ```bash
 bash scripts/run_public_replay.sh public-test_1780368312.json   # reproduce the 79.7 public artifact
 bash scripts/run_dynamic_noapi.sh public-test_1780368312.json   # full dynamic system, no API
 bash scripts/run_public_api50.sh public-test_1780368312.json    # medium API pilot (caps 50 qids)
-bash scripts/run_public_api100.sh public-test_1780368312.json   # quick API system check
-bash scripts/run_private_api200.sh private_test.json            # recommended BTC/private API run
-```
-
-Each wrapper logs to `scratch/runs/<profile>_<ts>/` and prints elapsed time + output md5.
-Full/explicit form:
-
-```bash
-python scripts/final_infer.py --input public-test_1780368312.json --output pred.csv
+python scripts/final_infer.py --input public-test_1780368312.json --output pred.csv  # explicit form
 ```
 
 `--input`/`--output` are optional — with the test file in the current directory (or under
@@ -99,7 +103,7 @@ via the independent v11 runner is explicit/experimental (`--mode v11_independent
 pip install -r requirements.txt
 
 # Run the baseline on the bundled public test
-python run.py --input public-test_1780368312.json --output outputs/pred.csv
+python run.py --input public-test_1780368312.json --output output/pred.csv
 
 # Or do run + validate in one step
 bash scripts/run_local.sh
@@ -116,7 +120,7 @@ python scripts/inspect_dataset.py --input public-test_1780368312.json
 ```bash
 python scripts/validate_submission.py \
   --input public-test_1780368312.json \
-  --submission outputs/pred.csv
+  --submission output/pred.csv
 ```
 
 ### Profile the dataset
@@ -129,7 +133,7 @@ and sample-submission inspection). Writes a Markdown report and a JSON dump.
 python scripts/profile_dataset.py \
   --input public-test_1780368312.json \
   --sample-submission submission_1780332147.csv
-# -> docs/DATASET_PROFILE.md  and  outputs/dataset_profile.json
+# -> docs/DATASET_PROFILE.md  and  output/dataset_profile.json
 ```
 
 See [docs/DATASET_PROFILE.md](docs/DATASET_PROFILE.md) for the current report.
@@ -209,28 +213,28 @@ count and keep the same valid-or-fallback-to-`A` guarantee via `postprocess.py`.
 ```bash
 # 1) Smoke test on the first 10 samples (confirms the model loads + parses)
 bash scripts/run_llm_smoke.sh /path/to/local/model [SCORE_MODE]
-#    -> outputs/pred_llm_smoke.csv  + validation
+#    -> output/pred_llm_smoke.csv  + validation
 
 # 2) Full public inference with the option-scoring solver
 bash scripts/run_llm_full.sh /path/to/local/model [SCORE_MODE]
-#    -> outputs/pred_llm.csv  + validation + reminder to upload & log the score
+#    -> output/pred_llm.csv  + validation + reminder to upload & log the score
 
 # Equivalent explicit command:
 python run.py --solver hf_option_score --model-path /path/to/local/model \
   --score-mode label_plus_choice \
-  --input public-test_1780368312.json --output outputs/pred_llm.csv \
-  --save-raw --log-path outputs/run_debug.jsonl
+  --input public-test_1780368312.json --output output/pred_llm.csv \
+  --save-raw --log-path output/run_debug.jsonl
 
 # 3) Validate any submission
 python scripts/validate_submission.py \
-  --input public-test_1780368312.json --submission outputs/pred_llm.csv
+  --input public-test_1780368312.json --submission output/pred_llm.csv
 
 # 4) Benchmark runtime from the debug log
-python scripts/benchmark_runtime.py --log-path outputs/run_debug.jsonl
+python scripts/benchmark_runtime.py --log-path output/run_debug.jsonl
 ```
 
 Useful flags: `--score-mode`, `--limit N` (first N samples), `--resume FILE`
-(skip qids already predicted), `--save-raw` (log raw outputs/scores),
+(skip qids already predicted), `--save-raw` (log raw output/scores),
 `--max-input-tokens`, `--max-new-tokens`, `--temperature`, `--device`,
 `--trust-remote-code`. CLI flags override `configs/default.yaml` (`hf:` section).
 
@@ -250,7 +254,7 @@ Keep whichever scoring mode wins on the leaderboard.
 1. `run_llm_smoke.sh` — sanity-check the model on 10 samples.
 2. `run_llm_full.sh` — full run + validate.
 3. Validate the submission CSV.
-4. Upload `outputs/pred_llm.csv` to the leaderboard.
+4. Upload `output/pred_llm.csv` to the leaderboard.
 5. Record the score in [`experiments/leaderboard_log.csv`](experiments/leaderboard_log.csv).
 
 ## Tests

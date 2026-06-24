@@ -10,9 +10,9 @@ ground truth, and writes no predictions.
 Usage:
     python scripts/create_verifier_smoke_subset.py \
         --input public-test_1780368312.json \
-        --log outputs/run_v2_calc_rerank.jsonl \
+        --log output/run_v2_calc_rerank.jsonl \
         --policy selective \
-        --output outputs/input_v3a_verifier_selective_smoke.json \
+        --output output/input_v3a_verifier_selective_smoke.json \
         --max-samples 60 --control-samples 10
 """
 

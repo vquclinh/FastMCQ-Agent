@@ -173,7 +173,7 @@ def test_adaptive_cheap_fewer_than_rich():
 def test_adaptive_refuses_outputs_and_mutual_exclusive():
     mod = _load("run_adaptive_selective_api.py")
     try:
-        mod.main(["--input", "x", "--base-pred", "y", "--plan", "z", "--output-dir", "outputs/z"])
+        mod.main(["--input", "x", "--base-pred", "y", "--plan", "z", "--output-dir", "output/z"])
         assert False
     except SystemExit as e:
         assert "scratch/" in str(e)

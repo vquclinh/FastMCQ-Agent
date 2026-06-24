@@ -54,7 +54,7 @@ def main(argv=None) -> int:
     ap.add_argument("--sk-candidates", default=None)
     ap.add_argument("--law-admin-candidates", default=None)
     ap.add_argument("--ambiguous-candidates", default=None)
-    ap.add_argument("--output", default="outputs/self_consistency_candidates.csv")
+    ap.add_argument("--output", default="output/self_consistency_candidates.csv")
     args = ap.parse_args(argv)
 
     samples = load_samples(args.input)

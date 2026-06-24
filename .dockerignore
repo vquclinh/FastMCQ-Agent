@@ -46,7 +46,7 @@ models/
 *.pt
 *.gguf
 .cache/
-# Keep only the required final CSV assets under outputs/ (see note in DOCKER_SUBMISSION.md):
-# outputs/pred_v11_independent_rerun1.csv and the v10 fallback are REQUIRED and NOT ignored.
-outputs/pred.csv
-outputs/pred_v11_full_adaptive_test.csv
+# Keep only the required final CSV assets under output/ (see note in DOCKER_SUBMISSION.md):
+# output/pred_v11_independent_rerun1.csv and the v10 fallback are REQUIRED and NOT ignored.
+output/pred.csv
+output/pred_v11_full_adaptive_test.csv

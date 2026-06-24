@@ -9,10 +9,10 @@ as a risk signal (never ground truth, never a qid->answer table).
 Usage:
     python scripts/export_risk_review_pack.py \
       --public-test public-test_1780368312.json \
-      --risk-csv outputs/first100_consensus_risk_audit.csv \
-      --v6b-log outputs/run_v6b_qwen_rerank_calc_verifier_fast.jsonl \
-      --output-md outputs/first100_p0p1_review_pack.md \
-      --output-csv outputs/first100_p0p1_review_pack.csv
+      --risk-csv output/first100_consensus_risk_audit.csv \
+      --v6b-log output/run_v6b_qwen_rerank_calc_verifier_fast.jsonl \
+      --output-md output/first100_p0p1_review_pack.md \
+      --output-csv output/first100_p0p1_review_pack.csv
 """
 
 from __future__ import annotations
@@ -68,8 +68,8 @@ def main(argv=None) -> int:
     ap.add_argument("--public-test", required=True)
     ap.add_argument("--risk-csv", required=True)
     ap.add_argument("--v6b-log", required=True)
-    ap.add_argument("--output-md", default="outputs/first100_p0p1_review_pack.md")
-    ap.add_argument("--output-csv", default="outputs/first100_p0p1_review_pack.csv")
+    ap.add_argument("--output-md", default="output/first100_p0p1_review_pack.md")
+    ap.add_argument("--output-csv", default="output/first100_p0p1_review_pack.csv")
     args = ap.parse_args(argv)
 
     public = _load_public(args.public_test)
