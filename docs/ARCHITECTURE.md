@@ -346,7 +346,7 @@ the simpler configuration at acceptable cost.
 - **Objective:** batching, quantization (e.g. 4-bit for the 7.6 GB GPU), token
   budgets, route-based compute caps.
 - **Files:** `src/hf_common.py`, `src/hf_option_score_solver.py`, config.
-- **Validation:** `scripts/benchmark_runtime.py`; full run within budget.
+- **Validation:** `scripts/legacy/benchmark_runtime.py`; full run within budget.
 - **Success:** target latency met, accuracy retained.
 - **Stop:** within budget, no regression.
 

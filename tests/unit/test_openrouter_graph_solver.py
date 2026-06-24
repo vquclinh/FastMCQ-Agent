@@ -1,0 +1,388 @@
+"""Tests for the OpenRouter graph solver using a fake client (no live API).
+
+Runnable with pytest, or standalone:
+``python tests/test_openrouter_graph_solver.py``.
+"""
+
+from __future__ import annotations
+
+import os
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+from src.openrouter_client import ChatResult  # noqa: E402
+from src.openrouter_graph_solver import OpenRouterConfig, OpenRouterGraphSolver  # noqa: E402
+from src.solver_factory import SOLVER_NAMES, build_solver  # noqa: E402
+
+ABCD = ["w", "x", "y", "z"]
+
+
+class FakeClient:
+    """Returns scripted contents in sequence (repeats the last when exhausted)."""
+
+    def __init__(self, contents):
+        self.contents = list(contents)
+        self.calls = 0
+        self.model = "qwen/qwen3.5-9b"
+
+    def chat(self, messages, *, response_format=None, temperature=None, max_tokens=None):
+        c = self.contents[min(self.calls, len(self.contents) - 1)]
+        self.calls += 1
+        return ChatResult(content=c, model=self.model, response_id="fake")
+
+
+class CaptureLogger:
+    def __init__(self):
+        self.events = []
+
+    def record_event(self, rec):
+        self.events.append(rec)
+
+
+def _sample(question="Thủ đô của Pháp là gì?", choices=ABCD, qid="q1"):
+    return {"qid": qid, "question": question, "choices": choices}
+
+
+def test_valid_answer_accepted():
+    client = FakeClient(['{"answer": "B", "confidence": 0.95}'])
+    solver = OpenRouterGraphSolver(config=OpenRouterConfig(), client=client)
+    assert solver.predict_one(_sample()) == "B"
+    assert client.calls == 1  # no repair needed
+
+
+def test_invalid_then_repair():
+    client = FakeClient(['{"answer": "Z"}',                 # invalid label
+                         '{"answer": "C", "confidence": 0.9}'])  # repair
+    solver = OpenRouterGraphSolver(config=OpenRouterConfig(enable_repair=True), client=client)
+    assert solver.predict_one(_sample()) == "C"
+    assert client.calls == 2
+
+
+def test_final_answer_always_valid():
+    client = FakeClient(["totally not json", "still not json"])
+    solver = OpenRouterGraphSolver(config=OpenRouterConfig(), client=client)
+    out = solver.predict_one(_sample())
+    assert out in ["A", "B", "C", "D"]  # valid label sized to 4 choices
+    assert out == "A"  # safe fallback
+
+
+def test_self_consistency_off_by_default():
+    client = FakeClient(['{"answer": "B", "confidence": 0.95}'])
+    solver = OpenRouterGraphSolver(config=OpenRouterConfig(), client=client)
+    solver.predict_one(_sample())
+    # high confidence + default config => no extra sampling calls
+    assert client.calls == 1
+
+
+def test_self_consistency_gated_on_low_confidence():
+    # First answer is low-confidence -> triggers gated self-consistency vote.
+    client = FakeClient([
+        '{"answer": "A", "confidence": 0.1}',  # primary (low conf, valid)
+        '{"answer": "D"}', '{"answer": "D"}', '{"answer": "B"}',  # 3 SC votes
+    ])
+    cfg = OpenRouterConfig(enable_self_consistency=True, self_consistency_k=3,
+                           low_confidence_threshold=0.5)
+    solver = OpenRouterGraphSolver(config=cfg, client=client)
+    assert solver.predict_one(_sample()) == "D"  # majority vote
+    assert client.calls == 4
+
+
+def test_dynamic_labels_ten_choices():
+    client = FakeClient(['{"answer": "J"}'])
+    solver = OpenRouterGraphSolver(config=OpenRouterConfig(), client=client)
+    sample = _sample(question="Một bài toán?", choices=[f"opt{i}" for i in range(10)])
+    assert solver.predict_one(sample) == "J"
+
+
+def test_logging_excludes_sample_and_has_trace():
+    client = FakeClient(['{"answer": "B", "confidence": 0.9}'])
+    logger = CaptureLogger()
+    solver = OpenRouterGraphSolver(config=OpenRouterConfig(), client=client, logger=logger)
+    solver.predict_one(_sample())
+    assert len(logger.events) == 1
+    rec = logger.events[0]
+    assert "_sample" not in rec            # raw sample never logged
+    assert rec["solver"] == "openrouter_graph"
+    for key in ("qid", "route", "final_answer", "confidence", "repair_used",
+                "self_consistency_used", "elapsed_sec", "raw_response"):
+        assert key in rec, f"missing trace field {key}"
+    assert rec["final_answer"] == "B"
+
+
+def test_speed_normal_path_one_call():
+    # A valid first answer must cost exactly ONE API call (speed policy).
+    client = FakeClient(['{"answer": "B", "confidence": 0.95}'])
+    solver = OpenRouterGraphSolver(config=OpenRouterConfig(), client=client)
+    solver.predict_one(_sample())
+    assert client.calls == 1
+
+
+def test_speed_needs_review_does_not_force_repair_by_default():
+    # Model self-flags needs_review but the label is valid -> still ONE call,
+    # because repair_only_on_invalid is the default.
+    client = FakeClient(['{"answer": "B", "confidence": 0.4, "needs_review": true}'])
+    solver = OpenRouterGraphSolver(config=OpenRouterConfig(), client=client)
+    assert solver.predict_one(_sample()) == "B"
+    assert client.calls == 1
+
+
+def test_speed_repair_path_at_most_two_calls():
+    client = FakeClient(['not json', '{"answer": "C"}'])
+    solver = OpenRouterGraphSolver(config=OpenRouterConfig(enable_repair=True), client=client)
+    solver.predict_one(_sample())
+    assert client.calls <= 2
+    assert client.calls == 2  # one answer + one repair
+
+
+def test_speed_repair_capped_by_budget():
+    # Even if both responses are invalid, repair fires at most once (cap = 2).
+    client = FakeClient(['nope', 'still nope', 'and again'])
+    solver = OpenRouterGraphSolver(config=OpenRouterConfig(enable_repair=True), client=client)
+    out = solver.predict_one(_sample())
+    assert client.calls == 2          # answer + single repair, no more
+    assert out == "A"                 # safe fallback
+
+
+def test_thorough_mode_repairs_flagged_answer():
+    # With repair_only_on_invalid=False, a needs_review valid answer DOES repair.
+    client = FakeClient(['{"answer": "B", "needs_review": true}', '{"answer": "C"}'])
+    cfg = OpenRouterConfig(repair_only_on_invalid=False, enable_repair=True)
+    solver = OpenRouterGraphSolver(config=cfg, client=client)
+    solver.predict_one(_sample())
+    assert client.calls == 2
+
+
+def test_api_calls_logged():
+    client = FakeClient(['{"answer": "B"}'])
+    logger = CaptureLogger()
+    solver = OpenRouterGraphSolver(config=OpenRouterConfig(), client=client, logger=logger)
+    solver.predict_one(_sample())
+    assert logger.events[0]["api_calls"] == 1
+
+
+def test_no_api_key_in_logs():
+    # Even with a key in env, the logged trace must not contain it.
+    os.environ["OPENROUTER_API_KEY"] = "sk-or-SECRETVALUE123"
+    try:
+        client = FakeClient(['{"answer": "B"}'])
+        logger = CaptureLogger()
+        solver = OpenRouterGraphSolver(config=OpenRouterConfig(), client=client, logger=logger)
+        solver.predict_one(_sample())
+        blob = repr(logger.events[0])
+        assert "sk-or-SECRETVALUE123" not in blob
+        assert "SECRET" not in blob
+    finally:
+        os.environ.pop("OPENROUTER_API_KEY", None)
+
+
+# --- calculation override integration (calculation route) --------------------
+
+def _cylinder_sample():
+    # Routes as "calculation" (numeric choices + math) and matches cylinder_rate.
+    return {"qid": "calc1",
+            "question": ("Một bể chứa hình trụ được đổ đầy nước với tốc độ 50 cm³/s. "
+                         "Bán kính của bể là 5 cm. Tốc độ tăng của độ cao mực nước?"),
+            "choices": ["0.2 cm/s", "0.4 cm/s", "0.6 cm/s", "0.8 cm/s"]}
+
+
+def test_calculation_override_uses_zero_api_calls():
+    client = FakeClient(['{"answer": "A"}'])  # would be wrong; must NOT be called
+    solver = OpenRouterGraphSolver(config=OpenRouterConfig(), client=client)
+    ans = solver.predict_one(_cylinder_sample())
+    assert ans == "C"            # deterministic cylinder answer (0.6366 -> 0.6)
+    assert client.calls == 0      # LLM skipped entirely
+
+
+def test_calculation_disabled_falls_back_to_llm():
+    client = FakeClient(['{"answer": "A"}'])
+    solver = OpenRouterGraphSolver(config=OpenRouterConfig(calc_enabled=False), client=client)
+    ans = solver.predict_one(_cylinder_sample())
+    assert ans == "A"            # calc disabled -> LLM path used
+    assert client.calls == 1
+
+
+def test_calculation_no_match_uses_llm():
+    # Calculation-routed but no family matches -> normal LLM path.
+    client = FakeClient(['{"answer": "B"}'])
+    solver = OpenRouterGraphSolver(config=OpenRouterConfig(), client=client)
+    sample = {"qid": "calc2",
+              "question": "Tính giá trị biểu thức $2x+3$ khi $x=4$?",
+              "choices": ["9", "11", "13", "15"]}
+    ans = solver.predict_one(sample)
+    assert ans == "B" and client.calls == 1
+
+
+def test_new_family_money_multiplier_bypasses_llm():
+    # A Phase-2L.8 family (money multiplier) also overrides the LLM when safe.
+    client = FakeClient(['{"answer": "D"}'])  # wrong; must NOT be used
+    solver = OpenRouterGraphSolver(config=OpenRouterConfig(), client=client)
+    sample = {"qid": "calc_mm",
+              "question": ("Trong nền kinh tế, nếu tỷ lệ dự trữ bắt buộc là 10%, "
+                           "số nhân tiền tối đa là bao nhiêu?"),
+              "choices": ["5", "10", "20", "100"]}
+    ans = solver.predict_one(sample)
+    assert ans == "B" and client.calls == 0   # deterministic 1/0.10 = 10 -> B
+
+
+def test_calculation_metadata_logged():
+    client = FakeClient(['{"answer": "A"}'])
+    logger = CaptureLogger()
+    solver = OpenRouterGraphSolver(config=OpenRouterConfig(), client=client, logger=logger)
+    solver.predict_one(_cylinder_sample())
+    rec = logger.events[0]
+    for key in ("calculation_matched", "calculation_method", "calculation_answer",
+                "calculation_confidence", "calculation_safe_to_override",
+                "calculation_rationale"):
+        assert key in rec
+    assert rec["calculation_matched"] is True
+    assert rec["calculation_method"] == "cylinder_rate"
+    assert rec["final_answer"] == "C"
+
+
+# --- evidence reranker integration (long_context route) ----------------------
+
+def _long_context_sample():
+    body = " ".join(f"Câu nền số {i} không liên quan." for i in range(60))
+    q = (f"Đoạn thông tin:\n[1] Tiêu đề: Nền\nNội dung: {body}\n"
+         f"[2] Tiêu đề: Sự kiện\nNội dung: Hiệp ước được ký năm 1802 tại thành phố A. "
+         + body + "\nCâu hỏi: Hiệp ước được ký vào năm nào?")
+    return {"qid": "lc1", "question": q, "choices": ["1801", "1802", "1803", "1804"]}
+
+
+def test_evidence_reranker_runs_on_long_context_and_logs():
+    client = FakeClient(['{"answer": "B"}'])
+    logger = CaptureLogger()
+    solver = OpenRouterGraphSolver(config=OpenRouterConfig(), client=client, logger=logger)
+    out = solver.predict_one(_long_context_sample())
+    assert out == "B" and client.calls == 1
+    rec = logger.events[0]
+    assert rec["route"] == "long_context"
+    assert rec["evidence_reranker_enabled"] is True
+    for key in ("evidence_reranker_method", "evidence_selected_chunk_count",
+                "evidence_selected_chars", "evidence_fallback_used"):
+        assert key in rec
+
+
+def test_evidence_reranker_disabled_preserves_behavior():
+    client = FakeClient(['{"answer": "C"}'])
+    logger = CaptureLogger()
+    cfg = OpenRouterConfig(evidence_reranker_enabled=False)
+    solver = OpenRouterGraphSolver(config=cfg, client=client, logger=logger)
+    out = solver.predict_one(_long_context_sample())
+    assert out == "C" and client.calls == 1
+    assert logger.events[0]["evidence_reranker_enabled"] is False
+
+
+def test_evidence_reranker_neural_method_falls_back_lexical():
+    # method=reranker with no local model/dep -> lexical fallback, still answers,
+    # and the trace records the requested/effective method + fallback reason.
+    client = FakeClient(['{"answer": "B"}'])
+    logger = CaptureLogger()
+    cfg = OpenRouterConfig(evidence_reranker_method="reranker")
+    solver = OpenRouterGraphSolver(config=cfg, client=client, logger=logger)
+    out = solver.predict_one(_long_context_sample())
+    assert out == "B" and client.calls == 1
+    rec = logger.events[0]
+    assert rec["evidence_reranker_requested_method"] == "reranker"
+    assert rec["evidence_reranker_effective_method"] == "hybrid_lexical"
+    assert rec["evidence_neural_available"] is False
+    assert rec["evidence_neural_fallback_reason"]
+
+
+def test_evidence_reranker_only_long_context():
+    # A short-knowledge sample must not engage the reranker.
+    client = FakeClient(['{"answer": "A"}'])
+    logger = CaptureLogger()
+    solver = OpenRouterGraphSolver(config=OpenRouterConfig(), client=client, logger=logger)
+    solver.predict_one(_sample())  # short_knowledge
+    assert logger.events[0]["evidence_reranker_enabled"] is False
+
+
+# --- MCQ verifier integration (default off; selective) -----------------------
+
+_VERIFIER_OVERRIDE = ('{"original_answer_supported": false, "best_answer": "C", '
+                      '"should_override": true, "confidence": 0.95, '
+                      '"option_assessments": [], "rationale": "C đúng hơn"}')
+
+
+def test_verifier_disabled_by_default_no_extra_call():
+    client = FakeClient([_LOW_CONF := '{"answer": "A", "confidence": 0.2}'])
+    solver = OpenRouterGraphSolver(config=OpenRouterConfig(), client=client)
+    solver.predict_one(_long_context_sample())
+    assert client.calls == 1  # answer only; verifier off by default
+
+
+def test_verifier_triggered_low_confidence_long_context():
+    # answer (low conf) then verifier override response.
+    client = FakeClient(['{"answer": "A", "confidence": 0.2}', _VERIFIER_OVERRIDE])
+    cfg = OpenRouterConfig(mcq_verifier_enabled=True, mcq_verifier_min_confidence_to_override=0.8)
+    logger = CaptureLogger()
+    solver = OpenRouterGraphSolver(config=cfg, client=client, logger=logger)
+    out = solver.predict_one(_long_context_sample())
+    assert out == "C" and client.calls == 2          # override applied
+    rec = logger.events[0]
+    assert rec["verifier_triggered"] and rec["verifier_override_applied"]
+    assert rec["verifier_original_answer"] == "A"
+
+
+def test_verifier_low_confidence_override_rejected():
+    weak = ('{"best_answer": "C", "should_override": true, "confidence": 0.5}')  # < 0.8
+    client = FakeClient(['{"answer": "A", "confidence": 0.2}', weak])
+    cfg = OpenRouterConfig(mcq_verifier_enabled=True, mcq_verifier_min_confidence_to_override=0.8)
+    solver = OpenRouterGraphSolver(config=cfg, client=client, logger=(lg := CaptureLogger()))
+    out = solver.predict_one(_long_context_sample())
+    assert out == "A"                                # kept original
+    assert lg.events[0]["verifier_override_applied"] is False
+
+
+def test_verifier_invalid_output_keeps_original():
+    client = FakeClient(['{"answer": "A", "confidence": 0.2}', "not json at all"])
+    cfg = OpenRouterConfig(mcq_verifier_enabled=True)
+    solver = OpenRouterGraphSolver(config=cfg, client=client)
+    assert solver.predict_one(_long_context_sample()) == "A"
+
+
+def test_verifier_not_run_for_calc_override():
+    # Calculation safe override answers first and skips LLM + verifier entirely.
+    client = FakeClient([_VERIFIER_OVERRIDE])  # must not be consumed
+    cfg = OpenRouterConfig(mcq_verifier_enabled=True)
+    solver = OpenRouterGraphSolver(config=cfg, client=client)
+    out = solver.predict_one(_cylinder_sample())
+    assert out == "C" and client.calls == 0          # calc override, no LLM, no verifier
+
+
+def test_factory_registers_openrouter_graph():
+    assert "openrouter_graph" in SOLVER_NAMES
+
+
+def test_factory_without_key_raises():
+    # Hermetic "no key": force api_key_available False (a real .env may exist).
+    import src.openrouter_client as oc
+    saved = os.environ.pop("OPENROUTER_API_KEY", None)
+    orig = oc.api_key_available
+    oc.api_key_available = lambda: False
+    try:
+        raised = False
+        try:
+            build_solver("openrouter_graph")
+        except ValueError as exc:
+            raised = True
+            assert "OPENROUTER_API_KEY" in str(exc)
+        assert raised
+    finally:
+        oc.api_key_available = orig
+        if saved is not None:
+            os.environ["OPENROUTER_API_KEY"] = saved
+
+
+if __name__ == "__main__":
+    failures = 0
+    for name, fn in sorted(globals().items()):
+        if name.startswith("test_") and callable(fn):
+            try:
+                fn(); print(f"PASS {name}")
+            except AssertionError as exc:
+                failures += 1; print(f"FAIL {name}: {exc}")
+    raise SystemExit(1 if failures else 0)

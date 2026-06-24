@@ -1,0 +1,28 @@
+{
+  "architecture": "v13_multilayer_dynamic_system",
+  "current_best_csv": "output/pred_v13_multilayer_candidate_api30_from_v12b.csv",
+  "current_best_public_score": 79.7,
+  "current_best_md5": "cb02fef569b31e7fb544abab46c0e282",
+  "baseline_v10_csv": "output/pred_v10_full_production_user_run.csv",
+  "official_layers": [
+    "v12b_option_permutation_debiaser",
+    "v13_programmatic_solver",
+    "v13_content_first",
+    "v13_least_to_most",
+    "system_candidate_selector"
+  ],
+  "protected_outputs": [
+    "output/pred_v13_multilayer_candidate_api30_from_v12b.csv",
+    "output/pred_v12b_permutation_candidate_api30.csv",
+    "output/pred_v11_independent_rerun1.csv",
+    "output/pred_v10_full_production_user_run.csv",
+    "output/pred_v8_clean_generalized_from_v7.csv",
+    "output/pred.csv"
+  ],
+  "mode": "dynamic_full",
+  "execute_api": false,
+  "base_execute_api": false,
+  "notes": [
+    "Offline production config: full dynamic system (base + V12B + V13 + selector) with NO API. Model-dependent layers report skipped_no_api; deterministic parts (incl. V13 programmatic arithmetic) still run."
+  ]
+}

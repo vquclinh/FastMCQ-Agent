@@ -4,7 +4,7 @@ This document records which model families we believe we may use, how confident
 we are, and what still needs confirmation from the organizer (BTC). The
 machine-checkable version of this policy lives in
 [`configs/allowed_models.yaml`](../configs/allowed_models.yaml) and is enforced
-by [`scripts/check_model_compliance.py`](../scripts/check_model_compliance.py).
+by [`scripts/legacy/check_model_compliance.py`](../scripts/legacy/check_model_compliance.py).
 
 > **Status: provisional.** The exact allowed-model list has **not** been
 > confirmed in writing for this task. Everything below is our *safe

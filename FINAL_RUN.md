@@ -43,13 +43,13 @@ Profiles live in `configs/run_profiles.json`; the wrappers create a timestamped 
 `scratch/runs/`, tee a `run.log`, and print elapsed time + output path + md5.
 
 ```bash
-bash scripts/run_public_replay.sh public-test_1780368312.json   # reproduce the 79.7 public artifact
-bash scripts/run_dynamic_noapi.sh public-test_1780368312.json   # full dynamic system, no API
-bash scripts/run_public_api50.sh public-test_1780368312.json    # medium API pilot (caps 50 qids, $2.50)
-bash scripts/run_public_layer_api50.sh public-test_1780368312.json  # layer-only API: base no-API, V12B/V13 API ($1.50)
-bash scripts/run_public_api100.sh public-test_1780368312.json   # quick API system check (caps 100 qids)
-bash scripts/run_private_api200.sh private_test.json            # recommended BTC/private API run
-bash scripts/run_private_noapi.sh private_test.json             # private, no API
+bash scripts/run/run_public_replay.sh public-test_1780368312.json   # reproduce the 79.7 public artifact
+bash scripts/run/run_dynamic_noapi.sh public-test_1780368312.json   # full dynamic system, no API
+bash scripts/run/run_public_api50.sh public-test_1780368312.json    # medium API pilot (caps 50 qids, $2.50)
+bash scripts/run/run_public_layer_api50.sh public-test_1780368312.json  # layer-only API: base no-API, V12B/V13 API ($1.50)
+bash scripts/run/run_public_api100.sh public-test_1780368312.json   # quick API system check (caps 100 qids)
+bash scripts/run/run_private_api200.sh private_test.json            # recommended BTC/private API run
+bash scripts/run/run_private_noapi.sh private_test.json             # private, no API
 ```
 
 Profile meanings: **public_replay** = reproduce the 79.7 artifact for the exact public qids;

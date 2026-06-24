@@ -109,11 +109,11 @@ so the choice can be made on evidence (see `docs/RESEARCH_STRATEGY.md`).
 
 LLM runs are gated by an explicit compliance policy. Allowed families (provisional)
 are declared in `configs/allowed_models.yaml` and checked by
-`scripts/check_model_compliance.py` (PASS/WARNING/FAIL, with `--strict`); the full
+`scripts/legacy/check_model_compliance.py` (PASS/WARNING/FAIL, with `--strict`); the full
 policy and open questions for the organizer are in `docs/MODEL_COMPLIANCE.md`.
 
 The optional LLM dependencies live in `requirements-llm.txt` (kept out of the
-baseline/Docker image). `scripts/check_llm_env.py` reports torch/transformers
+baseline/Docker image). `scripts/legacy/check_llm_env.py` reports torch/transformers
 availability, CUDA, and GPU/VRAM, and can validate a local model path — all
 without downloading anything.
 
@@ -122,7 +122,7 @@ without downloading anything.
 Per-sample JSONL debug records (qid, answer, solver, shape, #choices, elapsed,
 optional raw output/scores, fallback reason) go to `--log-path`
 (default `output/run_debug.jsonl`) — **never** to `pred.csv`. `run.py` appends a
-summary record and prints totals; `scripts/benchmark_runtime.py` reports
+summary record and prints totals; `scripts/legacy/benchmark_runtime.py` reports
 p50/p90/p95 and a per-shape breakdown.
 
 ## Future improvements (Phases 2I–2J)

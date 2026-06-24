@@ -26,7 +26,7 @@ echo "[entrypoint] INPUT_FILE=${INPUT_FILE:-<auto-detect /data>} OUTPUT_FILE=$OU
 echo "[entrypoint] args  : ${*:-<none>}"
 echo "============================================================"
 
-CFG="configs/production_v13_multilayer_7970.json"
+CFG="configs/production/default.json"
 if [ "$#" -eq 0 ]; then
   # No-arg BTC default: explicit OUTPUT_FILE; INPUT_FILE if provided, else auto-detect /data.
   if [ -n "$INPUT_FILE" ]; then

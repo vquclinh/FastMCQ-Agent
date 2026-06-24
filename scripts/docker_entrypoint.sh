@@ -10,7 +10,7 @@ OUT_DIR="${OUT_DIR:-/output}"
 mkdir -p "$OUT_DIR"
 
 # Single source of truth for detection (shared with tests).
-if ! INPUT="$(python scripts/run_production_pipeline.py --detect-only --data-dir "$DATA_DIR")"; then
+if ! INPUT="$(python scripts/legacy/run_production_pipeline.py --detect-only --data-dir "$DATA_DIR")"; then
   echo "ERROR: no input file found in $DATA_DIR (expected a .csv or .json)." >&2
   exit 1
 fi
@@ -31,7 +31,7 @@ START_TS=$(date +%s)
 
 # Run (do not 'exec' so we can print an end timestamp after completion).
 set +e
-python scripts/run_production_pipeline.py \
+python scripts/legacy/run_production_pipeline.py \
   --input "$INPUT" \
   --output "$OUTPUT" \
   --preset "$PRESET" \

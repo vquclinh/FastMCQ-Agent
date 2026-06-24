@@ -20,9 +20,9 @@ Runs base → V12B → V13 → selector end-to-end and writes the final local ar
 ### Legacy / research diagnostics only (not the main workflow)
 
 ```bash
-bash scripts/run_public_replay.sh public-test_1780368312.json   # reproduce the 79.7 artifact
-bash scripts/run_dynamic_noapi.sh public-test_1780368312.json   # full dynamic system, no API
-bash scripts/run_public_api50.sh public-test_1780368312.json    # medium API pilot (caps 50 qids)
+bash scripts/run/run_public_replay.sh public-test_1780368312.json   # reproduce the 79.7 artifact
+bash scripts/run/run_dynamic_noapi.sh public-test_1780368312.json   # full dynamic system, no API
+bash scripts/run/run_public_api50.sh public-test_1780368312.json    # medium API pilot (caps 50 qids)
 python scripts/final_infer.py --input public-test_1780368312.json --output pred.csv  # explicit form
 ```
 Runs `dynamic_full` (V12B + V13, API-free) and writes validated `pred.csv` for exactly the
@@ -31,7 +31,7 @@ reproduce the public 79.7 artifact exactly add `--mode public_replay`. See `FINA
 
 ## What ships in the image
 
-- Source (`src/`, `scripts/`), `configs/production_v13_multilayer_7970.json`, `requirements.txt`.
+- Source (`src/`, `scripts/`), `configs/production/default.json`, `requirements.txt`.
 - Required final CSVs under `output/`: `pred_v13_multilayer_candidate_api30_from_v12b.csv`
   (current best, 79.7), `pred_v12b_permutation_candidate_api30.csv` (previous best, 78.83),
   `pred_v11_independent_rerun1.csv`, and `pred_v10_full_production_user_run.csv` (fallback only).
