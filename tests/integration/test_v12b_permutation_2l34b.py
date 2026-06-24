@@ -24,7 +24,7 @@ _V11 = str(_ROOT / "output" / "pred_v11_independent_rerun1.csv")
 
 def _load(script):
     spec = importlib.util.spec_from_file_location(
-        f"v12b_{script}", (_ROOT / "scripts" / "legacy" / f"{script}.py" if (_ROOT / "scripts" / "legacy" / f"{script}.py").exists() else _ROOT / "scripts" / f"{script}.py"))
+        f"v12b_{script}", next(iter((_ROOT / "scripts" / "legacy").glob(f"**/{script}.py")), _ROOT / "scripts" / f"{script}.py"))
     mod = importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)
     return mod
 
@@ -36,7 +36,7 @@ def _md5(p):
 # --- runner dry-run (no API) -------------------------------------------------
 
 def test_verifier_dry_run_no_api(monkeypatch):
-    import src.selective_api_client as sac
+    import src.api.selective_api_client as sac
     monkeypatch.setattr(sac, "SelectiveAPIClient",
                         lambda *a, **k: (_ for _ in ()).throw(AssertionError("no API in dry-run")))
     run = _load("run_v12b_option_permutation")
@@ -52,8 +52,8 @@ def test_verifier_dry_run_no_api(monkeypatch):
 def test_verifier_builds_uses_core_module():
     run = _load("run_v12b_option_permutation")
     # The runner imports the core module functions (thin wrapper, no duplicated logic).
-    src = (_ROOT / "scripts" / "legacy" / "run_v12b_option_permutation.py").read_text()
-    assert "from src.mcq_permutation_debiaser import" in src
+    src = (next(iter((_ROOT / "scripts" / "legacy").glob("**/run_v12b_option_permutation.py")))).read_text()
+    assert "from src.layers.mcq_permutation_debiaser import" in src
     assert "def make_permutations" not in src and "def map_back" not in src
 
 

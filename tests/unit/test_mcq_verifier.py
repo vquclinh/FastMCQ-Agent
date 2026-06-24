@@ -7,7 +7,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from src.mcq_verifier import (  # noqa: E402
+from src.selector.mcq_verifier import (  # noqa: E402
     build_verifier_messages,
     parse_verification,
     should_run_verifier,
@@ -122,7 +122,7 @@ def test_no_valid_answer_defers():
 
 def test_source_no_qid_or_eval():
     import re as _re
-    src = Path(__file__).resolve().parents[2].joinpath("src/mcq_verifier.py").read_text()
+    src = Path(__file__).resolve().parents[2].joinpath("src/selector/mcq_verifier.py").read_text()
     assert "eval(" not in src and "exec(" not in src and "__import__" not in src
     for pat in (r'\[\s*["\']qid', r'\.get\(\s*["\']qid', r'qid\s*=='):
         assert not _re.search(pat, src)

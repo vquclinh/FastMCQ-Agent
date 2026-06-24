@@ -9,7 +9,7 @@ from pathlib import Path
 _ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(_ROOT))
 
-from src import mcq_permutation_debiaser as M
+from src.layers import mcq_permutation_debiaser as M
 
 
 def _sample(n=4):
@@ -131,7 +131,7 @@ def test_balanced_accepts_borderline_high_confidence():
 # --- hygiene -----------------------------------------------------------------
 
 def test_module_has_no_api_dependency():
-    src = (_ROOT / "src" / "mcq_permutation_debiaser.py").read_text()
+    src = (next(iter((_ROOT / "src").glob("**/mcq_permutation_debiaser.py")))).read_text()
     # No client construction / network imports (ignore prose in docstrings/comments).
     code_lines = [ln for ln in src.splitlines()
                   if not ln.lstrip().startswith("#")]
@@ -140,12 +140,12 @@ def test_module_has_no_api_dependency():
     assert "OpenRouterClient" not in code
     assert "import requests" not in code and "openrouter_client" not in code
     # And it actually imports nothing from an API module.
-    import src.mcq_permutation_debiaser as M
+    import src.layers.mcq_permutation_debiaser as M
     import sys as _sys
-    assert "src.openrouter_client" not in _sys.modules or True  # not imported by this module
+    assert "src.api.openrouter_client" not in _sys.modules or True  # not imported by this module
     assert not hasattr(M, "SelectiveAPIClient")
 
 
 def test_no_qid_hardcoding():
-    src = (_ROOT / "src" / "mcq_permutation_debiaser.py").read_text()
+    src = (next(iter((_ROOT / "src").glob("**/mcq_permutation_debiaser.py")))).read_text()
     assert not re.search(r"\btest_\d{4}\b", src)

@@ -13,7 +13,7 @@ from pathlib import Path
 _ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(_ROOT))
 
-from src.formula_bank_solver import solve_formula_bank_sample  # noqa: E402
+from src.solvers.formula_bank_solver import solve_formula_bank_sample  # noqa: E402
 
 
 def _r(q, ch):
@@ -262,7 +262,7 @@ def test_cournot_declines_asymmetric_costs():
 
 def test_no_qid_or_external_sheet_in_source():
     import re as _re
-    for rel in ("src/formula_bank_solver.py", "scripts/legacy/apply_formula_bank_to_predictions.py"):
+    for rel in ("src/solvers/formula_bank_solver.py", "scripts/legacy/repair/apply_formula_bank_to_predictions.py"):
         src = (_ROOT / rel).read_text()
         # Detect qid-VALUE hardcoding / answer tables (not legitimate "qid" column refs).
         for pat in (r'qid\s*==', r'==\s*qid', r'==\s*["\']test_0', r'test_0\d{3}'):
@@ -276,7 +276,7 @@ def test_no_qid_or_external_sheet_in_source():
 # --- apply script guards ------------------------------------------------------
 
 def _load_apply():
-    path = _ROOT / "scripts" / "legacy" / "apply_formula_bank_to_predictions.py"
+    path = next(iter((_ROOT / "scripts" / "legacy").glob("**/apply_formula_bank_to_predictions.py")))
     spec = importlib.util.spec_from_file_location("apply_fb", path)
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
@@ -318,7 +318,7 @@ def test_apply_script_prints_timing_and_writes_summary_event():
 
     root = Path(__file__).resolve().parents[2]
     spec = _ilu.spec_from_file_location(
-        "apply_fb_timing", root / "scripts" / "legacy" / "apply_formula_bank_to_predictions.py")
+        "apply_fb_timing", next(iter((root / "scripts" / "legacy").glob("**/apply_formula_bank_to_predictions.py"))))
     mod = _ilu.module_from_spec(spec)
     spec.loader.exec_module(mod)
 

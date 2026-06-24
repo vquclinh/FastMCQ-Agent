@@ -10,10 +10,10 @@ from pathlib import Path
 _ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(_ROOT))
 
-from src.answer_factory import build_candidate_pool  # noqa: E402
-from src.answer_ranker import select_answer  # noqa: E402
-from src.candidate_answer import AnswerCandidate, CandidatePool  # noqa: E402
-from src.rag_lite import retrieve_cards_for_question, retrieve_cards_per_option  # noqa: E402
+from src.base.answer_factory import build_candidate_pool  # noqa: E402
+from src.selector.answer_ranker import select_answer  # noqa: E402
+from src.selector.candidate_answer import AnswerCandidate, CandidatePool  # noqa: E402
+from src.evidence.rag_lite import retrieve_cards_for_question, retrieve_cards_per_option  # noqa: E402
 from src.tool_solvers import (cs_solver, finance_econ_solver, physics_solver,  # noqa: E402
                               safe_math_solver, stats_solver)
 
@@ -87,7 +87,7 @@ def test_factory_builds_candidates_no_api():
 
 
 def test_factory_stubs_return_none():
-    from src import answer_factory as af
+    from src.base import answer_factory as af
     assert af.direct_route_prompt_agent_stub(_DET) is None
     assert af.self_consistency_agent_stub(_DET) is None
     assert af.pairwise_judge_agent_stub(_DET) is None
@@ -118,7 +118,7 @@ def test_ranker_keeps_base_when_candidate_contradicts_proof():
 # --- scripts: scratch-only + deterministic + source safety --------------------
 
 def _load(name):
-    spec = importlib.util.spec_from_file_location(name.replace(".py", ""), (_ROOT / "scripts" / "legacy" / name if (_ROOT / "scripts" / "legacy" / name).exists() else _ROOT / "scripts" / name))
+    spec = importlib.util.spec_from_file_location(name.replace(".py", ""), next(iter((_ROOT / "scripts" / "legacy").glob(f"**/{name}")), _ROOT / "scripts" / name))
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod
@@ -144,10 +144,10 @@ def test_selective_planner_refuses_non_scratch_output():
 
 def test_no_qid_hardcoding_in_new_sources():
     import re as _re
-    for rel in ("src/candidate_answer.py", "src/answer_factory.py", "src/answer_ranker.py",
-                "src/rag_lite.py", "src/tool_solvers/safe_math_solver.py",
-                "scripts/legacy/build_v11_answer_factory_proposals.py",
-                "scripts/legacy/plan_selective_multicandidate_api.py"):
+    for rel in ("src/selector/candidate_answer.py", "src/base/answer_factory.py", "src/selector/answer_ranker.py",
+                "src/evidence/rag_lite.py", "src/tool_solvers/safe_math_solver.py",
+                "scripts/legacy/build/build_v11_answer_factory_proposals.py",
+                "scripts/legacy/build/plan_selective_multicandidate_api.py"):
         src = (_ROOT / rel).read_text()
         for pat in (r'qid\s*==', r'==\s*["\']test_0', r'test_0\d{3}'):
             assert not _re.search(pat, src), f"{pat} in {rel}"

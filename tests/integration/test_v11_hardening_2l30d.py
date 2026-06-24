@@ -13,12 +13,12 @@ from pathlib import Path
 _ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(_ROOT))
 
-from src.candidate_answer import AnswerCandidate, CandidatePool  # noqa: E402
+from src.selector.candidate_answer import AnswerCandidate, CandidatePool  # noqa: E402
 
 
 def _load(name):
     spec = importlib.util.spec_from_file_location(name.replace(".py", "") + "_t",
-                                                  (_ROOT / "scripts" / "legacy" / name if (_ROOT / "scripts" / "legacy" / name).exists() else _ROOT / "scripts" / name))
+                                                  next(iter((_ROOT / "scripts" / "legacy").glob(f"**/{name}")), _ROOT / "scripts" / name))
     mod = importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)
     return mod
 
@@ -197,5 +197,5 @@ def test_integrity_validates_good_submission_and_handles_missing():
 
 def test_no_qid_hardcoding():
     for name in ("run_full_v11_independent_submission.py", "audit_v11_independent_integrity.py"):
-        src = ((_ROOT / "scripts" / "legacy" / name if (_ROOT / "scripts" / "legacy" / name).exists() else _ROOT / "scripts" / name)).read_text()
+        src = (next(iter((_ROOT / "scripts" / "legacy").glob(f"**/{name}")), _ROOT / "scripts" / name)).read_text()
         assert not re.search(r"\btest_\d{4}\b", src)

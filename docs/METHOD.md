@@ -45,7 +45,7 @@ Nothing is downloaded, and no external API is used **in this (Mode B) path**.
 
 ### Solver selection
 
-A small factory (`src/solver_factory.py`) maps names to solvers:
+A small factory (`src/base/solver_factory.py`) maps names to solvers:
 `always_a` → `AlwaysASolver`, `hf_generate` → `HFGenerateSolver`,
 `hf_option_score` → `HFOptionScoreSolver`. Unknown names and missing model paths
 raise clear errors; `run.py` reports them cleanly (exit code 2) without a
@@ -55,10 +55,10 @@ baseline and the test suite never need them.
 ### Dynamic labels
 
 Every solver returns a label sized to the sample's actual choice count
-(`A`..`K` for an 11-choice question), via `src/labels.py`. `postprocess.py` still
+(`A`..`K` for an 11-choice question), via `src/utils/labels.py`. `postprocess.py` still
 guarantees one valid label per qid, falling back to `A`.
 
-### Prompt construction (`src/prompting.py`)
+### Prompt construction (`src/utils/prompting.py`)
 
 Vietnamese prompts that enumerate **all** choices with dynamic labels and ask the
 model to output exactly one label. `detect_question_shape` tags each sample as
@@ -75,14 +75,14 @@ are never truncated — the budget is computed so the instruction and full choic
 block always survive. Token-accurate when a tokenizer is supplied, character-
 based otherwise (so it is fully testable without heavy deps).
 
-### Output parsing (`src/output_parser.py`)
+### Output parsing (`src/utils/output_parser.py`)
 
 `parse_answer_label` first matches explicit phrases (`Đáp án: A`,
 `Câu trả lời là B`, `The answer is C`, `Answer: D`, `Tôi chọn E`, ...), then
 falls back to the first standalone valid label. It is case-insensitive, never
 returns a label outside the valid set, and avoids letters embedded in words.
 
-### Option scoring (`src/hf_option_score_solver.py`)
+### Option scoring (`src/solvers/hf_option_score_solver.py`)
 
 For each label it scores a continuation and computes the **average log-probability
 per continuation token** (length-normalised so longer options are not penalised).
@@ -109,20 +109,20 @@ so the choice can be made on evidence (see `docs/RESEARCH_STRATEGY.md`).
 
 LLM runs are gated by an explicit compliance policy. Allowed families (provisional)
 are declared in `configs/allowed_models.yaml` and checked by
-`scripts/legacy/check_model_compliance.py` (PASS/WARNING/FAIL, with `--strict`); the full
+`scripts/legacy/checks/check_model_compliance.py` (PASS/WARNING/FAIL, with `--strict`); the full
 policy and open questions for the organizer are in `docs/MODEL_COMPLIANCE.md`.
 
 The optional LLM dependencies live in `requirements-llm.txt` (kept out of the
-baseline/Docker image). `scripts/legacy/check_llm_env.py` reports torch/transformers
+baseline/Docker image). `scripts/legacy/checks/check_llm_env.py` reports torch/transformers
 availability, CUDA, and GPU/VRAM, and can validate a local model path — all
 without downloading anything.
 
-### Runtime logging (`src/run_logger.py`)
+### Runtime logging (`src/utils/run_logger.py`)
 
 Per-sample JSONL debug records (qid, answer, solver, shape, #choices, elapsed,
 optional raw output/scores, fallback reason) go to `--log-path`
 (default `output/run_debug.jsonl`) — **never** to `pred.csv`. `run.py` appends a
-summary record and prints totals; `scripts/legacy/benchmark_runtime.py` reports
+summary record and prints totals; `scripts/legacy/benchmark/benchmark_runtime.py` reports
 p50/p90/p95 and a per-shape breakdown.
 
 ## Future improvements (Phases 2I–2J)

@@ -9,13 +9,13 @@ from pathlib import Path
 _ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(_ROOT))
 
-from src.adaptive_accuracy_planner import (build_adaptive_plan, estimate_calls_for_plan,
+from src.layers.adaptive_accuracy_planner import (build_adaptive_plan, estimate_calls_for_plan,
                                            recommend_layers_for_question,
                                            score_question_difficulty)
-from src.candidate_answer import AnswerCandidate
-from src.evidence_pack import (build_calculation_evidence_pack,
+from src.selector.candidate_answer import AnswerCandidate
+from src.evidence.evidence_pack import (build_calculation_evidence_pack,
                                build_short_knowledge_evidence_pack)
-from src.option_grounding import (map_claim_to_option, verify_answer_label_matches_reasoning)
+from src.evidence.option_grounding import (map_claim_to_option, verify_answer_label_matches_reasoning)
 from src.tool_solvers import cs_solver, finance_econ_solver, geometry_solver, probability_solver
 
 
@@ -121,7 +121,7 @@ def test_build_adaptive_plan_and_estimate():
 # --- scripts: scratch-only + source safety ------------------------------------
 
 def _load(name):
-    spec = importlib.util.spec_from_file_location(name.replace(".py", ""), (_ROOT / "scripts" / "legacy" / name if (_ROOT / "scripts" / "legacy" / name).exists() else _ROOT / "scripts" / name))
+    spec = importlib.util.spec_from_file_location(name.replace(".py", ""), next(iter((_ROOT / "scripts" / "legacy").glob(f"**/{name}")), _ROOT / "scripts" / name))
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod
@@ -142,11 +142,11 @@ def test_scripts_refuse_outputs_dir():
 
 def test_no_qid_hardcoding_in_new_sources():
     import re as _re
-    for rel in ("src/option_grounding.py", "src/evidence_pack.py",
-                "src/adaptive_accuracy_planner.py", "src/tool_solvers/probability_solver.py",
+    for rel in ("src/evidence/option_grounding.py", "src/evidence/evidence_pack.py",
+                "src/layers/adaptive_accuracy_planner.py", "src/tool_solvers/probability_solver.py",
                 "src/tool_solvers/geometry_solver.py",
-                "scripts/legacy/build_overall_accuracy_plan.py",
-                "scripts/legacy/audit_selective_runner_behavior.py"):
+                "scripts/legacy/build/build_overall_accuracy_plan.py",
+                "scripts/legacy/audit/audit_selective_runner_behavior.py"):
         src = (_ROOT / rel).read_text()
         for pat in (r'qid\s*==', r'==\s*["\']test_0', r'test_0\d{3}'):
             assert not _re.search(pat, src), f"{pat} in {rel}"

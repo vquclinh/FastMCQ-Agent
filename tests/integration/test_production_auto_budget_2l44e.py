@@ -64,7 +64,7 @@ def test_explicit_int_and_all_override():
 # --- log rendering: auto(<cap>/<N>) ------------------------------------------
 
 def test_fmt_cap_renders_auto_all_int():
-    from src.fastmcq_system import _fmt_cap
+    from src.system.fastmcq_system import _fmt_cap
     assert _fmt_cap(1, "auto", 3) == "auto(1/3)"
     assert _fmt_cap(250, "auto", 2000) == "auto(250/2000)"
     assert _fmt_cap(58, "auto", 463) == "auto(58/463)"
@@ -127,7 +127,7 @@ def test_explicit_all_overrides_auto_no_api(tmp_path):
 def test_no_hardcoded_463_in_production():
     files = [
         "scripts/tools/final_infer.py",
-        "src/fastmcq_system.py",
+        "src/system/fastmcq_system.py",
         "configs/production/default.json",
         "configs/production/noapi.json",
         "scripts/run_full_system.sh",

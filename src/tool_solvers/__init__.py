@@ -9,8 +9,8 @@ table, no network.
 
 from __future__ import annotations
 
-from src.candidate_answer import AnswerCandidate
-from src.labels import labels_for
+from src.selector.candidate_answer import AnswerCandidate
+from src.utils.labels import labels_for
 
 
 def _candidate_from_rule(sample, rules, source):

@@ -80,7 +80,7 @@ def test_no_arg_default_is_dynamic_full(monkeypatch):
 
 
 def test_no_arg_makes_no_api_call(monkeypatch):
-    import src.selective_api_client as sac
+    import src.api.selective_api_client as sac
     monkeypatch.setattr(sac, "SelectiveAPIClient",
                         lambda *a, **k: (_ for _ in ()).throw(AssertionError("no API in frozen_csv")))
     mod = _fi()

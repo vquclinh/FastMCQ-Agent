@@ -105,7 +105,7 @@ def test_v10_is_not_default():
 
 
 def test_short_command_makes_no_api_call(monkeypatch):
-    import src.selective_api_client as sac
+    import src.api.selective_api_client as sac
     monkeypatch.setattr(sac, "SelectiveAPIClient",
                         lambda *a, **k: (_ for _ in ()).throw(AssertionError("no API in frozen_csv")))
     d = tempfile.mkdtemp(); out = f"{d}/pred.csv"

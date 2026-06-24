@@ -34,11 +34,11 @@ _SCAN_DIRS = ("src", "scripts", "configs")
 # banned names) and the external 3-LLM diagnostic tools (they reference sheet COLUMNS
 # named gemini/gpt/claude, never a model to run).
 _EXCLUDE = {
-    "src/model_policy.py", "scripts/audit_model_policy.py",
+    "src/api/model_policy.py", "src/model_policy.py", "scripts/audit_model_policy.py",
     "configs/allowed_models.yaml",
-    "scripts/legacy/audit_first100_consensus_risks.py",
+    "scripts/legacy/audit/audit_first100_consensus_risks.py",
     "scripts/compare_v7_programmatic_assist_pseudo.py",
-    "scripts/legacy/export_risk_review_pack.py",
+    "scripts/legacy/misc/export_risk_review_pack.py",
     "scripts/analyze_candidate_disagreements.py",
     "scripts/recommend_submission_candidate.py",
 }

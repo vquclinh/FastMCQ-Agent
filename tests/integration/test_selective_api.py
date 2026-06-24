@@ -11,17 +11,17 @@ from pathlib import Path
 _ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(_ROOT))
 
-from src import api_candidate_agents as agents  # noqa: E402
-from src.answer_factory import build_candidate_pool  # noqa: E402
-from src.answer_ranker import select_answer  # noqa: E402
-from src.candidate_answer import AnswerCandidate  # noqa: E402
-from src.selective_api_client import SelectiveAPIClient  # noqa: E402
+from src.api import api_candidate_agents as agents  # noqa: E402
+from src.base.answer_factory import build_candidate_pool  # noqa: E402
+from src.selector.answer_ranker import select_answer  # noqa: E402
+from src.selector.candidate_answer import AnswerCandidate  # noqa: E402
+from src.api.selective_api_client import SelectiveAPIClient  # noqa: E402
 
 _S = {"qid": "x", "question": "Tính 2+2?", "choices": ["3", "4", "5", "6"]}
 
 
 def _load(name):
-    spec = importlib.util.spec_from_file_location(name.replace(".py", ""), (_ROOT / "scripts" / "legacy" / name if (_ROOT / "scripts" / "legacy" / name).exists() else _ROOT / "scripts" / name))
+    spec = importlib.util.spec_from_file_location(name.replace(".py", ""), next(iter((_ROOT / "scripts" / "legacy").glob(f"**/{name}")), _ROOT / "scripts" / name))
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod
@@ -132,7 +132,7 @@ def test_runner_refuses_non_scratch_output():
 
 
 def test_runner_fake_execute_writes_jsonl_and_resume(monkeypatch):
-    import src.selective_api_client as sac
+    import src.api.selective_api_client as sac
     mod = _load("run_selective_multicandidate_api.py")
     d = tempfile.mkdtemp()
     inp, base, plan = _tiny_inputs(d)
@@ -140,7 +140,7 @@ def test_runner_fake_execute_writes_jsonl_and_resume(monkeypatch):
 
     class _FakeSelective:
         def __init__(self, model, **kw):
-            from src.model_policy import assert_allowed_llm_model
+            from src.api.model_policy import assert_allowed_llm_model
             assert_allowed_llm_model(model)   # keep the guard
             self.model = model; self.total_calls = 0; self.total_tokens = 0
 
@@ -203,9 +203,9 @@ def test_ranker_overrides_on_multi_agent_consensus_with_evidence():
 
 def test_no_qid_hardcoding_in_new_sources():
     import re as _re
-    for rel in ("src/api_candidate_agents.py", "src/selective_api_client.py",
-                "scripts/legacy/run_selective_multicandidate_api.py",
-                "scripts/legacy/build_v11_from_api_candidates.py", "scripts/legacy/review_v11_api_candidate.py"):
+    for rel in ("src/api/api_candidate_agents.py", "src/api/selective_api_client.py",
+                "scripts/legacy/run/run_selective_multicandidate_api.py",
+                "scripts/legacy/build/build_v11_from_api_candidates.py", "scripts/legacy/review/review_v11_api_candidate.py"):
         src = (_ROOT / rel).read_text()
         for pat in (r'qid\s*==', r'==\s*["\']test_0', r'test_0\d{3}'):
             assert not _re.search(pat, src), f"{pat} in {rel}"

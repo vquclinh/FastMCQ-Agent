@@ -13,7 +13,7 @@ sys.path.insert(0, str(_ROOT))
 
 
 def _load(name):
-    spec = importlib.util.spec_from_file_location(name.replace(".py", ""), (_ROOT / "scripts" / "legacy" / name if (_ROOT / "scripts" / "legacy" / name).exists() else _ROOT / "scripts" / name))
+    spec = importlib.util.spec_from_file_location(name.replace(".py", ""), next(iter((_ROOT / "scripts" / "legacy").glob(f"**/{name}")), _ROOT / "scripts" / name))
     mod = importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)
     return mod
 
@@ -69,7 +69,7 @@ def test_no_qid_hardcoding_in_sources():
     import re
     for name in ("select_adaptive_pilot_qids.py", "run_adaptive_pilot.py",
                  "build_pilot_decision_report.py", "build_full_adaptive_submission_candidate.py"):
-        src = ((_ROOT / "scripts" / "legacy" / name if (_ROOT / "scripts" / "legacy" / name).exists() else _ROOT / "scripts" / name)).read_text()
+        src = (next(iter((_ROOT / "scripts" / "legacy").glob(f"**/{name}")), _ROOT / "scripts" / name)).read_text()
         assert not re.search(r"test_\d{3,}", src), f"{name} hardcodes a qid"
         assert not re.search(r"\bq\d{3,}\b", src), f"{name} hardcodes a qid"
 
@@ -88,7 +88,7 @@ def _pilot_qids(d):
 
 
 def test_pilot_runner_dry_run_no_api(monkeypatch):
-    import src.selective_api_client as sac
+    import src.api.selective_api_client as sac
 
     def _boom(*a, **k):
         raise AssertionError("API client must NOT be constructed during dry-run")

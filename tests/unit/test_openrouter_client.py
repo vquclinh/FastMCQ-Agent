@@ -11,7 +11,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from src.openrouter_client import (  # noqa: E402
+from src.api.openrouter_client import (  # noqa: E402
     DEFAULT_MODEL,
     OpenRouterClient,
     OpenRouterError,
@@ -25,7 +25,7 @@ def test_default_model():
 
 def test_missing_key_raises_clearly():
     # Hermetic "no key": pop env AND disable .env loading (a real .env may exist).
-    import src.openrouter_client as oc
+    import src.api.openrouter_client as oc
     saved = os.environ.pop("OPENROUTER_API_KEY", None)
     orig_dotenv = oc._maybe_load_dotenv
     oc._maybe_load_dotenv = lambda: None
@@ -131,7 +131,7 @@ def test_payload_reasoning_disabled_ignores_other_fields():
 
 
 def test_payload_includes_response_format_when_structured():
-    from src.structured_answer import response_format_schema
+    from src.utils.structured_answer import response_format_schema
     c = _client()
     rf = response_format_schema()
     p = c.build_payload([{"role": "user", "content": "x"}], rf, 0.0, 256)

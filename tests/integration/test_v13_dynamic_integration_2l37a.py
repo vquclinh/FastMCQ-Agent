@@ -13,11 +13,11 @@ from pathlib import Path
 _ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(_ROOT))
 
-from src.dynamic_base_predictor import predict_base_answers, BasePrediction
-from src.v13_dynamic_layer import select_v13_targets, run_v13_layer, V13LayerResult
-from src.v12b_dynamic_layer import V12BLayerResult
-from src.system_candidate_selector import select_system_overrides
-from src.fastmcq_system import run_fastmcq_system, FastMCQSystemConfig
+from src.base.dynamic_base_predictor import predict_base_answers, BasePrediction
+from src.layers.v13_dynamic_layer import select_v13_targets, run_v13_layer, V13LayerResult
+from src.layers.v12b_dynamic_layer import V12BLayerResult
+from src.selector.system_candidate_selector import select_system_overrides
+from src.system.fastmcq_system import run_fastmcq_system, FastMCQSystemConfig
 
 _PUBLIC = str(_ROOT / "public-test_1780368312.json")
 # public_replay now reproduces the V13 79.7 artifact (promoted in 2L.38A).
@@ -67,7 +67,7 @@ def test_least_to_most_target_for_multicondition():
 
 
 def test_targets_feature_based_not_qid():
-    src = (_ROOT / "src" / "v13_dynamic_layer.py").read_text()
+    src = (next(iter((_ROOT / "src").glob("**/v13_dynamic_layer.py")))).read_text()
     assert not re.search(r"\b(test_\d{4}|private_\w+)\b", src)
 
 
@@ -179,6 +179,6 @@ def test_cli_supports_v13_flags(tmp_path):
 
 def test_no_hardcoding_in_new_modules():
     for name in ("v13_dynamic_layer", "system_candidate_selector"):
-        src = (_ROOT / "src" / f"{name}.py").read_text()
+        src = (next(iter((_ROOT / "src").glob(f"**/{name}.py")))).read_text()
         assert not re.search(r"\btest_\d{4}\b", src), name
         assert "pred_v12b_permutation_candidate_api30" not in src, name

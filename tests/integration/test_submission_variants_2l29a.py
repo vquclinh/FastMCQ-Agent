@@ -14,7 +14,7 @@ sys.path.insert(0, str(_ROOT))
 
 
 def _load(name):
-    spec = importlib.util.spec_from_file_location(name.replace(".py", ""), (_ROOT / "scripts" / "legacy" / name if (_ROOT / "scripts" / "legacy" / name).exists() else _ROOT / "scripts" / name))
+    spec = importlib.util.spec_from_file_location(name.replace(".py", ""), next(iter((_ROOT / "scripts" / "legacy").glob(f"**/{name}")), _ROOT / "scripts" / name))
     mod = importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)
     return mod
 
@@ -179,7 +179,7 @@ def test_audit_refuses_outputs():
 def test_no_qid_hardcoding():
     for name in ("build_submission_variant.py", "build_submission_ensemble.py",
                  "audit_submission_variants.py", "print_submission_runbook.py"):
-        src = ((_ROOT / "scripts" / "legacy" / name if (_ROOT / "scripts" / "legacy" / name).exists() else _ROOT / "scripts" / name)).read_text()
+        src = (next(iter((_ROOT / "scripts" / "legacy").glob(f"**/{name}")), _ROOT / "scripts" / name)).read_text()
         # qids look like test_0001 (4 digits); the dataset filename test_1780368312 is fine.
         assert not re.search(r"\btest_\d{4}\b", src), f"{name} hardcodes a qid"
 

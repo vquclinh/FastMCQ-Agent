@@ -135,9 +135,9 @@ status: PASS
 ### Official architecture layers (both enabled by default)
 
 The dynamic system combines two official layers via a unified conservative selector
-(`src/system_candidate_selector.py`):
-- **V12B** option-permutation debiaser (`src/v12b_dynamic_layer.py`) — promoted at 78.83.
-- **V13** multi-layer reasoning (`src/v13_dynamic_layer.py`): **programmatic solver**,
+(`src/selector/system_candidate_selector.py`):
+- **V12B** option-permutation debiaser (`src/layers/v12b_dynamic_layer.py`) — promoted at 78.83.
+- **V13** multi-layer reasoning (`src/layers/v13_dynamic_layer.py`): **programmatic solver**,
   **content-first normalizer**, **least-to-most constraint table** — promoted at **79.7**.
 
 Both are **enabled by default** in `dynamic_full`. Without API, model-dependent layers report

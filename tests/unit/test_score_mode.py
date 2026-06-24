@@ -13,7 +13,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from src.hf_option_score_solver import (  # noqa: E402
+from src.solvers.hf_option_score_solver import (  # noqa: E402
     DEFAULT_SCORE_MODE,
     SCORE_MODES,
     HFOptionScoreSolver,

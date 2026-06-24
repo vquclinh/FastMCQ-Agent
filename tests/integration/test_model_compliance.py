@@ -11,7 +11,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
-sys.path.insert(0, str(ROOT / "scripts" / "legacy"))
+sys.path.insert(0, str(ROOT / "scripts" / "legacy" / "checks"))
 
 from src.utils import load_config  # noqa: E402
 from check_model_compliance import evaluate  # noqa: E402

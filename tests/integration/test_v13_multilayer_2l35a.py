@@ -11,16 +11,16 @@ from pathlib import Path
 _ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(_ROOT))
 
-from src import programmatic_solver_layer as PS
-from src import content_first_answerer as CF
-from src import least_to_most_constraint_solver as LTM
+from src.layers import programmatic_solver_layer as PS
+from src.layers import content_first_answerer as CF
+from src.layers import least_to_most_constraint_solver as LTM
 
 _INPUT = str(_ROOT / "public-test_1780368312.json")
 _V11 = str(_ROOT / "output" / "pred_v11_independent_rerun1.csv")
 
 
 def _load(script):
-    spec = importlib.util.spec_from_file_location(f"v13_{script}", (_ROOT / "scripts" / "legacy" / f"{script}.py" if (_ROOT / "scripts" / "legacy" / f"{script}.py").exists() else _ROOT / "scripts" / f"{script}.py"))
+    spec = importlib.util.spec_from_file_location(f"v13_{script}", next(iter((_ROOT / "scripts" / "legacy").glob(f"**/{script}.py")), _ROOT / "scripts" / f"{script}.py"))
     mod = importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)
     return mod
 
@@ -198,16 +198,16 @@ def test_production_default_is_v12b_not_v13():
 def test_no_qid_hardcoding_v13():
     for name in ("programmatic_solver_layer", "content_first_answerer",
                  "least_to_most_constraint_solver"):
-        assert not re.search(r"\btest_\d{4}\b", (_ROOT / "src" / f"{name}.py").read_text()), name
+        assert not re.search(r"\btest_\d{4}\b", (next(iter((_ROOT / "src").glob(f"**/{name}.py")))).read_text()), name
     for name in ("build_v13_multilayer_plan", "run_v13_multilayer_verifier",
                  "build_v13_multilayer_candidate", "audit_v13_multilayer_candidate"):
-        assert not re.search(r"\btest_\d{4}\b", ((_ROOT / "scripts" / "legacy" / f"{name}.py" if (_ROOT / "scripts" / "legacy" / f"{name}.py").exists() else _ROOT / "scripts" / f"{name}.py")).read_text()), name
+        assert not re.search(r"\btest_\d{4}\b", (next(iter((_ROOT / "scripts" / "legacy").glob(f"**/{name}.py")), _ROOT / "scripts" / f"{name}.py")).read_text()), name
 
 
 def test_core_modules_have_no_api_dependency():
     for name in ("programmatic_solver_layer", "content_first_answerer",
                  "least_to_most_constraint_solver"):
-        code = "\n".join(ln for ln in (_ROOT / "src" / f"{name}.py").read_text().splitlines()
+        code = "\n".join(ln for ln in (next(iter((_ROOT / "src").glob(f"**/{name}.py")))).read_text().splitlines()
                          if not ln.lstrip().startswith("#"))
         assert "SelectiveAPIClient" not in code and "OpenRouterClient" not in code
         assert "import requests" not in code

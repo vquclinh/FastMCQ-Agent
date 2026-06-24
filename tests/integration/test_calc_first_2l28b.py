@@ -13,14 +13,14 @@ from pathlib import Path
 _ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(_ROOT))
 
-from src import api_candidate_agents as A  # noqa: E402
-from src import calculation_first_planner as P  # noqa: E402
-from src.formula_bank_solver import (labels_for, try_percent_change,  # noqa: E402
+from src.api import api_candidate_agents as A  # noqa: E402
+from src.solvers import calculation_first_planner as P  # noqa: E402
+from src.solvers.formula_bank_solver import (labels_for, try_percent_change,  # noqa: E402
                                      try_simple_linear_equation)
 
 
 def _load(name):
-    spec = importlib.util.spec_from_file_location(name.replace(".py", ""), (_ROOT / "scripts" / "legacy" / name if (_ROOT / "scripts" / "legacy" / name).exists() else _ROOT / "scripts" / name))
+    spec = importlib.util.spec_from_file_location(name.replace(".py", ""), next(iter((_ROOT / "scripts" / "legacy").glob(f"**/{name}")), _ROOT / "scripts" / name))
     mod = importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)
     return mod
 

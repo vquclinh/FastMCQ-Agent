@@ -10,9 +10,9 @@ from pathlib import Path
 _ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(_ROOT))
 
-from src.evidence_verifier_policy import evaluate_override  # noqa: E402
-from src.knowledge_cards import all_card_ids, retrieve_cards, score_card  # noqa: E402
-from src.pot_lite import map_to_option, safe_eval_arithmetic  # noqa: E402
+from src.evidence.evidence_verifier_policy import evaluate_override  # noqa: E402
+from src.evidence.knowledge_cards import all_card_ids, retrieve_cards, score_card  # noqa: E402
+from src.solvers.pot_lite import map_to_option, safe_eval_arithmetic  # noqa: E402
 
 
 # --- PoT-lite -----------------------------------------------------------------
@@ -124,7 +124,7 @@ def test_policy_rejects_no_change():
 # --- scripts: source safety + recommender logic -------------------------------
 
 def _load(name):
-    spec = importlib.util.spec_from_file_location(name.replace(".py", ""), (_ROOT / "scripts" / "legacy" / name if (_ROOT / "scripts" / "legacy" / name).exists() else _ROOT / "scripts" / name))
+    spec = importlib.util.spec_from_file_location(name.replace(".py", ""), next(iter((_ROOT / "scripts" / "legacy").glob(f"**/{name}")), _ROOT / "scripts" / name))
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod
@@ -150,9 +150,9 @@ def test_recommender_prefers_deterministic_over_drift():
 
 def test_no_qid_hardcoding_in_new_sources():
     import re as _re
-    for rel in ("src/pot_lite.py", "src/knowledge_cards.py", "src/evidence_verifier_policy.py",
-                "scripts/legacy/analyze_candidate_disagreements.py",
-                "scripts/legacy/recommend_submission_candidate.py"):
+    for rel in ("src/solvers/pot_lite.py", "src/evidence/knowledge_cards.py", "src/evidence/evidence_verifier_policy.py",
+                "scripts/legacy/analysis/analyze_candidate_disagreements.py",
+                "scripts/legacy/submission/recommend_submission_candidate.py"):
         src = (_ROOT / rel).read_text()
         for pat in (r'qid\s*==', r'==\s*["\']test_0', r'test_0\d{3}'):
             assert not _re.search(pat, src), f"{pat} in {rel}"

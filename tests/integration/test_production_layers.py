@@ -15,16 +15,16 @@ from pathlib import Path
 _ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(_ROOT))
 
-from src.formula_bank_solver import detect_formula_hints  # noqa: E402
-from src.option_evidence import build_option_aware_evidence_pack  # noqa: E402
-from src.production_inference import predict_one_direct  # noqa: E402
-from src.production_prompts import (answer_needs_repair, build_production_prompt,  # noqa: E402
+from src.solvers.formula_bank_solver import detect_formula_hints  # noqa: E402
+from src.evidence.option_evidence import build_option_aware_evidence_pack  # noqa: E402
+from src.system.production_inference import predict_one_direct  # noqa: E402
+from src.system.production_prompts import (answer_needs_repair, build_production_prompt,  # noqa: E402
                                     build_repair_prompt)
 
 
 def _load_runner():
     spec = importlib.util.spec_from_file_location(
-        "rpp", _ROOT / "scripts" / "legacy" / "run_production_pipeline.py")
+        "rpp", next(iter((_ROOT / "scripts" / "legacy").glob("**/run_production_pipeline.py"))))
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod
@@ -175,8 +175,8 @@ def test_atomic_write_no_corruption_and_no_tmp_left():
 
 def test_no_qid_hardcoding_or_sheet_in_new_sources():
     import re as _re
-    for rel in ("src/production_prompts.py", "src/production_inference.py",
-                "src/option_evidence.py"):
+    for rel in ("src/system/production_prompts.py", "src/system/production_inference.py",
+                "src/evidence/option_evidence.py"):
         src = (_ROOT / rel).read_text()
         for pat in (r'qid\s*==', r'==\s*["\']test_0', r'test_0\d{3}'):
             assert not _re.search(pat, src), f"{pat} in {rel}"

@@ -15,10 +15,10 @@ from pathlib import Path
 _ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(_ROOT))
 
-from src.fastmcq_system import run_fastmcq_system, FastMCQSystemConfig
-from src.dynamic_base_predictor import predict_base_answers
-from src.v12b_dynamic_layer import select_v12b_targets, run_v12b_layer
-from src.v13_layer_registry import available_v13_layers, run_v13_layers_if_enabled
+from src.system.fastmcq_system import run_fastmcq_system, FastMCQSystemConfig
+from src.base.dynamic_base_predictor import predict_base_answers
+from src.layers.v12b_dynamic_layer import select_v12b_targets, run_v12b_layer
+from src.layers.v13_layer_registry import available_v13_layers, run_v13_layers_if_enabled
 
 _PUBLIC = str(_ROOT / "public-test_1780368312.json")
 # public_replay now reproduces the V13 79.7 artifact (promoted in 2L.38A).
@@ -69,7 +69,7 @@ def test_dynamic_full_no_api_returns_valid_for_all(tmp_path):
     out = tmp_path / "pred.csv"
     run_fastmcq_system(samples, str(out), FastMCQSystemConfig(execute_api=False,
                                                              work_dir=str(tmp_path / "w")))
-    from src.labels import is_valid_label
+    from src.utils.labels import is_valid_label
     by = {s["qid"]: s for s in samples}
     for line in out.read_text().splitlines()[1:]:
         q, a = line.split(",")
@@ -208,7 +208,7 @@ def _make_private(tmp_path):
 def test_no_qid_hardcoding_in_system_modules():
     for name in ("fastmcq_system", "dynamic_base_predictor", "v12b_dynamic_layer",
                  "v13_layer_registry"):
-        src = (_ROOT / "src" / f"{name}.py").read_text()
+        src = (next(iter((_ROOT / "src").glob(f"**/{name}.py")))).read_text()
         assert not re.search(r"\btest_\d{4}\b", src), name
         assert "pred_v12b_permutation_candidate_api30" not in src, name  # no frozen-CSV dependency
 

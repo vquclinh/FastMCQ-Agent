@@ -11,14 +11,14 @@ from pathlib import Path
 _ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(_ROOT))
 
-from src import api_candidate_agents as agents  # noqa: E402
+from src.api import api_candidate_agents as agents  # noqa: E402
 
 _S = {"qid": "x", "question": "Cournot? P=20-Q, C(q)=2q.",
       "choices": ["q_X=4,q_Y=4", "q_X=5,q_Y=5", "q_X=6,q_Y=6"]}
 
 
 def _load(name):
-    spec = importlib.util.spec_from_file_location(name.replace(".py", ""), (_ROOT / "scripts" / "legacy" / name if (_ROOT / "scripts" / "legacy" / name).exists() else _ROOT / "scripts" / name))
+    spec = importlib.util.spec_from_file_location(name.replace(".py", ""), next(iter((_ROOT / "scripts" / "legacy").glob(f"**/{name}")), _ROOT / "scripts" / name))
     mod = importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)
     return mod
 
@@ -53,7 +53,7 @@ def _tiny(d, v10="A"):
 class _FakeSelective:
     """Returns a fixed answer with valid evidence; tracks calls. No network."""
     def __init__(self, model, answer="B", **kw):
-        from src.model_policy import assert_allowed_llm_model
+        from src.api.model_policy import assert_allowed_llm_model
         assert_allowed_llm_model(model)
         self.model = model; self.total_calls = 0; self.total_tokens = 0; self.answer = answer
 
@@ -67,7 +67,7 @@ class _FakeSelective:
 # --- Part A: pairwise judge fix ----------------------------------------------
 
 def test_judge_runs_on_conflict(monkeypatch):
-    import src.selective_api_client as sac
+    import src.api.selective_api_client as sac
     mod = _load("run_selective_multicandidate_api.py")
     d = tempfile.mkdtemp(); inp, base, plan = _tiny(d, v10="A")
     out = Path(d) / "scratch" / "run"
@@ -83,7 +83,7 @@ def test_judge_runs_on_conflict(monkeypatch):
 
 
 def test_judge_skipped_when_no_alternative(monkeypatch):
-    import src.selective_api_client as sac
+    import src.api.selective_api_client as sac
     mod = _load("run_selective_multicandidate_api.py")
     d = tempfile.mkdtemp(); inp, base, plan = _tiny(d, v10="B")   # v10 == agent answer "B"
     out = Path(d) / "scratch" / "run"
@@ -97,7 +97,7 @@ def test_judge_skipped_when_no_alternative(monkeypatch):
 
 
 def test_dry_run_calls_match_execute(monkeypatch):
-    import src.selective_api_client as sac
+    import src.api.selective_api_client as sac
     mod = _load("run_selective_multicandidate_api.py")
     d = tempfile.mkdtemp(); inp, base, plan = _tiny(d, v10="A")
     # dry-run upper bound: 1 agent * 1 temp + 1 judge = 2

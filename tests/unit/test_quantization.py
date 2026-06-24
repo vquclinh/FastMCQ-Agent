@@ -15,8 +15,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from src import hf_common  # noqa: E402
-from src.hf_common import (  # noqa: E402
+from src.solvers import hf_common  # noqa: E402
+from src.solvers.hf_common import (  # noqa: E402
     HFDependencyError,
     bitsandbytes_available,
 )
@@ -136,9 +136,9 @@ def _patch_load_model(module):
 
 
 def test_factory_passes_quantization_to_option_score():
-    from src import hf_option_score_solver as oss
-    from src import hf_generate_solver as gen
-    from src.solver_factory import build_solver
+    from src.solvers import hf_option_score_solver as oss
+    from src.solvers import hf_generate_solver as gen
+    from src.base.solver_factory import build_solver
 
     cap_oss, restore_oss = _patch_load_model(oss)
     cap_gen, restore_gen = _patch_load_model(gen)
@@ -152,8 +152,8 @@ def test_factory_passes_quantization_to_option_score():
 
 
 def test_factory_passes_quantization_to_generate():
-    from src import hf_generate_solver as gen
-    from src.solver_factory import build_solver
+    from src.solvers import hf_generate_solver as gen
+    from src.base.solver_factory import build_solver
 
     cap, restore = _patch_load_model(gen)
     try:
@@ -165,16 +165,16 @@ def test_factory_passes_quantization_to_generate():
 
 
 def test_default_solver_unaffected_by_quant():
-    from src.baseline_solver import AlwaysASolver
-    from src.solver_factory import build_solver
+    from src.base.baseline_solver import AlwaysASolver
+    from src.base.solver_factory import build_solver
     # always_a ignores quantization entirely and needs no model.
     solver = build_solver("always_a", quantization={"mode": "4bit"})
     assert isinstance(solver, AlwaysASolver)
 
 
 def test_existing_solver_constructs_with_default_quant():
-    from src import hf_option_score_solver as oss
-    from src.solver_factory import build_solver
+    from src.solvers import hf_option_score_solver as oss
+    from src.base.solver_factory import build_solver
 
     cap, restore = _patch_load_model(oss)
     try:

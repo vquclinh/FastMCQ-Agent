@@ -14,12 +14,12 @@ from pathlib import Path
 _ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(_ROOT))
 
-from src.labels import labels_for  # noqa: E402
-from src.production_policy import apply_safe_overrides, branch_of, decide  # noqa: E402
+from src.utils.labels import labels_for  # noqa: E402
+from src.system.production_policy import apply_safe_overrides, branch_of, decide  # noqa: E402
 
 
 def _load_runner():
-    path = _ROOT / "scripts" / "legacy" / "run_production_pipeline.py"
+    path = next(iter((_ROOT / "scripts" / "legacy").glob("**/run_production_pipeline.py")))
     spec = importlib.util.spec_from_file_location("rpp", path)
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
@@ -53,7 +53,7 @@ def test_unknown_preset_rejected():
 # --- no dependency on previous prediction files -------------------------------
 
 def test_runner_does_not_read_prediction_files():
-    src = (_ROOT / "scripts" / "legacy" / "run_production_pipeline.py").read_text()
+    src = (next(iter((_ROOT / "scripts" / "legacy").glob("**/run_production_pipeline.py")))).read_text()
     # The runner reads ONLY --input via load_dataset; it must not read prior preds.
     assert "load_dataset" in src
     assert "read_predictions" not in src        # never reads an existing prediction CSV
@@ -148,8 +148,8 @@ def test_branch_of_is_deterministic():
 
 def test_no_qid_hardcoding_or_api_in_new_sources():
     import re as _re
-    for rel in ("scripts/legacy/run_production_pipeline.py", "src/production_policy.py",
-                "scripts/legacy/audit_hidden_generalization_readiness.py"):
+    for rel in ("scripts/legacy/run/run_production_pipeline.py", "src/system/production_policy.py",
+                "scripts/legacy/audit/audit_hidden_generalization_readiness.py"):
         src = (_ROOT / rel).read_text()
         for pat in (r'qid\s*==', r'==\s*qid', r'==\s*["\']test_0', r'test_0\d{3}'):
             assert not _re.search(pat, src), f"{pat} in {rel}"

@@ -20,8 +20,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from src.data_io import load_dataset, read_predictions  # noqa: E402
-from src.labels import is_valid_label  # noqa: E402
+from src.utils.data_io import load_dataset, read_predictions  # noqa: E402
+from src.utils.labels import is_valid_label  # noqa: E402
 
 
 def validate(input_path: Path, submission_path: Path) -> tuple[bool, list[str]]:

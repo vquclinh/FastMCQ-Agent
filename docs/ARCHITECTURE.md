@@ -112,12 +112,12 @@ autonomous LLM loop — which keeps the system deterministic and debuggable.
 - Reads JSON or CSV from `/data`; preserves `qid` exactly.
 - Normalizes each record to `{qid, question, choices}`; absorbs schema variants
   (`A,B,C,D` / `option_*` / `choice_*` / single `choices` column).
-- **Status:** implemented (`src/data_io.py`).
+- **Status:** implemented (`src/utils/data_io.py`).
 
 ### Dynamic Label Manager
 - Builds `A, B, C, ...` labels sized to the actual choice count (2–11, extensible
   to 26); validates labels; prevents out-of-range labels.
-- **Status:** implemented (`src/labels.py`).
+- **Status:** implemented (`src/utils/labels.py`).
 
 ### Question Profiler Agent
 - Computes cheap, deterministic features with **no LLM call**: question length,
@@ -125,7 +125,7 @@ autonomous LLM loop — which keeps the system deterministic and debuggable.
   `Tiêu đề:`, `-- Đoạn văn`), numeric density, LaTeX/math symbols, legal/admin
   keywords, safety/ethics keywords, duplicate choices.
 - **Status:** partially implemented (`detect_question_shape` in
-  `src/prompting.py`); full profiler planned (`src/question_profiler.py`, 2F).
+  `src/utils/prompting.py`); full profiler planned (`src/layers/question_profiler.py`, 2F).
 
 ### Budget Controller
 - Maps profile → a compute tier (0/1/2, see §8). Easy questions get the cheap
@@ -139,7 +139,7 @@ autonomous LLM loop — which keeps the system deterministic and debuggable.
 - **Deterministic heuristics first** (keywords, choice patterns, numeric density);
   optional LLM-assisted routing later. Router output informs, but is not trusted
   blindly — the verifier can override.
-- **Status:** planned (`src/question_router.py`, 2F).
+- **Status:** planned (`src/layers/question_router.py`, 2F).
 
 ### Knowledge Agent
 - Short factual/commonsense questions. Primary: option scoring. Fallback:
@@ -173,24 +173,24 @@ autonomous LLM loop — which keeps the system deterministic and debuggable.
   **all choices intact**, keeps the **final question visible**, and **logs what
   was kept/dropped** for debugging.
 - **Status:** head-tail truncation implemented (`truncate_question`); evidence
-  selection planned (`src/passage_compressor.py`, 2F).
+  selection planned (`src/evidence/passage_compressor.py`, 2F).
 
 ### Candidate Scoring Engine
 - The MCQA backbone. Scores each candidate continuation and picks the best
   length-normalised average log-prob. Modes: `label_only`, `label_plus_choice`
   (default), `choice_only`. Logs per-candidate scores and the top-2 margin; modes
   are directly comparable in ablations.
-- **Status:** implemented (`src/hf_option_score_solver.py`).
+- **Status:** implemented (`src/solvers/hf_option_score_solver.py`).
 
 ### Generation Engine
 - Fallback and comparison baseline. A robust parser extracts the label; parse
   failures are logged and trigger fallback.
-- **Status:** implemented (`src/hf_generate_solver.py`, `src/output_parser.py`).
+- **Status:** implemented (`src/solvers/hf_generate_solver.py`, `src/utils/output_parser.py`).
 
 ### Verifier + Confidence Agent
 - Checks: score margin, parse success, invalid label, duplicate choices, and
   route/strategy consistency. Decides **accept vs fallback**.
-- **Status:** planned (`src/confidence.py`, 2F).
+- **Status:** planned (`src/selector/confidence.py`, 2F).
 
 ### Selective Fallback Controller
 - Escalation ladder: high-confidence → accept; low-confidence → alternate score
@@ -201,7 +201,7 @@ autonomous LLM loop — which keeps the system deterministic and debuggable.
 ### Final Answer Agent
 - Guarantees exactly one valid label per qid; writes only `qid,answer`; **never**
   writes reasoning into `pred.csv`.
-- **Status:** implemented (`src/postprocess.py`, `src/data_io.py`).
+- **Status:** implemented (`src/utils/postprocess.py`, `src/utils/data_io.py`).
 
 ## 5. Routing policy table
 
@@ -318,8 +318,8 @@ the simpler configuration at acceptable cost.
 ### Phase 2F — Lightweight agent modules
 - **Objective:** deterministic, no-LLM building blocks (profiler, router, passage
   compressor, confidence) with tests.
-- **Files:** `src/question_profiler.py`, `src/question_router.py`,
-  `src/passage_compressor.py`, `src/confidence.py`, `tests/test_*`.
+- **Files:** `src/layers/question_profiler.py`, `src/layers/question_router.py`,
+  `src/evidence/passage_compressor.py`, `src/selector/confidence.py`, `tests/test_*`.
 - **Validation:** `.venv/bin/python -m pytest -q`; baseline run + validate PASS.
 - **Success:** modules covered by tests; no torch dependency; baseline unaffected.
 - **Stop:** modules stable and tested.
@@ -327,7 +327,7 @@ the simpler configuration at acceptable cost.
 ### Phase 2G — AdaptiveAgentSolver v1
 - **Objective:** wire profiler→router→scoring→verifier→fallback into one solver
   selectable as `adaptive_agent`; log route/strategy/confidence.
-- **Files:** `src/adaptive_agent_solver.py`, `src/solver_factory.py`,
+- **Files:** `src/layers/adaptive_agent_solver.py`, `src/base/solver_factory.py`,
   `configs/default.yaml`.
 - **Validation:** run on a `--limit` slice (when a model exists) + validate;
   baseline still default.
@@ -345,8 +345,8 @@ the simpler configuration at acceptable cost.
 ### Phase 2I — Runtime optimization
 - **Objective:** batching, quantization (e.g. 4-bit for the 7.6 GB GPU), token
   budgets, route-based compute caps.
-- **Files:** `src/hf_common.py`, `src/hf_option_score_solver.py`, config.
-- **Validation:** `scripts/legacy/benchmark_runtime.py`; full run within budget.
+- **Files:** `src/solvers/hf_common.py`, `src/solvers/hf_option_score_solver.py`, config.
+- **Validation:** `scripts/legacy/benchmark/benchmark_runtime.py`; full run within budget.
 - **Success:** target latency met, accuracy retained.
 - **Stop:** within budget, no regression.
 
@@ -397,11 +397,11 @@ To prevent over-engineering, the **first** implemented adaptive system
 (`adaptive_agent` v1, Phases 2F–2G) is deliberately minimal. It consists of
 **exactly these five modules**, and nothing more:
 
-- `src/question_profiler.py` — deterministic, cheap feature extraction (no LLM).
-- `src/question_router.py` — deterministic route assignment from the profile.
-- `src/passage_compressor.py` — pure-Python, deterministic passage compression.
-- `src/confidence.py` — margin-based accept/fallback decisions.
-- `src/adaptive_agent_solver.py` — orchestrates the above and reuses the existing
+- `src/layers/question_profiler.py` — deterministic, cheap feature extraction (no LLM).
+- `src/layers/question_router.py` — deterministic route assignment from the profile.
+- `src/evidence/passage_compressor.py` — pure-Python, deterministic passage compression.
+- `src/selector/confidence.py` — margin-based accept/fallback decisions.
+- `src/layers/adaptive_agent_solver.py` — orchestrates the above and reuses the existing
   scoring backbone.
 
 v1 **must** use:

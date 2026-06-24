@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import re
 
-from src.candidate_answer import AnswerCandidate
-from src.labels import labels_for
-from src.pot_lite import map_to_option
+from src.selector.candidate_answer import AnswerCandidate
+from src.utils.labels import labels_for
+from src.solvers.pot_lite import map_to_option
 from src.tool_solvers import _candidate_from_rule
-from src.formula_bank_solver import try_mean_median_mode, try_expected_value
+from src.solvers.formula_bank_solver import try_mean_median_mode, try_expected_value
 
 _NUM = r"[-+]?\d+(?:[.,]\d+)?"
 

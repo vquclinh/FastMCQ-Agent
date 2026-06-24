@@ -9,11 +9,11 @@ from __future__ import annotations
 
 import re
 
-from src.candidate_answer import AnswerCandidate
-from src.labels import labels_for
-from src.pot_lite import map_to_option, safe_eval_arithmetic
+from src.selector.candidate_answer import AnswerCandidate
+from src.utils.labels import labels_for
+from src.solvers.pot_lite import map_to_option, safe_eval_arithmetic
 from src.tool_solvers import _candidate_from_rule
-from src.formula_bank_solver import (try_expected_value, try_pythagorean_distance,
+from src.solvers.formula_bank_solver import (try_expected_value, try_pythagorean_distance,
                                      try_circle_area_circumference, try_triangle_area)
 
 # A self-contained arithmetic expression: digits/operators only (no letters except the

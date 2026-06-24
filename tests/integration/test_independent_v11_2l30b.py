@@ -12,13 +12,13 @@ from pathlib import Path
 _ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(_ROOT))
 
-from src.candidate_answer import AnswerCandidate, CandidatePool  # noqa: E402
-from src.independent_answer_selector import select_independent_answer  # noqa: E402
+from src.selector.candidate_answer import AnswerCandidate, CandidatePool  # noqa: E402
+from src.selector.independent_answer_selector import select_independent_answer  # noqa: E402
 
 
 def _load():
     spec = importlib.util.spec_from_file_location(
-        "rv11", _ROOT / "scripts" / "legacy" / "run_full_v11_independent_submission.py")
+        "rv11", next(iter((_ROOT / "scripts" / "legacy").glob("**/run_full_v11_independent_submission.py"))))
     mod = importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)
     return mod
 
@@ -47,7 +47,7 @@ def _args(d, inp, **over):
 # --- structural: no v10 base -------------------------------------------------
 
 def test_runner_has_no_base_pred_arg():
-    src = (_ROOT / "scripts" / "legacy" / "run_full_v11_independent_submission.py").read_text()
+    src = (next(iter((_ROOT / "scripts" / "legacy").glob("**/run_full_v11_independent_submission.py")))).read_text()
     # no --base-pred CLI argument is defined (docstrings may mention it to explain its absence)
     assert "add_argument(\"--base-pred\"" not in src
     # generation must not add a v10_base candidate
@@ -66,7 +66,7 @@ def test_runner_rejects_base_pred_flag():
 
 def test_dry_run_does_not_read_v10(monkeypatch):
     """Dry-run without --compare-pred must never load any prediction file."""
-    import src.adaptive_proposal_common as apc
+    import src.layers.adaptive_proposal_common as apc
     mod = _load(); d = tempfile.mkdtemp(); inp = _fixture(d)
     monkeypatch.setattr(mod, "load_pred",
                         lambda *a, **k: (_ for _ in ()).throw(AssertionError("v11 dry-run read a pred file")))
@@ -83,7 +83,7 @@ def test_compare_pred_is_report_only_not_needed_to_run(monkeypatch):
 # --- guards ------------------------------------------------------------------
 
 def test_dry_run_no_api_no_outputs(monkeypatch):
-    import src.selective_api_client as sac
+    import src.api.selective_api_client as sac
     monkeypatch.setattr(sac, "SelectiveAPIClient",
                         lambda *a, **k: (_ for _ in ()).throw(AssertionError("no API in dry-run")))
     mod = _load(); d = tempfile.mkdtemp(); inp = _fixture(d)
@@ -167,7 +167,7 @@ def test_fallback_answer_not_from_v10():
 
 
 def test_selector_module_has_no_v10():
-    src = (_ROOT / "src" / "independent_answer_selector.py").read_text()
+    src = (next(iter((_ROOT / "src").glob("**/independent_answer_selector.py")))).read_text()
     # the selector must not consume a v10 base answer/source (docstring may name v10 to explain)
     assert "v10_base" not in src and "_BASE_SOURCE" not in src and "base_answer" not in src
 
@@ -181,6 +181,6 @@ def test_selector_unique_deterministic():
 
 def test_no_qid_hardcoding():
     for name in ("run_full_v11_independent_submission.py",):
-        src = ((_ROOT / "scripts" / "legacy" / name if (_ROOT / "scripts" / "legacy" / name).exists() else _ROOT / "scripts" / name)).read_text()
+        src = (next(iter((_ROOT / "scripts" / "legacy").glob(f"**/{name}")), _ROOT / "scripts" / name)).read_text()
         assert not re.search(r"\btest_\d{4}\b", src)
-    assert not re.search(r"\btest_\d{4}\b", (_ROOT / "src" / "independent_answer_selector.py").read_text())
+    assert not re.search(r"\btest_\d{4}\b", (next(iter((_ROOT / "src").glob("**/independent_answer_selector.py")))).read_text())

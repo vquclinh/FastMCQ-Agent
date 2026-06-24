@@ -17,7 +17,7 @@ sys.path.insert(0, str(_ROOT))
 
 
 def _load(name):
-    path = (_ROOT / "scripts" / "legacy" / name if (_ROOT / "scripts" / "legacy" / name).exists() else _ROOT / "scripts" / name)
+    path = next(iter((_ROOT / "scripts" / "legacy").glob(f"**/{name}")), _ROOT / "scripts" / name)
     spec = importlib.util.spec_from_file_location(name.replace(".py", ""), path)
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
@@ -61,16 +61,16 @@ def test_gate_blocks_should_override_false():
 
 
 def test_runner_dry_run_default_and_lazy_client_import():
-    src = (_ROOT / "scripts" / "legacy" / "run_short_knowledge_verifier_sample.py").read_text()
+    src = (next(iter((_ROOT / "scripts" / "legacy").glob("**/run_short_knowledge_verifier_sample.py")))).read_text()
     assert "dry_run = not (args.execute and args.max_calls > 0)" in src
     # OpenRouter client imported lazily, inside the `if not dry_run` block only.
-    assert src.count("from src.openrouter_client import OpenRouterClient") == 1
+    assert src.count("from src.api.openrouter_client import OpenRouterClient") == 1
     assert "if not dry_run:" in src
 
 
 def test_runner_no_qid_hardcoding_or_external_sheet():
     import re as _re
-    src = (_ROOT / "scripts" / "legacy" / "run_short_knowledge_verifier_sample.py").read_text()
+    src = (next(iter((_ROOT / "scripts" / "legacy").glob("**/run_short_knowledge_verifier_sample.py")))).read_text()
     for pat in (r'qid\s*==', r'==\s*["\']test_0'):
         assert not _re.search(pat, src)
     assert "first100_external" not in src        # never reads the answer sheet

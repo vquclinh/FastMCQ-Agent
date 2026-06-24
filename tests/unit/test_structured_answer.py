@@ -10,7 +10,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from src.structured_answer import parse_structured_answer  # noqa: E402
+from src.utils.structured_answer import parse_structured_answer  # noqa: E402
 
 ABCD = ["A", "B", "C", "D"]
 

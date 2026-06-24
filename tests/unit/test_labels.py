@@ -10,7 +10,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from src.labels import index_to_label, is_valid_label, label_to_index, labels_for  # noqa: E402
+from src.utils.labels import index_to_label, is_valid_label, label_to_index, labels_for  # noqa: E402
 
 
 def test_index_to_label():

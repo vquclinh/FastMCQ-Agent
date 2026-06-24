@@ -20,7 +20,7 @@ sys.path.insert(0, str(_ROOT))
 
 def _load_runner():
     spec = importlib.util.spec_from_file_location(
-        "rpp_timing", _ROOT / "scripts" / "legacy" / "run_production_pipeline.py")
+        "rpp_timing", next(iter((_ROOT / "scripts" / "legacy").glob("**/run_production_pipeline.py"))))
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod
@@ -104,6 +104,6 @@ def test_docker_entrypoint_detection_and_metadata():
 
 def test_no_qid_hardcoding_in_runner():
     import re as _re
-    src = (_ROOT / "scripts" / "legacy" / "run_production_pipeline.py").read_text()
+    src = (next(iter((_ROOT / "scripts" / "legacy").glob("**/run_production_pipeline.py")))).read_text()
     for pat in (r'qid\s*==', r'==\s*["\']test_0', r'test_0\d{3}'):
         assert not _re.search(pat, src)

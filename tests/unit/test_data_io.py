@@ -12,9 +12,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
-from src.baseline_solver import AlwaysASolver  # noqa: E402
-from src.data_io import load_dataset, read_predictions, write_predictions  # noqa: E402
-from src.postprocess import build_predictions  # noqa: E402
+from src.base.baseline_solver import AlwaysASolver  # noqa: E402
+from src.utils.data_io import load_dataset, read_predictions, write_predictions  # noqa: E402
+from src.utils.postprocess import build_predictions  # noqa: E402
 
 PUBLIC_TEST = ROOT / "public-test_1780368312.json"
 

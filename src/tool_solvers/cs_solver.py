@@ -6,13 +6,13 @@ address (concept). DB-key / normalization remain card/hint territory (not auto-s
 
 from __future__ import annotations
 
-from src.candidate_answer import AnswerCandidate
-from src.labels import labels_for
+from src.selector.candidate_answer import AnswerCandidate
+from src.utils.labels import labels_for
 from src.tool_solvers import _candidate_from_rule
-from src.formula_bank_solver import (try_binary_decimal, try_cache_amat, try_cache_hit_rate,
+from src.solvers.formula_bank_solver import (try_binary_decimal, try_cache_amat, try_cache_hit_rate,
                                      try_time_complexity_nested_loops, try_hex_decimal,
                                      try_subnet_hosts)
-from src.concept_solver import try_paging_logical_address
+from src.solvers.concept_solver import try_paging_logical_address
 
 
 def solve(sample):

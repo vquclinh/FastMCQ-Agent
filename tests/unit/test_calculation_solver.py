@@ -11,8 +11,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from src.calculation_solver import solve_calculation_sample  # noqa: E402
-from src.labels import labels_for  # noqa: E402
+from src.solvers.calculation_solver import solve_calculation_sample  # noqa: E402
+from src.utils.labels import labels_for  # noqa: E402
 
 
 def _solve(question, choices):
@@ -140,7 +140,7 @@ def test_hess_three_steps_sum():
 
 
 def test_comma_decimal_and_percent_parsing():
-    from src.calculation_solver import _to_float
+    from src.solvers.calculation_solver import _to_float
     assert _to_float("2,5") == 2.5
     assert _to_float("-1,0") == -1.0
     assert _to_float("20%") == 20.0
@@ -160,7 +160,7 @@ def test_no_qid_in_solver_logic_or_output():
 
 def test_source_has_no_qid_usage_or_unsafe_eval():
     import re as _re
-    src = Path(__file__).resolve().parents[2].joinpath("src/calculation_solver.py").read_text()
+    src = Path(__file__).resolve().parents[2].joinpath("src/solvers/calculation_solver.py").read_text()
     # No code that READS a qid (prose in comments mentioning "qid" is fine).
     for pat in (r'\[\s*["\']qid', r'\.get\(\s*["\']qid', r'qid\s*==', r'==\s*qid'):
         assert not _re.search(pat, src), f"qid usage found: {pat}"
@@ -447,7 +447,7 @@ def test_new_families_no_qid_effect():
 
 
 def test_source_has_no_network_imports():
-    src = Path(__file__).resolve().parents[2].joinpath("src/calculation_solver.py").read_text()
+    src = Path(__file__).resolve().parents[2].joinpath("src/solvers/calculation_solver.py").read_text()
     for bad in ("import requests", "import urllib", "import httpx", "import socket",
                 "open(", "eval(", "exec(", "__import__"):
         assert bad not in src, f"unexpected '{bad}' in calculation_solver.py"

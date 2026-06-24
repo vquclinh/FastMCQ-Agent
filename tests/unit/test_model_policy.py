@@ -10,7 +10,7 @@ from pathlib import Path
 _ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(_ROOT))
 
-from src.model_policy import (assert_allowed_llm_model, assert_allowed_rerank_model,
+from src.api.model_policy import (assert_allowed_llm_model, assert_allowed_rerank_model,
                               is_allowed_llm_model, is_allowed_rerank_model)
 
 

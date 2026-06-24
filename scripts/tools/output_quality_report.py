@@ -18,7 +18,7 @@ from pathlib import Path
 _ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(_ROOT))
 
-from src.data_io import read_predictions  # noqa: E402
+from src.utils.data_io import read_predictions  # noqa: E402
 
 
 def compute_quality_report(pred_csv, threshold=0.70):

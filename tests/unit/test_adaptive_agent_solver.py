@@ -14,9 +14,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from src.adaptive_agent_solver import AdaptiveAgentSolver, AdaptiveConfig  # noqa: E402
-from src.baseline_solver import AlwaysASolver  # noqa: E402
-from src.solver_factory import SOLVER_NAMES, build_solver  # noqa: E402
+from src.layers.adaptive_agent_solver import AdaptiveAgentSolver, AdaptiveConfig  # noqa: E402
+from src.base.baseline_solver import AlwaysASolver  # noqa: E402
+from src.base.solver_factory import SOLVER_NAMES, build_solver  # noqa: E402
 
 FOUR = ["w", "x", "y", "z"]
 

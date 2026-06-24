@@ -10,7 +10,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from src.confidence import assess_confidence  # noqa: E402
+from src.selector.confidence import assess_confidence  # noqa: E402
 
 TH = {"high_margin": 0.3, "medium_margin": 0.1}
 

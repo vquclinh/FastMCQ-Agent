@@ -114,13 +114,13 @@ pip install -r requirements.txt
 python run.py --input public-test_1780368312.json --output output/pred.csv
 
 # Or do run + validate in one step
-bash scripts/legacy/run_local.sh
+bash scripts/legacy/run/run_local.sh
 ```
 
 ### Inspect the dataset
 
 ```bash
-python scripts/legacy/inspect_dataset.py --input public-test_1780368312.json
+python scripts/legacy/analysis/inspect_dataset.py --input public-test_1780368312.json
 ```
 
 ### Validate a submission
@@ -138,7 +138,7 @@ standalone questions, rough category breakdown, template/edge-case detection,
 and sample-submission inspection). Writes a Markdown report and a JSON dump.
 
 ```bash
-python scripts/legacy/profile_dataset.py \
+python scripts/legacy/analysis/profile_dataset.py \
   --input public-test_1780368312.json \
   --sample-submission submission_1780332147.csv
 # -> docs/DATASET_PROFILE.md  and  output/dataset_profile.json
@@ -185,12 +185,12 @@ directory. **Nothing is downloaded** and no external API is called —
 pip install -r requirements-llm.txt
 
 # Check the environment (torch/transformers, CUDA, GPU/VRAM) — no downloads
-python scripts/legacy/check_llm_env.py
-python scripts/legacy/check_llm_env.py --model-path /path/to/local/model --load-tokenizer
+python scripts/legacy/checks/check_llm_env.py
+python scripts/legacy/checks/check_llm_env.py --model-path /path/to/local/model --load-tokenizer
 
 # Check the model is within the allowed families BEFORE running it
-python scripts/legacy/check_model_compliance.py --model-path /path/to/local/model
-python scripts/legacy/check_model_compliance.py --model-name "Qwen3.5-7B" --strict
+python scripts/legacy/checks/check_model_compliance.py --model-path /path/to/local/model
+python scripts/legacy/checks/check_model_compliance.py --model-name "Qwen3.5-7B" --strict
 ```
 
 See [docs/MODEL_COMPLIANCE.md](docs/MODEL_COMPLIANCE.md) for which model families
@@ -220,11 +220,11 @@ count and keep the same valid-or-fallback-to-`A` guarantee via `postprocess.py`.
 
 ```bash
 # 1) Smoke test on the first 10 samples (confirms the model loads + parses)
-bash scripts/legacy/run_llm_smoke.sh /path/to/local/model [SCORE_MODE]
+bash scripts/legacy/run/run_llm_smoke.sh /path/to/local/model [SCORE_MODE]
 #    -> output/pred_llm_smoke.csv  + validation
 
 # 2) Full public inference with the option-scoring solver
-bash scripts/legacy/run_llm_full.sh /path/to/local/model [SCORE_MODE]
+bash scripts/legacy/run/run_llm_full.sh /path/to/local/model [SCORE_MODE]
 #    -> output/pred_llm.csv  + validation + reminder to upload & log the score
 
 # Equivalent explicit command:
@@ -238,7 +238,7 @@ python scripts/validate_submission.py \
   --input public-test_1780368312.json --submission output/pred_llm.csv
 
 # 4) Benchmark runtime from the debug log
-python scripts/legacy/benchmark_runtime.py --log-path output/run_debug.jsonl
+python scripts/legacy/benchmark/benchmark_runtime.py --log-path output/run_debug.jsonl
 ```
 
 Useful flags: `--score-mode`, `--limit N` (first N samples), `--resume FILE`

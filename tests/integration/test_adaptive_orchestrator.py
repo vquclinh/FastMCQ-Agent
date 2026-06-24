@@ -11,9 +11,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from src.adaptive_orchestrator import AdaptiveConfig, AdaptiveOrchestrator  # noqa: E402
-from src.formula_registry import all_formula_ids, eligible_formula_ids  # noqa: E402
-from src.openrouter_graph_solver import OpenRouterConfig, OpenRouterGraphSolver  # noqa: E402
+from src.layers.adaptive_orchestrator import AdaptiveConfig, AdaptiveOrchestrator  # noqa: E402
+from src.solvers.formula_registry import all_formula_ids, eligible_formula_ids  # noqa: E402
+from src.api.openrouter_graph_solver import OpenRouterConfig, OpenRouterGraphSolver  # noqa: E402
 
 _EXPECTED_FORMULAS = {
     "relativistic_gamma", "relativistic_momentum", "henderson_hasselbalch_buffer",
@@ -188,21 +188,21 @@ def test_patch_script_has_no_network_qid_or_external_sheet():
     base = Path(__file__).resolve().parents[2] / "scripts" / "legacy"
     for name in ("apply_programmatic_assist_to_predictions.py",
                  "compare_v7_programmatic_assist_pseudo.py"):
-        src = (base / name).read_text()
+        src = next(iter(base.glob(f"**/{name}"))).read_text()
         for bad in ("import requests", "import urllib", "import socket", "openrouter",
                     "OPENROUTER", "eval(", "exec(", ".env"):
             assert bad not in src, f"unexpected '{bad}' in {name}"
         for pat in (r'qid\s*==', r'==\s*["\']test_0'):
             assert not _re.search(pat, src), f"qid hardcoding in {name}"
     # The patch script must NOT read the external answer sheet (no filename / arg ref).
-    patch = (base / "apply_programmatic_assist_to_predictions.py").read_text()
+    patch = next(iter(base.glob("**/apply_programmatic_assist_to_predictions.py"))).read_text()
     assert "first100_external_3llm" not in patch
     assert "--external" not in patch and "external_sheet" not in patch
 
 
 # --- Phase 2L.15C: short-knowledge selective verifier ------------------------
 
-from src.adaptive_routing import sk_verifier_eligibility  # noqa: E402
+from src.layers.adaptive_routing import sk_verifier_eligibility  # noqa: E402
 
 
 def _sk_orch():
@@ -260,10 +260,10 @@ def test_sk_orchestrator_never_overrides_and_no_candidate():
 
 def test_sk_runner_dry_run_is_default_and_makes_no_api_call():
     import re as _re
-    src = (Path(__file__).resolve().parents[2] / "scripts" / "legacy" / "run_short_knowledge_verifier_sample.py").read_text()
+    src = (next(iter((Path(__file__).resolve().parents[2] / "scripts" / "legacy").glob("**/run_short_knowledge_verifier_sample.py")))).read_text()
     # dry_run defaults true; the OpenRouter client import is lazy (only under --execute).
     assert 'default=False' in src and "--execute" in src
-    assert "from src.openrouter_client import OpenRouterClient" in src
+    assert "from src.api.openrouter_client import OpenRouterClient" in src
     # No top-level (module-import-time) client construction / network / env access.
     assert ".env" not in src and "OPENROUTER_API_KEY" not in src
     for pat in (r'qid\s*==', r'==\s*["\']test_0'):
@@ -276,7 +276,7 @@ def test_no_qid_or_network_in_adaptive_source():
     base = Path(__file__).resolve().parents[2] / "src"
     for name in ("adaptive_orchestrator.py", "adaptive_routing.py", "adaptive_types.py",
                  "formula_registry.py", "programmatic_solver.py"):
-        src = (base / name).read_text()
+        src = next(iter(base.glob(f"**/{name}"))).read_text()
         for bad in ("import requests", "import urllib", "import socket", "import httpx",
                     "eval(", "exec(", "__import__", "gemini", "claude", "chatgpt"):
             assert bad not in src, f"unexpected '{bad}' in {name}"

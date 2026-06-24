@@ -27,8 +27,8 @@ from pathlib import Path
 _ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(_ROOT))
 
-from src.data_io import load_dataset, read_predictions  # noqa: E402
-from src.labels import is_valid_label  # noqa: E402
+from src.utils.data_io import load_dataset, read_predictions  # noqa: E402
+from src.utils.labels import is_valid_label  # noqa: E402
 
 _DEFAULT_CONFIG = "configs/production/default.json"
 # Frozen/locked artifacts that must NEVER be written as an output by this entrypoint.
@@ -239,7 +239,7 @@ def _v11_independent(args, config):
     if args.budget_usd is None:
         raise SystemExit("REFUSING: v11_independent requires an explicit --budget-usd.")
     spec = importlib.util.spec_from_file_location(
-        "rv11", _ROOT / "scripts" / "legacy" / "run_full_v11_independent_submission.py")
+        "rv11", _ROOT / "scripts" / "legacy" / "run" / "run_full_v11_independent_submission.py")
     runner = importlib.util.module_from_spec(spec); spec.loader.exec_module(runner)
     delegate = ["--input", args.input, "--output", args.output,
                 "--model", args.model or config.get("model"),
@@ -304,7 +304,7 @@ def _resolve_maxq(v, n_input=None):
 
 def _dynamic_full(args, config):
     """The real production system: run the full dynamic architecture over the given input."""
-    from src.fastmcq_system import run_fastmcq_system, FastMCQSystemConfig
+    from src.system.fastmcq_system import run_fastmcq_system, FastMCQSystemConfig
     samples = load_dataset(args.input)
     n_input = len(samples)
     cfg = FastMCQSystemConfig(
@@ -327,7 +327,7 @@ def _dynamic_full(args, config):
     print(f"[final_infer] system overrides : {report.v12b_overrides + report.v13_overrides}")
     for w in report.warnings:
         print(f"[final_infer] warning: {w}")
-    return "dynamic_full", "src.fastmcq_system", report.output_count
+    return "dynamic_full", "src.system.fastmcq_system", report.output_count
 
 
 def _resolve_mode(args, config):

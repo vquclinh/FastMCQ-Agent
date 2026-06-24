@@ -13,8 +13,8 @@ from pathlib import Path
 _ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(_ROOT))
 
-import src.selective_api_client as sac
-from src.fastmcq_system import run_fastmcq_system, FastMCQSystemConfig
+import src.api.selective_api_client as sac
+from src.system.fastmcq_system import run_fastmcq_system, FastMCQSystemConfig
 
 _PROFILES = json.loads((_ROOT / "configs" / "profiles" / "run_profiles.json").read_text())
 
@@ -119,7 +119,7 @@ def test_no_public_artifact_required():
     # the system modules must not depend on the frozen public CSV path
     for name in ("fastmcq_system", "dynamic_base_predictor", "v12b_dynamic_layer",
                  "v13_dynamic_layer"):
-        src = (_ROOT / "src" / f"{name}.py").read_text()
+        src = (next(iter((_ROOT / "src").glob(f"**/{name}.py")))).read_text()
         assert "pred_v13_multilayer_candidate_api30_from_v12b" not in src, name
 
 

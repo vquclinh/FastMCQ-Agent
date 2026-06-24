@@ -11,7 +11,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from src.evidence_reranker import (  # noqa: E402
+from src.evidence.evidence_reranker import (  # noqa: E402
     chunk_context,
     extract_question_stem,
     rerank_evidence_for_sample,
@@ -109,7 +109,7 @@ def test_question_stem_extraction_vietnamese():
 
 # --- neural backend adapter (Phase 2L.6): all fail closed to lexical ---------
 
-from src.evidence_reranker import build_neural_scorer  # noqa: E402
+from src.evidence.evidence_reranker import build_neural_scorer  # noqa: E402
 
 
 class _FakeNeuralScorer:
@@ -186,8 +186,8 @@ def test_neural_error_falls_back_lexical_by_default():
 import json as _json2  # noqa: E402
 import tempfile  # noqa: E402
 
-import src.evidence_reranker as _er  # noqa: E402
-from src.evidence_reranker import (  # noqa: E402
+import src.evidence.evidence_reranker as _er  # noqa: E402
+from src.evidence.evidence_reranker import (  # noqa: E402
     _looks_like_bge_m3,
     _looks_like_qwen3_reranker,
 )
@@ -270,7 +270,7 @@ def test_build_bge_missing_transformers_fails_closed(monkeypatch):
 
 import types  # noqa: E402
 
-from src.evidence_reranker import (  # noqa: E402
+from src.evidence.evidence_reranker import (  # noqa: E402
     TransformersQwen3RerankerScorer,
     _cached,
     clear_neural_model_cache,
@@ -377,7 +377,7 @@ def test_rerank_sets_batch_size_and_records_timing():
 
 def test_no_web_or_eval_in_source():
     import re as _re
-    src = Path(__file__).resolve().parents[2].joinpath("src/evidence_reranker.py").read_text()
+    src = Path(__file__).resolve().parents[2].joinpath("src/evidence/evidence_reranker.py").read_text()
     # No network clients and no dynamic code execution.
     for bad in ("import requests", "import urllib", "import httpx", "import socket",
                 "__import__", "hf_hub_download", "snapshot_download"):

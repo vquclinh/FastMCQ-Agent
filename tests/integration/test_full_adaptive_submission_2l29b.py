@@ -16,7 +16,7 @@ sys.path.insert(0, str(_ROOT))
 
 def _load(name):
     spec = importlib.util.spec_from_file_location(name.replace(".py", "") + "_t",
-                                                  (_ROOT / "scripts" / "legacy" / name if (_ROOT / "scripts" / "legacy" / name).exists() else _ROOT / "scripts" / name))
+                                                  next(iter((_ROOT / "scripts" / "legacy").glob(f"**/{name}")), _ROOT / "scripts" / name))
     mod = importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)
     return mod
 
@@ -47,7 +47,7 @@ def _base_args(d, inp, base, plan, **over):
 # --- dry-run ------------------------------------------------------------------
 
 def test_dry_run_no_api_no_outputs(monkeypatch):
-    import src.selective_api_client as sac
+    import src.api.selective_api_client as sac
     monkeypatch.setattr(sac, "SelectiveAPIClient",
                         lambda *a, **k: (_ for _ in ()).throw(AssertionError("no API in dry-run")))
     mod = _load("run_full_adaptive_submission.py")
@@ -187,5 +187,5 @@ def test_execute_validates_output_qid_set(monkeypatch):
 
 
 def test_no_qid_hardcoding():
-    src = (_ROOT / "scripts" / "legacy" / "run_full_adaptive_submission.py").read_text()
+    src = (next(iter((_ROOT / "scripts" / "legacy").glob("**/run_full_adaptive_submission.py")))).read_text()
     assert not re.search(r"\btest_\d{4}\b", src)

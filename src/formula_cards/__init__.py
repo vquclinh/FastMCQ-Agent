@@ -13,7 +13,7 @@ eligible when γ / the Lorentz factor is the *asked* quantity, and
 
 from __future__ import annotations
 
-from src.adaptive_types import FormulaCard
+from src.layers.adaptive_types import FormulaCard
 
 CARDS: tuple = (
     FormulaCard(

@@ -153,7 +153,7 @@ def test_legacy_env_aliases_still_work(monkeypatch):
 # --- end-to-end: INPUT_FILE + OUTPUT_FILE honored, no API --------------------
 
 def test_input_file_and_output_file_end_to_end_no_api(monkeypatch, tmp_path):
-    import src.selective_api_client as sac
+    import src.api.selective_api_client as sac
     monkeypatch.setattr(sac, "SelectiveAPIClient",
                         lambda *a, **k: (_ for _ in ()).throw(AssertionError("no API")))
     mod = _fi(); _clear_env(monkeypatch)

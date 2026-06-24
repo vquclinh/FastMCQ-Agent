@@ -14,8 +14,8 @@ from pathlib import Path
 _ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(_ROOT))
 
-from src.adaptive_proposal_common import override_gate  # noqa: E402
-from src.evidence_sufficiency import compute_evidence_sufficiency  # noqa: E402
+from src.layers.adaptive_proposal_common import override_gate  # noqa: E402
+from src.evidence.evidence_sufficiency import compute_evidence_sufficiency  # noqa: E402
 
 _INPUT = str(_ROOT / "public-test_1780368312.json")
 _PRED = str(_ROOT / "output" / "pred_v7_programmatic_assist_from_v6b.csv")
@@ -24,7 +24,7 @@ _HAVE_DATA = Path(_INPUT).exists() and Path(_PRED).exists() and Path(_LOG).exist
 
 
 def _load(name):
-    path = (_ROOT / "scripts" / "legacy" / name if (_ROOT / "scripts" / "legacy" / name).exists() else _ROOT / "scripts" / name)
+    path = next(iter((_ROOT / "scripts" / "legacy").glob(f"**/{name}")), _ROOT / "scripts" / name)
     spec = importlib.util.spec_from_file_location(name.replace(".py", ""), path)
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
@@ -149,7 +149,7 @@ def test_branch_source_safety():
                "audit_self_consistency_candidates.py", "run_selective_self_consistency_sample.py",
                "analyze_adaptive_branch_proposals.py", "audit_long_context_evidence_sufficiency.py"]
     for name in scripts:
-        src = ((_ROOT / "scripts" / "legacy" / name if (_ROOT / "scripts" / "legacy" / name).exists() else _ROOT / "scripts" / name)).read_text()
+        src = (next(iter((_ROOT / "scripts" / "legacy").glob(f"**/{name}")), _ROOT / "scripts" / name)).read_text()
         assert ".env" not in src and "OPENROUTER_API_KEY" not in src, name
         assert "first100_external" not in src, name        # never reads the answer sheet
         for pat in (r'qid\s*==', r'==\s*["\']test_0'):
@@ -159,7 +159,7 @@ def test_branch_source_safety():
             assert "if not dry_run:" in src, name
     # source modules too
     for name in ("evidence_sufficiency.py", "adaptive_proposal_common.py"):
-        src = (_ROOT / "src" / name).read_text()
+        src = next(iter((_ROOT / "src").glob(f"**/{name}"))).read_text()
         for bad in ("import requests", "import urllib", "import socket", "eval(", "exec("):
             assert bad not in src, f"{bad} in {name}"
 

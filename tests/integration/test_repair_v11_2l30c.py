@@ -13,13 +13,13 @@ from pathlib import Path
 _ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(_ROOT))
 
-from src.candidate_answer import AnswerCandidate, CandidatePool  # noqa: E402
-from src.independent_answer_selector import select_independent_answer  # noqa: E402
+from src.selector.candidate_answer import AnswerCandidate, CandidatePool  # noqa: E402
+from src.selector.independent_answer_selector import select_independent_answer  # noqa: E402
 
 
 def _load(name):
     spec = importlib.util.spec_from_file_location(name.replace(".py", "") + "_t",
-                                                  (_ROOT / "scripts" / "legacy" / name if (_ROOT / "scripts" / "legacy" / name).exists() else _ROOT / "scripts" / name))
+                                                  next(iter((_ROOT / "scripts" / "legacy").glob(f"**/{name}")), _ROOT / "scripts" / name))
     mod = importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)
     return mod
 
@@ -96,7 +96,7 @@ def _work(d, rows, cands=None):
 
 
 def test_repair_detects_none_label_dry_run(monkeypatch):
-    import src.selective_api_client as sac
+    import src.api.selective_api_client as sac
     monkeypatch.setattr(sac, "SelectiveAPIClient",
                         lambda *a, **k: (_ for _ in ()).throw(AssertionError("no API in dry-run")))
     mod = _load("repair_v11_independent_run.py")
@@ -112,7 +112,7 @@ def test_repair_detects_none_label_dry_run(monkeypatch):
 
 
 def test_repair_refuses_v10_usage_in_source():
-    src = (_ROOT / "scripts" / "legacy" / "repair_v11_independent_run.py").read_text()
+    src = (next(iter((_ROOT / "scripts" / "legacy").glob("**/repair_v11_independent_run.py")))).read_text()
     assert "v10_base" not in src and "--base-pred" not in src and "base_pred" not in src
 
 
@@ -130,7 +130,7 @@ def test_repair_execute_requires_ack():
 
 
 def test_repair_execute_reuses_candidate_and_validates(monkeypatch):
-    import src.selective_api_client as sac
+    import src.api.selective_api_client as sac
     monkeypatch.setattr(sac, "SelectiveAPIClient",
                         lambda *a, **k: (_ for _ in ()).throw(AssertionError("candidate reuse must not call API")))
     mod = _load("repair_v11_independent_run.py")
@@ -174,5 +174,5 @@ def test_repair_disallowed_model_rejected():
 
 
 def test_no_qid_hardcoding():
-    src = (_ROOT / "scripts" / "legacy" / "repair_v11_independent_run.py").read_text()
+    src = (next(iter((_ROOT / "scripts" / "legacy").glob("**/repair_v11_independent_run.py")))).read_text()
     assert not re.search(r"\btest_\d{4}\b", src)

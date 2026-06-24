@@ -93,7 +93,7 @@ def test_public_replay_profile_reproduces_v13(tmp_path):
 
 
 def test_dynamic_noapi_profile_no_api(tmp_path, monkeypatch):
-    import src.selective_api_client as sac
+    import src.api.selective_api_client as sac
     monkeypatch.setattr(sac, "SelectiveAPIClient",
                         lambda *a, **k: (_ for _ in ()).throw(AssertionError("no API")))
     out = tmp_path / "pred.csv"
@@ -116,7 +116,7 @@ def test_profile_cannot_bypass_model_policy(tmp_path):
 
 
 def test_api_profiles_use_allowed_model():
-    from src.model_policy import is_allowed_llm_model
+    from src.api.model_policy import is_allowed_llm_model
     for name in ("public_api50", "public_api100", "public_api463", "private_api200"):
         assert is_allowed_llm_model(_PROFILES[name]["model"])
 
@@ -133,7 +133,7 @@ def test_public_api50_profile_values():
 
 
 def test_public_api50_model_policy():
-    from src.model_policy import is_allowed_llm_model
+    from src.api.model_policy import is_allowed_llm_model
     assert is_allowed_llm_model(_PROFILES["public_api50"]["model"])
 
 

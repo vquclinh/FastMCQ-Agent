@@ -13,8 +13,8 @@ from pathlib import Path
 _ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(_ROOT))
 
-from src.concept_solver import solve_concept_sample  # noqa: E402
-from src.labels import labels_for  # noqa: E402
+from src.solvers.concept_solver import solve_concept_sample  # noqa: E402
+from src.utils.labels import labels_for  # noqa: E402
 
 
 def _solve(q, choices):
@@ -22,7 +22,7 @@ def _solve(q, choices):
 
 
 def _load(name):
-    path = (_ROOT / "scripts" / "legacy" / name if (_ROOT / "scripts" / "legacy" / name).exists() else _ROOT / "scripts" / name)
+    path = next(iter((_ROOT / "scripts" / "legacy").glob(f"**/{name}")), _ROOT / "scripts" / name)
     spec = importlib.util.spec_from_file_location(name.replace(".py", ""), path)
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
@@ -87,7 +87,7 @@ def test_mc_avc_declines_without_numbers():
 
 def test_concept_result_has_no_qid_or_answer_table():
     import re as _re
-    src = (_ROOT / "src" / "concept_solver.py").read_text()
+    src = (next(iter((_ROOT / "src").glob("**/concept_solver.py")))).read_text()
     for pat in (r'qid\s*==', r'\[\s*["\']qid', r'==\s*["\']test_0', r'test_0\d{3}'):
         assert not _re.search(pat, src), f"qid/answer-table pattern {pat} in concept_solver.py"
     for bad in ("import requests", "import urllib", "eval(", "exec(", "openrouter"):
@@ -108,7 +108,7 @@ def test_clean_v8_refuses_protected_output():
 
 
 def test_clean_v8_no_external_sheet_or_api():
-    src = (_ROOT / "scripts" / "legacy" / "apply_clean_generalized_fixes_to_predictions.py").read_text()
+    src = (next(iter((_ROOT / "scripts" / "legacy").glob("**/apply_clean_generalized_fixes_to_predictions.py")))).read_text()
     # No actual API/client usage, no env access, no external answer sheet read.
     assert "first100_external" not in src and "OpenRouterClient" not in src
     assert "import" not in src or "openrouter_client" not in src
@@ -143,7 +143,7 @@ def test_cleanup_keep_list_protects_final_outputs():
 
 def test_cleanup_only_targets_outputs_dir():
     mod = _load("cleanup_outputs_for_submission.py")
-    src = (_ROOT / "scripts" / "legacy" / "cleanup_outputs_for_submission.py").read_text()
+    src = (next(iter((_ROOT / "scripts" / "legacy").glob("**/cleanup_outputs_for_submission.py")))).read_text()
     assert 'OUTPUTS = Path("output")' in src
     assert "OUTPUTS.resolve() not in rp.parents" in src   # outside-outputs guard
 

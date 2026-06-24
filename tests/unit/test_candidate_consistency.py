@@ -8,9 +8,9 @@ from pathlib import Path
 _ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(_ROOT))
 
-from src.answer_ranker import select_answer  # noqa: E402
-from src.candidate_answer import AnswerCandidate, CandidatePool  # noqa: E402
-from src.candidate_consistency import (candidate_matches_option, detect_placeholder_evidence,
+from src.selector.answer_ranker import select_answer  # noqa: E402
+from src.selector.candidate_answer import AnswerCandidate, CandidatePool  # noqa: E402
+from src.selector.candidate_consistency import (candidate_matches_option, detect_placeholder_evidence,
                                        extract_numeric_claims, extract_option_numeric_values,
                                        strong_claim, validate_candidate_consistency)
 

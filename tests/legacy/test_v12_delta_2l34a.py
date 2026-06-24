@@ -62,7 +62,7 @@ def test_plan_no_qid_hardcoding():
 
 def test_verifier_dry_run_no_api(monkeypatch):
     # Any attempt to construct the API client must fail the test.
-    import src.selective_api_client as sac
+    import src.api.selective_api_client as sac
     monkeypatch.setattr(sac, "SelectiveAPIClient",
                         lambda *a, **k: (_ for _ in ()).throw(AssertionError("no API in dry-run")))
     runner = _load("run_v12_delta_verifier")

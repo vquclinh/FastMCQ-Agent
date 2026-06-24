@@ -15,12 +15,12 @@ from pathlib import Path
 _ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(_ROOT))
 
-from src.selective_api_client import SelectiveAPIClient
-import src.selective_api_client as sac
-from src.v12b_dynamic_layer import run_v12b_layer, select_v12b_targets
-from src.v13_dynamic_layer import run_v13_layer, select_v13_targets, build_messages
-import src.v13_dynamic_layer as v13mod
-from src.dynamic_base_predictor import predict_base_answers
+from src.api.selective_api_client import SelectiveAPIClient
+import src.api.selective_api_client as sac
+from src.layers.v12b_dynamic_layer import run_v12b_layer, select_v12b_targets
+from src.layers.v13_dynamic_layer import run_v13_layer, select_v13_targets, build_messages
+import src.layers.v13_dynamic_layer as v13mod
+from src.base.dynamic_base_predictor import predict_base_answers
 
 
 # --- fakes -------------------------------------------------------------------
@@ -188,5 +188,5 @@ def test_progress_logs_include_qid_layer_index(monkeypatch, tmp_path):
 def test_no_qid_or_answer_hardcoding():
     for name in ("v13_dynamic_layer", "v12b_dynamic_layer", "dynamic_base_predictor",
                  "fastmcq_system", "selective_api_client"):
-        src = (_ROOT / "src" / f"{name}.py").read_text()
+        src = (next(iter((_ROOT / "src").glob(f"**/{name}.py")))).read_text()
         assert not re.search(r"\btest_\d{4}\b", src), name

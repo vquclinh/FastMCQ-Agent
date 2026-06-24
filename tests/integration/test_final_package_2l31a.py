@@ -23,7 +23,7 @@ _V10 = "output/pred_v10_full_production_user_run.csv"
 
 def _load(name):
     spec = importlib.util.spec_from_file_location(name.replace(".py", "") + "_t",
-                                                  (_ROOT / "scripts" / "legacy" / name if (_ROOT / "scripts" / "legacy" / name).exists() else _ROOT / "scripts" / name))
+                                                  next(iter((_ROOT / "scripts" / "legacy").glob(f"**/{name}")), _ROOT / "scripts" / name))
     mod = importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)
     return mod
 
@@ -180,5 +180,5 @@ def test_docker_default_not_v10():
 
 def test_no_qid_hardcoding():
     for name in ("final_infer.py", "audit_production_candidate.py"):
-        src = ((_ROOT / "scripts" / "legacy" / name if (_ROOT / "scripts" / "legacy" / name).exists() else _ROOT / "scripts" / name)).read_text()
+        src = (next(iter((_ROOT / "scripts" / "legacy").glob(f"**/{name}")), _ROOT / "scripts" / name)).read_text()
         assert not re.search(r"\btest_\d{4}\b", src)
