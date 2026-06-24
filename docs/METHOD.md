@@ -173,3 +173,59 @@ an internal reasoning prompt (label-only output), RAG as in-question passage
 selection, self-consistency / PAL-lite / debate-lite / ToT-lite as rationed
 fallbacks — never always-on. The default solver stays `always_a`; the adaptive
 solver is opt-in and adopted only on leaderboard evidence.
+
+## Final production architecture — the dynamic full system
+
+The submitted system is the **dynamic full pipeline** (`final_infer.py --mode dynamic_full`, the
+default), orchestrated by `src/system/fastmcq_system.py`. It runs over *any* input (public,
+private, unseen, or larger sets) and writes a prediction for **exactly the input qids**.
+
+```
+load (/data) → base predictor → V12B layer → V13 layer → unified selector → write (/output/pred.csv) → validate
+```
+
+1. **Base predictor** (`src/base/dynamic_base_predictor.py`). Produces a valid baseline answer
+   for **every** input qid. This guarantees full coverage regardless of how many qids the
+   later layers revise.
+2. **V12B — option-permutation debiaser** (`src/layers/v12b_dynamic_layer.py`,
+   `mcq_permutation_debiaser.py`). For selected high-risk qids, it re-asks the model under
+   several option permutations and keeps an answer only when it is stable across permutations —
+   removing position bias. Promoted at public 78.83.
+3. **V13 — multi-layer reasoning** (`src/layers/v13_dynamic_layer.py`, `v13_layer_registry.py`).
+   Three sub-strategies: a deterministic **programmatic solver** (arithmetic/PoT-lite, runs even
+   offline), a **content-first normalizer**, and a **least-to-most constraint table**. Promoted
+   at public **79.7**.
+4. **Unified selector** (`src/selector/system_candidate_selector.py`). Conservatively combines
+   the base answer with the V12B/V13 proposals and writes **all** qids to `pred.csv`. A layer
+   override is accepted only when it clears the conservative agreement bar; otherwise the base
+   answer stands.
+
+### Selective API budget — `auto = ceil(N / 8)`
+
+The V12B/V13 layers are the only parts that may call the model. By default their per-layer cap is
+`auto = ceil(input_count / 8)`, **minimum 1** (e.g. 3 → 1, 463 → 58, 2000 → 250), logged as
+`auto(<cap>/<N>)`. This bounds API cost relative to the input size without any hardcoded number;
+pass an integer to cap explicitly, or `all` to let the layers consider every qid. **The cap never
+limits output coverage** — the base predictor + selector always emit all input qids. With no API
+key the model-dependent layers report `skipped_no_api` (only the deterministic V13 programmatic
+path still runs), and the system still writes a complete, valid `pred.csv`.
+
+### Allowed-model policy
+
+All model access goes through `src/api/model_policy.py` (`is_allowed_llm_model`), which enforces
+the competition allowlist (a ≤9B open model, e.g. `qwen/qwen3.5-9b-20260310`). Profiles cannot
+bypass it — a disallowed `--model` is rejected before any call. No GPT/Claude/Gemini/DeepSeek/
+Llama or other disallowed models are referenced (`scripts/audit_model_policy.py` enforces this in
+CI-style checks).
+
+### Docker contract
+
+The image entrypoint (`scripts/docker_entrypoint_v11.sh`) auto-detects the input under `/data`
+(`private_test.csv` → `public_test.csv` → `.json` equivalents; override with `INPUT_FILE`) and
+writes **`/output/pred.csv`** (`qid,answer`). If `OPENROUTER_API_KEY` is present (baked into the
+`:api-baked`/`:latest` image, or supplied at run time on `:no-key`) it runs the API profile; if
+absent it falls back to the offline profile and still writes a valid `pred.csv`. No secret is ever
+stored in GitHub.
+
+This document describes the design and the public-leaderboard checkpoints that were actually
+observed (V11 78.40 → V12B 78.83 → V13 79.7); it makes no unverified private-set claims.

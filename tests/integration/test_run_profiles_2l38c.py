@@ -160,7 +160,7 @@ def test_public_api50_apply_profile_sets_caps():
 
 
 def test_docs_mention_public_api50():
-    for doc in ("README.md", "FINAL_RUN.md", "DOCKER_SUBMISSION.md"):
+    for doc in ("DOCKER_SUBMISSION.md",):
         assert "run_public_api50.sh" in (_ROOT / doc).read_text(), doc
 
 

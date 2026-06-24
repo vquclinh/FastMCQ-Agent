@@ -188,7 +188,7 @@ def test_frozen_best_and_v10_still_protected():
 # --- docs + hygiene ----------------------------------------------------------
 
 def test_docs_contain_btc_noarg_docker_command():
-    text = (_ROOT / "DOCKER_SUBMISSION.md").read_text() + (_ROOT / "FINAL_RUN.md").read_text()
+    text = (_ROOT / "DOCKER_SUBMISSION.md").read_text()
     assert 'docker run --rm' in text and '-v "$PWD/data:/data"' in text
     assert 'fastmcq-final' in text
 

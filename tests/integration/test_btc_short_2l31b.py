@@ -133,7 +133,7 @@ def test_allow_pred_csv_flag_harmless_backward_compat():
 
 
 def test_docs_contain_dynamic_and_replay_commands():
-    fr = (_ROOT / "FINAL_RUN.md").read_text()
+    fr = (_ROOT / "DOCKER_SUBMISSION.md").read_text()
     # the default dynamic command and the public_replay reproduction command are both documented
     assert "scripts/final_infer.py --input" in fr
     assert "--mode public_replay" in fr

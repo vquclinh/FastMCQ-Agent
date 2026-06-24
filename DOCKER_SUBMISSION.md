@@ -27,7 +27,7 @@ python scripts/final_infer.py --input public-test_1780368312.json --output pred.
 ```
 Runs `dynamic_full` (V12B + V13, API-free) and writes validated `pred.csv` for exactly the
 input qids; prints resolved mode + V12B/V13 overrides + `elapsed_seconds` + `status: PASS`. To
-reproduce the public 79.7 artifact exactly add `--mode public_replay`. See `FINAL_RUN.md`.
+reproduce the public 79.7 artifact exactly add `--mode public_replay`.
 
 ## What ships in the image
 
@@ -44,6 +44,24 @@ reproduce the public 79.7 artifact exactly add `--mode public_replay`. See `FINA
 ```bash
 docker build -t fastmcq-final .
 ```
+
+## Official submission image (Docker Hub)
+
+- **Image:** `vquclinh/fastmcq-agent:latest` — explicit equivalent tag
+  `vquclinh/fastmcq-agent:api-baked`.
+- **Run (BTC):**
+  ```bash
+  docker run --rm -v "$PWD/data:/data:ro" -v "$PWD/output:/output" vquclinh/fastmcq-agent:latest
+  ```
+- Reads `/data/private_test.csv` (else `/data/public_test.csv`, else the `.json` equivalents) and
+  writes `/output/pred.csv` (`qid,answer`).
+
+**The submitted `:latest`/`:api-baked` image is built locally with the contest OpenRouter key
+baked in** (so BTC needs no env wiring); it runs the API `production_full_system` profile. This
+secret lives **only inside that Docker Hub image layer — never in GitHub**: `Dockerfile.api` is
+git-ignored, `.env` is never committed, and no key appears in any tracked file. Use a
+disposable/limited-credit key and revoke it after the contest. If you prefer no secret in the
+image, use the `:no-key` image below and pass the key at run time.
 
 ## Safe image (Docker Hub: `vquclinh/fastmcq-agent:no-key`)
 
