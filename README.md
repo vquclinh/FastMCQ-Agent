@@ -95,19 +95,11 @@ This is a **dynamic full-system reasoning agent**, not a single-shot baseline: a
 guarantees full coverage, selective API reasoning layers (V12B / V13) target high-value
 questions, and a conservative selector merges the candidates.
 
-```mermaid
-flowchart TD
-    A["/data/private_test.csv<br/>or /data/public_test.csv"] --> B["Input Loader<br/>CSV / JSON normalization"]
-    B --> C["Base Predictor<br/>all-qid coverage"]
-    C --> D["Selective Router<br/>choose hard / high-value qids"]
-    D --> E["V12B Layer<br/>permutation + option-debias reasoning"]
-    D --> F["V13 Layer<br/>multi-layer reasoning"]
-    E --> G["Candidate Pool"]
-    F --> G
-    C --> G
-    G --> H["Final Selector<br/>conservative candidate merge"]
-    H --> I["/output/pred.csv<br/>qid,answer"]
-```
+<div align="center">
+
+![FASTMCQ Agent architecture](assets/archi.png)
+
+</div>
 
 ### Modules
 
