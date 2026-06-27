@@ -171,11 +171,14 @@ def test_dockerignore_excludes_secrets_and_scratch():
 
 
 def test_docker_default_not_v10():
-    # default entrypoint runs the dynamic system, not the v10 production pipeline
+    # Default action runs the BTC pipeline (predict.py via inference.sh) using the OFFLINE local
+    # model — not the v10 production pipeline (Phase 2L.47B).
     dockerfile = (_ROOT / "Dockerfile").read_text()
-    assert "docker_entrypoint_v11.sh" in dockerfile
-    entry = (_ROOT / "scripts" / "docker_entrypoint_v11.sh").read_text()
-    assert "dynamic_full" in entry and "run_production_pipeline.py --input" not in entry
+    assert "inference.sh" in dockerfile
+    assert "run_production_pipeline.py" not in dockerfile
+    predict = (_ROOT / "predict.py").read_text()
+    assert ("local_model" in predict or "qwen_mcq_predictor" in predict)  # offline local default
+    assert "run_production_pipeline" not in predict   # never the v10 pipeline
 
 
 def test_no_qid_hardcoding():

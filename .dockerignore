@@ -57,3 +57,7 @@ models/
 # output/pred_v11_independent_rerun1.csv and the v10 fallback are REQUIRED and NOT ignored.
 output/pred.csv
 output/pred_v11_full_adaptive_test.csv
+btc_data/
+btc_output/
+btc_contract_smoke/
+docker_compat_smoke/

@@ -133,7 +133,7 @@ deferred and adopted only on leaderboard evidence (see `docs/ARCHITECTURE.md`
 
 - **Batching** prompts/continuations for throughput (2I).
 - **Quantization** (8-bit/4-bit) to fit larger models in the time/memory budget (2I).
-- **Faster backends:** vLLM or llama.cpp for higher tokens/sec (2I).
+- **Faster backends:** non-submission backend experiments for higher tokens/sec (2I).
 - **Adaptive routing:** pick strategy/score-mode by question shape (2F/2G core;
   extended routing later).
 - **Prompt ensembles / self-consistency** with majority vote over labels (2J).
@@ -218,14 +218,43 @@ bypass it — a disallowed `--model` is rejected before any call. No GPT/Claude/
 Llama or other disallowed models are referenced (`scripts/audit_model_policy.py` enforces this in
 CI-style checks).
 
-### Docker contract
+### Final offline submission (Phase 2L.47B)
 
-The image entrypoint (`scripts/docker_entrypoint_v11.sh`) auto-detects the input under `/data`
-(`private_test.csv` → `public_test.csv` → `.json` equivalents; override with `INPUT_FILE`) and
-writes **`/output/pred.csv`** (`qid,answer`). If `OPENROUTER_API_KEY` is present (baked into the
-`:api-baked`/`:latest` image, or supplied at run time on `:no-key`) it runs the API profile; if
-absent it falls back to the offline profile and still writes a valid `pred.csv`. No secret is ever
-stored in GitHub.
+The submitted system is **fully offline**: a single open-weight local model,
+**`Qwen/Qwen3-4B-Instruct-2507`** (4.0B < 5B, Apache-2.0), run via Hugging Face Transformers. The
+BTC private-test runtime is internet-isolated, so the final path uses **no OpenRouter, no external
+API, and no web retrieval**.
+
+The entry point is **`predict.py`** (run via **`inference.sh`**, the image default;
+`CMD ["bash", "inference.sh"]`, `WORKDIR /code`). It:
+
+1. Resolves the input (`--input`/`$INPUT_FILE` → `/code/private_test.json` → `/app/data/*.json`
+   → `/data/*.json` → `/data/*.csv`).
+2. Loads the local model **once** (`src/local_model/qwen_mcq_predictor.py`; greedy / answer-only).
+3. For **each** question, builds a labeled-choice MCQ prompt, generates deterministically, parses
+   the option label, and — on any failure — uses a deterministic fallback label so every qid is
+   answered.
+4. Writes **`/code/submission.csv`** (`qid,answer`) and **`/code/submission_time.csv`**
+   (`qid,answer,time` — a **real per-sample** time measured around each inference); mirrors to
+   `/output/pred.csv` for backward compatibility.
+
+Model weights are downloaded at **Docker build time** (`scripts/download_local_model.py`) into
+`/models/qwen3-4b-instruct-2507`; the container runs with `TRANSFORMERS_OFFLINE=1` /
+`HF_HUB_OFFLINE=1`. No vector database is required, no indexing step is required, and only the
+Qwen model is initialized during Docker build. GPU is used via `--gpus all`; `--ipc=host` is not
+required, `--shm-size` is not required, and no vLLM is used. No secret is ever stored in GitHub.
+
+BTC confirmed CUDA 12.8+ base images for the target GPU environment, so the final
+GPU/local-Transformers image uses the clean official
+`nvidia/cuda:12.8.0-cudnn-runtime-ubuntu22.04` base and exact-pinned PyTorch `torch==2.7.1` from
+the `cu128` wheel index. The original CUDA 12.2 template is historical context only. Because this
+solution does not use vLLM, `--ipc=host`, `--shm-size`, `uv`, and `--torch-backend=cu128` are not
+required.
+
+The earlier dynamic API pipeline described above (base → V12B → V13 → selector, OpenRouter) is
+retained only as a **dev-only** path (`predict.py --legacy-dynamic-full`) and is **not** used by
+the offline submission.
 
 This document describes the design and the public-leaderboard checkpoints that were actually
-observed (V11 78.40 → V12B 78.83 → V13 79.7); it makes no unverified private-set claims.
+observed for the legacy dynamic system (V11 78.40 → V12B 78.83 → V13 79.7); it makes no unverified
+private-set claims for the offline local model.

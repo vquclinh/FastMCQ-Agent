@@ -62,3 +62,8 @@ models/*
 !models/README.md
 
 scratch/*
+# BTC Docker smoke / local run scratch dirs (never committed)
+btc_data/
+btc_output/
+btc_contract_smoke/
+docker_compat_smoke/

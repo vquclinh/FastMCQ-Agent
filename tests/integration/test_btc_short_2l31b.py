@@ -133,11 +133,12 @@ def test_allow_pred_csv_flag_harmless_backward_compat():
 
 
 def test_docs_contain_dynamic_and_replay_commands():
+    # Phase 2L.47B: the final submission is offline local-model; the older dynamic pipeline is
+    # documented as a dev-only legacy path. Verify both messages are present.
     fr = (_ROOT / "DOCKER_SUBMISSION.md").read_text()
-    # the default dynamic command and the public_replay reproduction command are both documented
-    assert "scripts/final_infer.py --input" in fr
-    assert "--mode public_replay" in fr
-    assert "dynamic_full" in fr
+    assert "offline" in fr.lower()
+    assert "--legacy-dynamic-full" in fr
+    assert "run_full_system.sh" in fr
 
 
 def test_no_qid_hardcoding():

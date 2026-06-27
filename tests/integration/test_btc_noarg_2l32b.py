@@ -189,8 +189,9 @@ def test_frozen_best_and_v10_still_protected():
 
 def test_docs_contain_btc_noarg_docker_command():
     text = (_ROOT / "DOCKER_SUBMISSION.md").read_text()
-    assert 'docker run --rm' in text and '-v "$PWD/data:/data"' in text
-    assert 'fastmcq-final' in text
+    assert "docker run --rm --gpus all" in text          # BTC offline run command
+    assert "vquclinh/fastmcq-agent:latest" in text       # official image
+    assert "/code/private_test.json" in text and "/code/submission.csv" in text
 
 
 def test_no_qid_hardcoding():
