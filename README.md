@@ -63,22 +63,128 @@ and `--torch-backend=cu128` are not required.
 
 ## Quick Start
 
-The entry point is **`predict.py`**, run via **`inference.sh`** (the Docker `CMD`). It reads
-`/code/private_test.json` and writes `/code/submission.csv` + `/code/submission_time.csv`.
+The Docker image entrypoint is **`inference.sh`**, which runs **`predict.py`** automatically.
+The official/default BTC contract is:
 
-Build the final image (downloads the real Qwen weights during build):
+```text
+Host input file      -> mounted to container as /code/private_test.json
+Container output     -> /code/submission.csv
+Container time file  -> /code/submission_time.csv
+```
+
+`/code` is the Linux filesystem path **inside the Docker container**. If the evaluator wants to
+inspect the output files on the host machine after the container finishes, keep the container with
+`--name` and copy the files out with `docker cp`.
+
+### 1. Pull the final image from DockerHub
+
+```bash
+docker pull vquclinh/fastmcq-agent:latest
+```
+
+### 2. Default BTC run
+
+Place the private test file on the host machine as `private_test.json`, then mount it into the
+container at `/code/private_test.json`.
+
+Linux / Bash:
+
+```bash
+docker rm -f fastmcq_btc_test 2>/dev/null || true
+
+docker run --name fastmcq_btc_test --gpus all \
+  -v "$PWD/private_test.json:/code/private_test.json:ro" \
+  vquclinh/fastmcq-agent:latest
+```
+
+Windows PowerShell:
+
+```powershell
+$IMAGE = "vquclinh/fastmcq-agent"
+
+docker rm -f fastmcq_btc_test 2>$null
+
+docker run --name fastmcq_btc_test --gpus all `
+  -v "${PWD}\private_test.json:/code/private_test.json:ro" `
+  "${IMAGE}:latest"
+```
+
+After the run finishes, the default output files are created inside the container:
+
+```text
+/code/submission.csv
+/code/submission_time.csv
+```
+
+### 3. Copy default outputs from the container
+
+Linux / Bash:
+
+```bash
+docker cp fastmcq_btc_test:/code/submission.csv ./submission.csv
+docker cp fastmcq_btc_test:/code/submission_time.csv ./submission_time.csv
+
+cat ./submission.csv
+cat ./submission_time.csv
+```
+
+Windows PowerShell:
+
+```powershell
+docker cp fastmcq_btc_test:/code/submission.csv .\submission.csv
+docker cp fastmcq_btc_test:/code/submission_time.csv .\submission_time.csv
+
+Get-Content .\submission.csv
+Get-Content .\submission_time.csv
+```
+
+Clean up the named test container after copying the outputs:
+
+```bash
+docker rm fastmcq_btc_test
+```
+
+### 4. Equivalent minimal run command
+
+If the evaluator has another mechanism to collect files from the container filesystem, the minimal
+run command is:
+
+```bash
+docker run --gpus all \
+  -v /path/to/private_test.json:/code/private_test.json:ro \
+  vquclinh/fastmcq-agent:latest
+```
+
+Do **not** use `--rm` if you need to copy `/code/submission.csv` and
+`/code/submission_time.csv` from the container after it exits.
+
+### 5. Optional offline verification
+
+The final image is designed to run without runtime internet. After pulling the image, this can be
+checked locally by adding `--network none`:
+
+```bash
+docker rm -f fastmcq_btc_test 2>/dev/null || true
+
+docker run --name fastmcq_btc_test --gpus all --network none \
+  -v "$PWD/private_test.json:/code/private_test.json:ro" \
+  vquclinh/fastmcq-agent:latest
+```
+
+### 6. Build from source
+
+Build the final image from this repository. The real Qwen weights are downloaded during Docker
+build and stored inside the image.
 
 ```bash
 docker build -t vquclinh/fastmcq-agent:latest .
 ```
 
-BTC default run (GPU required):
+### 7. Compatibility runs
 
-```bash
-docker run --rm --gpus all vquclinh/fastmcq-agent:latest
-```
+The official path is `/code/private_test.json`. The image also supports older compatibility paths.
 
-BTC sample-compatible run using `/app/data`:
+BTC sample-compatible `/app/data` run:
 
 ```bash
 docker run --rm --gpus all \
@@ -86,35 +192,7 @@ docker run --rm --gpus all \
   vquclinh/fastmcq-agent:latest
 ```
 
-Reproducible local run that keeps the outputs on the host:
-
-```bash
-mkdir -p btc_data btc_output
-# put private_test.json in ./btc_data/private_test.json
-
-docker run --rm --gpus all \
-  -v "$PWD/btc_data/private_test.json:/code/private_test.json:ro" \
-  -v "$PWD/btc_output:/code/btc_output" \
-  -e SUBMISSION_FILE=/code/btc_output/submission.csv \
-  -e SUBMISSION_TIME_FILE=/code/btc_output/submission_time.csv \
-  vquclinh/fastmcq-agent:latest
-```
-
-Offline runtime verification after the image is built:
-
-```bash
-docker run --rm --gpus all --network none \
-  -v "$PWD/btc_data/private_test.json:/code/private_test.json:ro" \
-  -v "$PWD/btc_output:/code/btc_output" \
-  -e SUBMISSION_FILE=/code/btc_output/submission.csv \
-  -e SUBMISSION_TIME_FILE=/code/btc_output/submission_time.csv \
-  vquclinh/fastmcq-agent:latest
-```
-
-**Required Docker flags:** `--gpus all` (local Transformers GPU inference). **`--ipc=host` is NOT
-required** and **`--shm-size` is NOT required** — this solution does not use vLLM.
-
-Legacy compatibility (old `/data` → `/output/pred.csv` contract still works):
+Legacy `/data` -> `/output/pred.csv` run:
 
 ```bash
 docker run --rm --gpus all \
@@ -122,6 +200,9 @@ docker run --rm --gpus all \
   -v "$PWD/output:/output" \
   vquclinh/fastmcq-agent:latest
 ```
+
+**Required Docker flag:** `--gpus all` for local Transformers GPU inference. **`--ipc=host` is not
+required** and **`--shm-size` is not required** because this solution does not use vLLM.
 
 ## Pipeline Flow
 
