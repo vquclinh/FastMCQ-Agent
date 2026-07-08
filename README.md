@@ -373,7 +373,7 @@ contains all input qids**.
 - **Conservative selection:** prefer safe overrides over noisy changes.
 - **Docker-first reproducibility:** one command reads `/data` and writes `/output/pred.csv`.
 
-See [`docs/METHOD.md`](docs/METHOD.md) for the full method description.
+See [`docs/FINAL_SYSTEM.md`](docs/FINAL_SYSTEM.md) for the full method and architecture description.
 
 ## Runtime Modes
 
@@ -406,7 +406,7 @@ src/                    core inference system
 scripts/                CLI/Docker entrypoints and validation tools
 configs/                production profiles and model-policy configuration
 tests/                  unit and integration tests
-docs/METHOD.md          method description
+docs/FINAL_SYSTEM.md    method and architecture (source of truth)
 DOCKER_SUBMISSION.md    Docker-specific submission details
 docs/audits/            audit trail of major changes and validations
 ```
@@ -427,7 +427,7 @@ docs/audits/            audit trail of major changes and validations
 ## Documentation
 
 - [DOCKER_SUBMISSION.md](DOCKER_SUBMISSION.md) — Docker build/run details and the I/O contract.
-- [docs/METHOD.md](docs/METHOD.md) — method and architecture description.
+- [docs/FINAL_SYSTEM.md](docs/FINAL_SYSTEM.md) — method and architecture description (source of truth).
 - [docs/audits/](docs/audits/) — audit trail of major changes and validations.
 
 ## Security & Compliance

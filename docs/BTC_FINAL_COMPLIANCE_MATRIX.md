@@ -59,7 +59,7 @@ Status: PASS
 
 Repository evidence:
 - `Dockerfile:12` uses `nvidia/cuda:12.8.0-cudnn-runtime-ubuntu22.04`.
-- `README.md:53-60`, `DOCKER_SUBMISSION.md:136-144`, `docs/METHOD.md:229-242`, and `docs/BTC_SUBMISSION_COMPLIANCE.md:23-32` state BTC confirmed CUDA 12.8+ for the RTX 5060 Ti / Blackwell target environment.
+- `README.md:53-60`, `DOCKER_SUBMISSION.md:136-144`, `docs/FINAL_SYSTEM.md` (§2–§3), and `docs/BTC_SUBMISSION_COMPLIANCE.md:23-32` state BTC confirmed CUDA 12.8+ for the RTX 5060 Ti / Blackwell target environment.
 - Mentions of the old CUDA 12.2 template are historical context only.
 
 Why this satisfies BTC:
@@ -284,7 +284,7 @@ Status: PASS
 Evidence:
 - `Dockerfile:12` uses CUDA 12.8.
 - `Dockerfile:29-30` installs `torch==2.7.1` from `cu128`.
-- `README.md:51-62`, `DOCKER_SUBMISSION.md:136-144`, and `docs/METHOD.md:229-242` document BTC's CUDA 12.8+ confirmation and the RTX 5060 Ti / Blackwell target.
+- `README.md:51-62`, `DOCKER_SUBMISSION.md:136-144`, and `docs/FINAL_SYSTEM.md` (§2–§3) document BTC's CUDA 12.8+ confirmation and the RTX 5060 Ti / Blackwell target.
 - Final model is `Qwen/Qwen3-4B-Instruct-2507`: `Dockerfile:47`, `README.md:48`.
 
 Why this satisfies BTC:

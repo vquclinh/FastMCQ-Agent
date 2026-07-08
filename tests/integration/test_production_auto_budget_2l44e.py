@@ -129,7 +129,6 @@ def test_no_hardcoded_463_in_production():
         "scripts/tools/final_infer.py",
         "src/system/fastmcq_system.py",
         "configs/production/default.json",
-        "configs/production/noapi.json",
         "scripts/run_full_system.sh",
         "scripts/docker_entrypoint_v11.sh",
     ]

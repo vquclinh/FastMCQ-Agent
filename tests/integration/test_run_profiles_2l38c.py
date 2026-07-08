@@ -42,7 +42,7 @@ def _private(tmp_path, qids=("a1",)):
 
 def test_profiles_file_has_expected_profiles():
     assert set(_PROFILES) >= {"public_replay", "dynamic_noapi", "public_api100",
-                              "private_noapi", "private_api200", "public_api463", "public_noapi"}
+                              "private_noapi", "private_api200"}
 
 
 def test_apply_profile_sets_values():
@@ -117,7 +117,7 @@ def test_profile_cannot_bypass_model_policy(tmp_path):
 
 def test_api_profiles_use_allowed_model():
     from src.api.model_policy import is_allowed_llm_model
-    for name in ("public_api50", "public_api100", "public_api463", "private_api200"):
+    for name in ("public_api50", "public_api100", "private_api200"):
         assert is_allowed_llm_model(_PROFILES[name]["model"])
 
 
