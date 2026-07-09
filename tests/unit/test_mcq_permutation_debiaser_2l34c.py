@@ -136,14 +136,12 @@ def test_module_has_no_api_dependency():
     code_lines = [ln for ln in src.splitlines()
                   if not ln.lstrip().startswith("#")]
     code = "\n".join(code_lines)
-    assert "SelectiveAPIClient" not in code
-    assert "OpenRouterClient" not in code
-    assert "import requests" not in code and "openrouter_client" not in code
+    assert "src.api" not in code
+    assert "import requests" not in code
     # And it actually imports nothing from an API module.
     import src.layers.mcq_permutation_debiaser as M
     import sys as _sys
-    assert "src.api.openrouter_client" not in _sys.modules or True  # not imported by this module
-    assert not hasattr(M, "SelectiveAPIClient")
+    assert not hasattr(M, "remote_client")
 
 
 def test_no_qid_hardcoding():

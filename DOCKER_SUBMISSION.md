@@ -2,7 +2,7 @@
 
 The final image is **fully offline**: it runs a single open-weight local model
 (`Qwen/Qwen3-4B-Instruct-2507`, 4.0B < 5B, Apache-2.0) via Hugging Face Transformers and answers
-each MCQ deterministically. **No OpenRouter, no external API, no internet at runtime.** The
+each MCQ deterministically. **No external API and no internet are used at runtime.** The
 container reads `/code/private_test.json` and writes `/code/submission.csv` (`qid,answer`) and
 `/code/submission_time.csv` (`qid,answer,time`, a real per-sample time).
 
@@ -16,7 +16,7 @@ container reads `/code/private_test.json` and writes `/code/submission.csv` (`qi
   `/code/submission_time.csv`
 - **Required Docker flags:** `--gpus all` (local Transformers GPU inference). **`--ipc=host` is
   NOT required** and **`--shm-size` is NOT required** (no vLLM). No
-  `-e OPENROUTER_API_KEY` and no network access are needed.
+  no network access is needed.
 
 ### Build
 
@@ -150,32 +150,23 @@ This solution does not use vLLM. Therefore `--ipc=host`, `--shm-size`, `uv`, and
 - **Excluded** by `.dockerignore`: `.env`/secrets/keys, `scratch/`, `experiments/`, `docs/`,
   `.git/`, notebooks, `*.log`, `*.jsonl`, host `models/` and caches.
 
-## Optional dev image (`Dockerfile.api`, local-only, git-ignored)
+## Optional local selective path
 
-`Dockerfile.api` mirrors the offline image but bakes an `OPENROUTER_API_KEY` (build arg) so the
-**dev-only** `predict.py --legacy-dynamic-full` path can exercise the older API pipeline. It is
-**not** the submission, **never committed**, and must use a disposable key.
+`predict.py --legacy-dynamic-full` remains an explicit development/research path, not the BTC
+default. It runs Dynamic Base → local V12B → local V13 → selector with the same baked Qwen model
+backend as the default path. Its V12B/V13 budget defaults to `auto = ceil(input_count / 8)` (min
+1) for each layer independently, while Base still answers every input qid.
 
-<!-- legacy OpenRouter notes retained below for development reference only -->
-<details>
-<summary>Legacy dev-only OpenRouter pipeline (NOT the submission)</summary>
-
-The earlier dynamic API pipeline (base → V12B → V13 → conservative selector) is reachable only
-via `predict.py --legacy-dynamic-full` and is used for development only — never in the offline
-submission. It read `/data/private_test.csv|public_test.csv` (or the BTC `/code` paths) and, when
-`OPENROUTER_API_KEY` was present, called the allowed model via OpenRouter
-(`production_full_system`); without a key it ran `production_full_system_noapi`. Its selective
-V12B/V13 budget defaulted to `auto = ceil(input_count / 8)` (min 1). The local helper
-`bash scripts/run_full_system.sh <test_file> --no-api` still runs it offline and writes
-`output/pred.csv`. None of this is required for, or used by, the final offline image.
-
-</details>
+```bash
+bash scripts/run_full_system.sh path/to/private_test.json
+```
 
 ## Notes
 
-- Default = offline local model (`Qwen/Qwen3-4B-Instruct-2507`); no OpenRouter / external API /
-  internet at runtime.
+- Default = offline local model (`Qwen/Qwen3-4B-Instruct-2507`); no external API or internet at
+  runtime.
 - Docker startup uses BTC-template `CMD ["bash", "inference.sh"]`. With `CMD`, use
   `SUBMISSION_FILE` and `SUBMISSION_TIME_FILE` for Docker output overrides.
 - `final_infer.py` still refuses to overwrite protected/locked historical CSVs under `output/`.
-- No real API key is stored in GitHub; `.env`, `Dockerfile.api`, and `models/` are git-ignored.
+- `.env`, local-only Docker variants, and `models/` are git-ignored and are not part of the
+  submission image.

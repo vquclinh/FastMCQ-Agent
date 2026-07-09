@@ -5,7 +5,7 @@ Starts from a base prediction CSV (v6b) and, for each sample, runs the adaptive
 orchestrator's **calculation branch in assist mode**. It patches the answer ONLY
 when a deterministic family matched with ``safe_to_override=True`` AND the branch is
 calculation AND the new answer differs from the base. Everything else keeps the base
-answer. No OpenRouter, no full inference, no qid-specific logic, no external answer
+answer. No remote provider, no full inference, no qid-specific logic, no external answer
 sheet — purely deterministic patching of frozen v6b predictions.
 
 Usage:

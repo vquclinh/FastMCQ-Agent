@@ -1,10 +1,8 @@
-"""V13 multi-layer reasoning as a dynamic architecture layer (Phase 2L.37A).
+"""V13 multi-layer reasoning as a dynamic architecture layer.
 
 Integrates the three V13 methods — programmatic solver, content-first normalizer, least-to-most
 constraint table — into the real dynamic system over ARBITRARY inputs. Target assignment is
-feature-based (no qid hardcoding). API is called only under explicit ``execute_api``; otherwise
-each layer is reported ``skipped_no_api`` EXCEPT the programmatic solver, whose deterministic
-arithmetic path may run without API when the question is a simple computable expression.
+feature-based (no qid hardcoding). Model-backed layers use the shared local Qwen backend.
 """
 
 from __future__ import annotations
@@ -18,6 +16,7 @@ from src.utils.labels import is_valid_label, labels_for
 from src.layers import programmatic_solver_layer as PS
 from src.layers import content_first_answerer as CF
 from src.layers import least_to_most_constraint_solver as LTM
+from src.local_model.local_qwen_backend import get_local_qwen_backend, parse_json_object
 
 def _log(msg):
     print(msg, flush=True)
@@ -27,7 +26,7 @@ _MULTI_COND_HINTS = ("đúng", "sai", "phát biểu", "chọn câu", "không đ�
                      "statement", "which of the following", "true", "false", "except")
 _CONTENT_HINTS = ("tục ngữ", "thành ngữ", "nghĩa", "định nghĩa", "là gì", "thuật ngữ",
                   "khái niệm", "đồng nghĩa", "proverb", "definition", "term", "meaning")
-_WEAK_TOKENS = ("fallback", "weak", "single_source", "dynamic_api", "api:")
+_WEAK_TOKENS = ("fallback", "weak", "single_source", "dynamic_local_qwen")
 # Simple binary arithmetic, e.g. "2 + 2", "10 * 5", "12 / 4" (x/× treated as multiply).
 _ARITH = re.compile(r"(-?\d+(?:\.\d+)?)\s*([+\-*x×/])\s*(-?\d+(?:\.\d+)?)")
 
@@ -114,8 +113,7 @@ def select_v13_targets(samples, base_predictions, *, max_qids=None):
 
 
 def _deterministic_programmatic(sample):
-    """No-API deterministic arithmetic path: if the question is a simple computable expression
-    and a single option matches, return (label, option_text, value); else None."""
+    """If a simple computable expression maps to one option, return (label, option_text, value)."""
     q = str(sample.get("question") or "")
     m = _ARITH.search(q)
     if not m:
@@ -132,7 +130,7 @@ def _deterministic_programmatic(sample):
     return None
 
 
-def _interpret_api(layer, sample, parsed):
+def _interpret_model_json(layer, sample, parsed):
     choices = sample.get("choices") or []
     labels = labels_for(len(choices))
     if layer == "programmatic_solver":
@@ -180,7 +178,7 @@ def _prompt(layer, sample, route):
 
 def build_messages(layer, sample, route):
     """Return (messages_list, prompt_len) or (None, 0) if the prompt is empty/invalid.
-    Never returns an empty/whitespace prompt to the API."""
+    Never returns an empty/whitespace prompt to the model backend."""
     text = (_prompt(layer, sample, route) or "").strip()
     if not text:
         return None, 0
@@ -222,15 +220,11 @@ def _load_completed(path):
     return done
 
 
-def run_v13_layer(samples, base_predictions, targets, *, model=None, execute_api=False,
-                  budget_usd=None, work_dir="scratch/v13_dynamic", resume=False):
+def run_v13_layer(samples, base_predictions, targets, *, model_path=None, local_backend=None,
+                  max_new_tokens=768, work_dir="scratch/v13_dynamic", resume=False):
     by_qid = {s["qid"]: s for s in samples}
-    client = None
-    if execute_api:
-        from src.api.model_policy import assert_allowed_llm_model
-        assert_allowed_llm_model(model)
-        from src.api.selective_api_client import SelectiveAPIClient
-        client = SelectiveAPIClient(model=model)
+    backend = local_backend or get_local_qwen_backend(
+        model_path, default_max_new_tokens=max_new_tokens)
 
     work = Path(work_dir); work.mkdir(parents=True, exist_ok=True)
     rec_path = work / "v13_dynamic_records.jsonl"
@@ -259,37 +253,42 @@ def run_v13_layer(samples, base_predictions, targets, *, model=None, execute_api
                     results.append(_record_to_result(completed[key]))
                     continue
 
-                if not execute_api:
-                    if layer == "programmatic_solver":
-                        det = _deterministic_programmatic(s)
-                        if det and det[0] != t.current_answer and is_valid_label(det[0], s):
-                            r = V13LayerResult(t.qid, layer, det[0], det[1], True, 1.0,
-                                               "deterministic_arithmetic", f"value={det[2]}",
-                                               {"mode": "deterministic_no_api"})
-                            results.append(r); _emit(r); continue
-                        if det:
-                            r = V13LayerResult(t.qid, layer, det[0], det[1], False, 1.0,
-                                               "deterministic_matches_current", f"value={det[2]}",
-                                               {"mode": "deterministic_no_api"})
-                            results.append(r); _emit(r); continue
+                if layer == "programmatic_solver":
+                    det = _deterministic_programmatic(s)
+                    if det and det[0] != t.current_answer and is_valid_label(det[0], s):
+                        r = V13LayerResult(t.qid, layer, det[0], det[1], True, 1.0,
+                                           "deterministic_arithmetic", f"value={det[2]}",
+                                           {"mode": "deterministic"})
+                        results.append(r); _emit(r); continue
+                    if det:
+                        r = V13LayerResult(t.qid, layer, det[0], det[1], False, 1.0,
+                                           "deterministic_matches_current", f"value={det[2]}",
+                                           {"mode": "deterministic"})
+                        results.append(r); _emit(r); continue
                     r = V13LayerResult(t.qid, layer, None, None, False, None,
-                                       "skipped_no_api", "", {"mode": "no_api"})
+                                       "no_deterministic_programmatic_match", "",
+                                       {"mode": "deterministic"})
                     results.append(r); _emit(r); continue
 
-                # API path: build + validate the prompt BEFORE any call.
+                # Local model path: build + validate the prompt BEFORE generation.
                 messages, plen = build_messages(layer, s, t.route)
                 if messages is None:
                     _log(f"[V13] skip qid={t.qid} layer={layer} reason=empty_prompt")
                     r = V13LayerResult(t.qid, layer, None, None, False, None,
-                                       "skipped_empty_prompt", "", {"mode": "api"})
+                                       "skipped_empty_prompt", "", {"mode": "local_qwen"})
                     results.append(r); _emit(r); continue
-                _log(f"[V13] {idx}/{total} qid={t.qid} layer={layer} prompt_len={plen}")
-                content, _u = client.chat(messages)
-                parsed = client.parse_json(content) or {}
-                lab, text, evid, valid, reason = _interpret_api(layer, s, parsed)
-                accept = bool(valid and lab and lab != t.current_answer and is_valid_label(lab, s))
-                r = V13LayerResult(t.qid, layer, lab, text, accept, parsed.get("confidence"),
-                                   reason or "ok", str(evid or "")[:200], {"mode": "api"})
+                try:
+                    _log(f"[V13] {idx}/{total} qid={t.qid} layer={layer} prompt_len={plen}")
+                    content = backend.generate_text(messages, max_new_tokens=max_new_tokens)
+                    parsed = parse_json_object(content) or {}
+                    lab, text, evid, valid, reason = _interpret_model_json(layer, s, parsed)
+                    accept = bool(valid and lab and lab != t.current_answer and is_valid_label(lab, s))
+                    r = V13LayerResult(t.qid, layer, lab, text, accept, parsed.get("confidence"),
+                                       reason or "ok", str(evid or "")[:200], {"mode": "local_qwen"})
+                except Exception as exc:
+                    r = V13LayerResult(t.qid, layer, None, None, False, None,
+                                       f"local_error:{type(exc).__name__}", "",
+                                       {"mode": "local_qwen"})
                 results.append(r); _emit(r)
     finally:
         fh.close()

@@ -17,7 +17,7 @@ ABCD = ["A", "B", "C", "D"]
 
 
 class _Cfg:
-    """Minimal stand-in for OpenRouterConfig verifier fields."""
+    """Minimal stand-in for verifier config fields."""
     mcq_verifier_enabled = True
     mcq_verifier_apply_routes = ["long_context", "ambiguous", "law_admin", "safety_ethics"]
     mcq_verifier_trigger_below_confidence = 0.70

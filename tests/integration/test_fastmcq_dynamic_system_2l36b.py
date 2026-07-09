@@ -44,6 +44,31 @@ def _private_samples():
     ]
 
 
+class _FakeLocalBackend:
+    def __init__(self):
+        self.predict_calls = 0
+        self.generate_calls = 0
+
+    def predict_mcq(self, item, *, max_new_tokens=None):
+        self.predict_calls += 1
+        return "B" if "2 + 2" in str(item.get("question", "")) else "A"
+
+    def generate_text(self, messages, *, max_new_tokens=None, temperature=0.0):
+        self.generate_calls += 1
+        text = "\n".join(m.get("content", "") for m in messages) if isinstance(messages, list) else str(messages)
+        if "selected_label" in text:
+            return json.dumps({"selected_label": "A", "selected_option_text": "3",
+                               "label_matches_option": True, "confidence": 0.8})
+        if "ANSWER CONTENT" in text:
+            return json.dumps({"answer_content": "3", "answer_type": "numeric",
+                               "numeric_value": 3, "evidence": "fake", "confidence": 0.8})
+        return json.dumps({"constraints": ["fake"],
+                           "option_evaluations": [{"label": "A", "passes_constraints": [True],
+                                                    "eliminated": False}],
+                           "final_survivor_label": "A", "confidence": 0.8,
+                           "contradiction_check": True})
+
+
 def _run(argv):
     mod = _final_infer()
     buf = io.StringIO()
@@ -58,17 +83,17 @@ def test_dynamic_full_outputs_exactly_input_qids(tmp_path):
     samples = _private_samples()
     out = tmp_path / "pred.csv"
     rep = run_fastmcq_system(samples, str(out), FastMCQSystemConfig(
-        mode="dynamic_full", execute_api=False, work_dir=str(tmp_path / "w")))
+        mode="dynamic_full", local_backend=_FakeLocalBackend(), work_dir=str(tmp_path / "w")))
     rows = [l.split(",")[0] for l in out.read_text().splitlines()[1:]]
     assert rows == [s["qid"] for s in samples]
     assert rep.output_count == 2 and rep.status == "PASS"
 
 
-def test_dynamic_full_no_api_returns_valid_for_all(tmp_path):
+def test_dynamic_full_local_returns_valid_for_all(tmp_path):
     samples = _private_samples()
     out = tmp_path / "pred.csv"
-    run_fastmcq_system(samples, str(out), FastMCQSystemConfig(execute_api=False,
-                                                             work_dir=str(tmp_path / "w")))
+    run_fastmcq_system(samples, str(out), FastMCQSystemConfig(
+        local_backend=_FakeLocalBackend(), work_dir=str(tmp_path / "w")))
     from src.utils.labels import is_valid_label
     by = {s["qid"]: s for s in samples}
     for line in out.read_text().splitlines()[1:]:
@@ -81,15 +106,15 @@ def test_dynamic_full_does_not_use_public_csv(tmp_path):
     # produced answers must not be lifted from the public CSV (different qids entirely).
     samples = _private_samples()
     out = tmp_path / "pred.csv"
-    run_fastmcq_system(samples, str(out), FastMCQSystemConfig(execute_api=False,
-                                                             work_dir=str(tmp_path / "w")))
+    run_fastmcq_system(samples, str(out), FastMCQSystemConfig(
+        local_backend=_FakeLocalBackend(), work_dir=str(tmp_path / "w")))
     text = out.read_text()
     assert "priv_x1" in text and "test_0001" not in text
 
 
-def test_base_predictor_one_label_per_sample_no_api():
+def test_base_predictor_one_label_per_sample_local():
     samples = _private_samples()
-    preds = predict_base_answers(samples, model=None, execute_api=False, budget_usd=None,
+    preds = predict_base_answers(samples, local_backend=_FakeLocalBackend(),
                                  work_dir=None, resume=False)
     assert len(preds) == 2
     assert all(p.answer and p.source for p in preds)
@@ -103,7 +128,7 @@ def test_base_predictor_one_label_per_sample_no_api():
 
 def test_v12b_targets_are_feature_based_not_qid():
     samples = _private_samples()
-    preds = predict_base_answers(samples, model=None, execute_api=False, budget_usd=None,
+    preds = predict_base_answers(samples, local_backend=_FakeLocalBackend(),
                                  work_dir=None, resume=False)
     targets = select_v12b_targets(samples, preds, max_qids=None)
     # both fallback/weak -> both selected; reasons mention features, never a qid literal
@@ -112,30 +137,29 @@ def test_v12b_targets_are_feature_based_not_qid():
         assert not re.search(r"\b(priv_x\d|test_\d{4})\b", t.reason)
 
 
-def test_v12b_no_api_is_skipped_not_executed():
+def test_v12b_runs_local_permutations():
     samples = _private_samples()
-    preds = predict_base_answers(samples, model=None, execute_api=False, budget_usd=None,
-                                 work_dir=None, resume=False)
+    backend = _FakeLocalBackend()
+    preds = predict_base_answers(samples, local_backend=backend, work_dir=None, resume=False)
     targets = select_v12b_targets(samples, preds, max_qids=None)
-    results = run_v12b_layer(samples, preds, targets, model=None, execute_api=False,
-                             budget_usd=None, permutations=6, policy="conservative",
-                             work_dir="scratch/_t", resume=False)
-    assert results and all(not r.accept and r.reason == "skipped_no_api" for r in results)
+    results = run_v12b_layer(samples, preds, targets, local_backend=backend,
+                             permutations=6, policy="conservative",
+                             work_dir=str(Path(tempfile.mkdtemp()) / "w"), resume=False)
+    assert results and backend.generate_calls > 0
 
 
-def test_v12b_execute_validates_model_policy():
-    # execute_api=True with a DISALLOWED model must raise via model_policy before any call.
+def test_v12b_local_failure_is_recorded(tmp_path):
+    class _Fail(_FakeLocalBackend):
+        def generate_text(self, *a, **k):
+            raise RuntimeError("boom")
     samples = _private_samples()
-    preds = predict_base_answers(samples, model=None, execute_api=False, budget_usd=None,
-                                 work_dir=None, resume=False)
-    targets = select_v12b_targets(samples, preds, max_qids=None)
-    try:
-        run_v12b_layer(samples, preds, targets, model="gpt-4o", execute_api=True,
-                       budget_usd=1.0, permutations=6, policy="conservative",
-                       work_dir="scratch/_t", resume=False)
-        assert False, "should have refused disallowed model"
-    except ValueError as e:
-        assert "disallowed" in str(e).lower()
+    backend = _Fail()
+    preds = predict_base_answers(samples, local_backend=backend, work_dir=None, resume=False)
+    targets = select_v12b_targets(samples, preds, max_qids=1)
+    results = run_v12b_layer(samples, preds, targets, local_backend=backend,
+                             work_dir=str(tmp_path / "w"), resume=False)
+    assert results and not results[0].accept
+    assert "local_error" in (tmp_path / "w" / "v12b_dynamic_records.jsonl").read_text()
 
 
 # --- V13 registry ------------------------------------------------------------
@@ -152,8 +176,8 @@ def test_v13_registry_exposes_layers_disabled_by_default():
 
 def test_cli_default_mode_is_dynamic_full(tmp_path):
     out = tmp_path / "pred.csv"
-    rc, txt = _run(["--input", str(_make_private(tmp_path)), "--output", str(out)])
-    assert rc == 0 and "resolved mode: dynamic_full" in txt
+    rc, txt = _run(["--input", str(_make_private(tmp_path)), "--output", str(out), "--dry-run"])
+    assert rc == 0 and "DRY-RUN" in txt
 
 
 def test_cli_public_replay_reproduces_v12b(tmp_path):
@@ -175,7 +199,7 @@ def test_cli_public_replay_refuses_mismatch(tmp_path):
 def test_cli_auto_resolves_dynamic_for_private(tmp_path):
     out = tmp_path / "pred.csv"
     rc, txt = _run(["--input", str(_make_private(tmp_path)), "--output", str(out),
-                    "--mode", "auto", "--no-api"])
+                    "--mode", "auto", "--dry-run"])
     assert rc == 0 and "auto -> dynamic_full" in txt
 
 

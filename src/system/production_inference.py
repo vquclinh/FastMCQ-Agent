@@ -6,8 +6,7 @@ and a single JSON-repair retry. The base call goes through an injected ``client`
 a ``.chat(messages, ...) -> result.content`` interface — so this is fully testable
 with a fake client and makes NO network call by itself. No qid logic, no answer table.
 
-This is an ALTERNATIVE to the mature ``openrouter_graph`` solver, selected by the
-production runner's ``--direct-prompt`` flag; the graph solver remains the default.
+This is an injectable direct-prompt helper for local/fake clients.
 """
 
 from __future__ import annotations

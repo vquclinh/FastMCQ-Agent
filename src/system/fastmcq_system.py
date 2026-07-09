@@ -1,12 +1,11 @@
-"""FastMCQ dynamic system orchestrator (Phase 2L.36B).
+"""FastMCQ dynamic system orchestrator.
 
 The real production architecture: runs a full dynamic pipeline over ANY input (public, private,
 unseen, larger sets) and outputs predictions for EXACTLY the input qids. It never depends on
 public-test qids and never requires the public frozen CSV (that is only for public_replay).
 
-Pipeline: validate → dynamic base predictions → per-qid metadata → V12B target selection →
-V12B layer (official, API only under execute_api) → optional V13 registry (disabled by
-default, never applied here) → assemble + validate → write CSV.
+Pipeline: validate -> dynamic base predictions -> per-qid metadata -> V12B target selection ->
+V12B layer -> V13 layers -> system selector -> assemble + validate -> write CSV.
 """
 
 from __future__ import annotations
@@ -23,6 +22,7 @@ from src.base.dynamic_base_predictor import predict_base_answers, base_predictio
 from src.layers.v12b_dynamic_layer import select_v12b_targets, run_v12b_layer
 from src.layers.v13_dynamic_layer import select_v13_targets, run_v13_layer
 from src.selector.system_candidate_selector import select_system_overrides
+from src.local_model.local_qwen_backend import DEFAULT_MODEL_PATH, get_local_qwen_backend
 
 _GLOBAL_LABELS = set("ABCDEFGHIJK")
 
@@ -58,12 +58,11 @@ class FastMCQSystemConfig:
     system_policy: str = "conservative"
     max_overrides: int | None = None
     profile: str | None = None
-    model: str | None = None
-    budget_usd: float | None = None
-    execute_api: bool = False
-    # When set, controls the BASE predictor's API use independently of the V12B/V13 layers.
-    # None -> inherit execute_api. False -> base is deterministic/no-API even if layers use API.
-    base_execute_api: bool | None = None
+    model_path: str | None = DEFAULT_MODEL_PATH
+    device: str = "auto"
+    max_new_tokens: int = 64
+    layer_max_new_tokens: int = 768
+    local_backend: object | None = None
     work_dir: str = "scratch/fastmcq_run"
     resume: bool = False
 
@@ -123,28 +122,27 @@ def run_fastmcq_system(samples, output_csv, config: FastMCQSystemConfig) -> Fast
         raise ValueError("REFUSING: duplicate qids in input")
 
     wd = config.work_dir
-    # Base API use is independent of layer API use. None inherits execute_api.
-    base_api = config.execute_api if config.base_execute_api is None else config.base_execute_api
+    backend = config.local_backend or get_local_qwen_backend(
+        config.model_path, device=config.device, default_max_new_tokens=config.max_new_tokens)
     # max-qids display: 'auto' -> auto(<cap>/<N>); None -> all(<N>); an int -> the int.
     # (Never a hardcoded size — 'auto' caps derive from the input count: ceil(N/8), min 1.)
     v12b_cap = _fmt_cap(config.v12b_max_qids, config.v12b_max_qids_source, len(samples))
     v13_cap = _fmt_cap(config.v13_max_qids, config.v13_max_qids_source, len(samples))
     _log(f"[FASTMCQ] input_count={len(samples)} output={output_csv} work_dir={wd} "
          f"mode={config.mode} profile={config.profile or '-'} "
-         f"base_execute_api={base_api} layer_execute_api={config.execute_api} "
+         f"local_model={config.model_path or DEFAULT_MODEL_PATH} "
          f"v12b_max_qids={v12b_cap} v13_max_qids={v13_cap} "
          f"public_replay=disabled")
 
     try:
-        # 2) Dynamic base predictions (arbitrary qids; no public frozen CSV). Base API use is
-        # governed by base_api, separate from the V12B/V13 layer API gate.
+        # 2) Dynamic base predictions (arbitrary qids; no public frozen CSV).
         _write_progress(wd, "base_start", input_count=len(samples), output=str(output_csv),
-                        base_execute_api=base_api, layer_execute_api=config.execute_api)
+                        local_model=str(config.model_path or DEFAULT_MODEL_PATH))
         base = predict_base_answers(
-            samples, model=config.model, execute_api=base_api,
-            budget_usd=config.budget_usd, work_dir=config.work_dir, resume=config.resume)
+            samples, model_path=config.model_path, local_backend=backend,
+            max_new_tokens=config.max_new_tokens, work_dir=config.work_dir, resume=config.resume)
         _write_progress(wd, "base_done", base_predictions=len(base),
-                        base_api_calls=sum(1 for b in base if b.source == "dynamic_api"))
+                        base_local_model_calls=sum(1 for b in base if b.source == "dynamic_local_qwen"))
         answers = {}
         for bp, s in zip(base, samples):
             if not base_prediction_is_valid(bp, s):
@@ -159,30 +157,25 @@ def run_fastmcq_system(samples, output_csv, config: FastMCQSystemConfig) -> Fast
             v12b_targets = select_v12b_targets(samples, base, max_qids=config.v12b_max_qids)
             _write_progress(wd, "v12b_start", v12b_targets=len(v12b_targets))
             v12b_results = run_v12b_layer(
-                samples, base, v12b_targets, model=config.model, execute_api=config.execute_api,
-                budget_usd=config.budget_usd, permutations=config.v12b_permutations,
+                samples, base, v12b_targets, model_path=config.model_path, local_backend=backend,
+                max_new_tokens=config.layer_max_new_tokens, permutations=config.v12b_permutations,
                 policy=config.v12b_policy, work_dir=config.work_dir, resume=config.resume)
-            v12b_executed = config.execute_api and bool(v12b_targets)
+            v12b_executed = bool(v12b_targets)
             _write_progress(wd, "v12b_done", v12b_targets=len(v12b_targets),
                             v12b_results=len(v12b_results))
-            if not config.execute_api:
-                warnings.append("V12B enabled but no API: targets selected, 0 model overrides (skipped_no_api)")
 
-        # 6) V13 multi-layer (optional). Deterministic programmatic path may run offline;
-        # model-dependent layers are skipped_no_api without --execute-api.
+        # 6) V13 multi-layer.
         v13_targets, v13_results, v13_executed = [], [], False
         if config.enable_v13:
             v13_targets = select_v13_targets(samples, base, max_qids=config.v13_max_qids)
             _write_progress(wd, "v13_start", v13_targets=len(v13_targets))
             v13_results = run_v13_layer(
-                samples, base, v13_targets, model=config.model, execute_api=config.execute_api,
-                budget_usd=config.budget_usd, work_dir=config.work_dir, resume=config.resume)
-            v13_executed = config.execute_api and bool(v13_targets)
+                samples, base, v13_targets, model_path=config.model_path, local_backend=backend,
+                max_new_tokens=config.layer_max_new_tokens,
+                work_dir=config.work_dir, resume=config.resume)
+            v13_executed = bool(v13_targets)
             _write_progress(wd, "v13_done", v13_targets=len(v13_targets),
                             v13_results=len(v13_results))
-            if not config.execute_api:
-                warnings.append("V13 enabled: model layers skipped_no_api; deterministic "
-                                "programmatic path may apply")
 
         # 7) Unified conservative selector over V12B + V13, on top of base predictions.
         decisions = select_system_overrides(

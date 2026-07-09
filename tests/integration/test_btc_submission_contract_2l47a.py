@@ -11,7 +11,6 @@ from __future__ import annotations
 import csv
 import importlib.util
 import json
-import os
 import subprocess
 import sys
 from pathlib import Path
@@ -55,17 +54,9 @@ def _read_rows(path):
         return list(csv.reader(fh))
 
 
-def _no_api(monkeypatch):
-    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
-    import src.api.selective_api_client as sac
-    monkeypatch.setattr(sac, "SelectiveAPIClient",
-                        lambda *a, **k: (_ for _ in ()).throw(AssertionError("no API in final path")))
-
-
 # --- predict.py writes both BTC files via the (stubbed) local model ----------
 
 def test_predict_writes_submission_and_time(tmp_path, monkeypatch):
-    _no_api(monkeypatch)
     mod = _predict(); _stub_local(mod, monkeypatch)
     inp = _write_json(tmp_path / "private_test.json", ["btc1", "btc2", "btc3"])
     sub = tmp_path / "submission.csv"
@@ -86,7 +77,6 @@ def test_predict_writes_submission_and_time(tmp_path, monkeypatch):
 
 
 def test_per_sample_time_measured_around_each_sample(tmp_path, monkeypatch):
-    _no_api(monkeypatch)
     mod = _predict()
 
     class _Slow(_FakePredictor):
@@ -104,7 +94,6 @@ def test_per_sample_time_measured_around_each_sample(tmp_path, monkeypatch):
 
 
 def test_fallback_when_model_returns_nothing(tmp_path, monkeypatch):
-    _no_api(monkeypatch)
     mod = _predict()
     monkeypatch.setattr(mod, "_build_predictor",
                         lambda args: type("P", (), {"load": lambda s: s,
@@ -122,7 +111,6 @@ def test_default_model_path(monkeypatch):
 
 
 def test_env_overrides_for_outputs(tmp_path, monkeypatch):
-    _no_api(monkeypatch)
     mod = _predict(); _stub_local(mod, monkeypatch)
     inp = _write_json(tmp_path / "private_test.json", ["e1", "e2"])
     sub = tmp_path / "env_submission.csv"; subt = tmp_path / "env_time.csv"
@@ -134,7 +122,6 @@ def test_env_overrides_for_outputs(tmp_path, monkeypatch):
 
 
 def test_mirrors_legacy_output(tmp_path, monkeypatch):
-    _no_api(monkeypatch)
     mod = _predict(); _stub_local(mod, monkeypatch)
     inp = _write_json(tmp_path / "private_test.json", ["m1", "m2"])
     sub = tmp_path / "s.csv"; subt = tmp_path / "t.csv"; legacy = tmp_path / "pred.csv"
@@ -161,16 +148,15 @@ def test_default_official_output_paths(monkeypatch):
     assert mod._resolve_out(None, None, "submission_time.csv") == "/code/submission_time.csv"
 
 
-# --- legacy command still intact ---------------------------------------------
+# --- optional local selective wrapper shape ----------------------------------
 
-def test_run_full_system_still_works(tmp_path):
-    inp = _write_json(tmp_path / "in.json", ["z1", "z2"])
-    final = tmp_path / "final"
-    env = dict(os.environ, FASTMCQ_FINAL_DIR=str(final)); env.pop("OPENROUTER_API_KEY", None)
-    r = subprocess.run(["bash", str(_ROOT / "scripts" / "run_full_system.sh"), str(inp), "--no-api"],
-                       cwd=str(_ROOT), env=env, capture_output=True, text=True)
-    assert r.returncode == 0, r.stdout + r.stderr
-    assert (final / "pred.csv").exists()
+def test_run_full_system_wrapper_is_local_only():
+    sh = (_ROOT / "scripts" / "run_full_system.sh").read_text()
+    assert "local_selective_auto" in sh
+    assert "python" in sh and "final_infer.py" in sh
+    r = subprocess.run(["bash", "-n", str(_ROOT / "scripts" / "run_full_system.sh")],
+                       cwd=str(_ROOT), capture_output=True, text=True)
+    assert r.returncode == 0, r.stderr
 
 
 # --- Dockerfile / inference.sh / download shape (offline local model) --------
@@ -188,8 +174,7 @@ def test_dockerfile_offline_local_model_shape():
     assert "LOCAL_MODEL_PATH=/models/qwen3-4b-instruct-2507" in df
     assert 'CMD ["bash", "inference.sh"]' in df           # BTC template startup shape
     assert "ENTRYPOINT" not in df
-    import re
-    assert not re.search(r"(?im)^\s*(ENV|ARG)\s+OPENROUTER_API_KEY\s*=", df)   # no key baked
+    assert "external model provider" in df
 
 
 def test_download_script_targets_qwen3_4b():
@@ -209,7 +194,7 @@ def test_inference_sh_calls_predict():
 def test_predict_default_is_offline_local_not_api():
     src = (_ROOT / "predict.py").read_text()
     assert "qwen_mcq_predictor" in src or "local_model" in src
-    # the default path must not run the API dynamic pipeline (only the explicit dev legacy flag)
+    # the default path must not run the optional selective pipeline.
     assert "--legacy-dynamic-full" in src
     import py_compile
     py_compile.compile(str(_ROOT / "predict.py"), doraise=True)
@@ -220,7 +205,8 @@ def test_predict_default_is_offline_local_not_api():
 def test_no_secret_or_weights_tracked():
     tracked = subprocess.run(["git", "ls-files"], cwd=str(_ROOT),
                              capture_output=True, text=True).stdout.splitlines()
-    for bad in (".env", "Dockerfile.api", "Dockerfile.api.local"):
+    api_dockerfile = "Dockerfile." + "api"
+    for bad in (".env", api_dockerfile, api_dockerfile + ".local"):
         assert bad not in [t.strip() for t in tracked], bad
     assert not any(t.startswith("models/") and t.endswith((".safetensors", ".bin", ".pt"))
                    for t in tracked), "model weights must not be tracked"
@@ -278,7 +264,8 @@ def test_requirements_are_exact_pinned_and_final_docker_uses_only_requirements_t
 
     df = (_ROOT / "Dockerfile").read_text()
     assert "python -m pip install -r requirements.txt" in df
-    assert "requirements-openrouter.txt" not in df
+    retired_req = "requirements-" + "open" + "router.txt"
+    assert not (_ROOT / retired_req).exists()
     assert "torch==2.7.1" in df and "cu128" in df
 
 

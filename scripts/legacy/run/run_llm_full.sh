@@ -5,7 +5,7 @@
 #   SCORE_MODE: label_only | label_plus_choice | choice_only  (default: label_plus_choice)
 set -euo pipefail
 
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/../../.."
 
 MODEL_PATH="${1:-}"
 SCORE_MODE="${2:-label_plus_choice}"

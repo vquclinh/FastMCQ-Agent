@@ -1,7 +1,7 @@
 """CLI-integration tests for the V12B permutation scripts (Phase 2L.34B, updated in 2L.34C).
 
 Core permutation/mapping/voting logic is unit-tested in test_mcq_permutation_debiaser_2l34c.py.
-These tests exercise the thin CLI wrappers: dry-run (no API), the selector wrapper + output
+These tests exercise the selector wrapper + output
 protection + CSV validation, and the plan ranking.
 """
 
@@ -31,30 +31,6 @@ def _load(script):
 
 def _md5(p):
     return hashlib.md5(Path(p).read_bytes()).hexdigest()
-
-
-# --- runner dry-run (no API) -------------------------------------------------
-
-def test_verifier_dry_run_no_api(monkeypatch):
-    import src.api.selective_api_client as sac
-    monkeypatch.setattr(sac, "SelectiveAPIClient",
-                        lambda *a, **k: (_ for _ in ()).throw(AssertionError("no API in dry-run")))
-    run = _load("run_v12b_option_permutation")
-    d = tempfile.mkdtemp()
-    sbq = {"q1": {"qid": "q1", "question": "x", "choices": ["a", "b", "c", "d"]}}
-    summary = run.run(sbq, [{"qid": "q1"}], work_dir=d, model="qwen/qwen3.5-9b-20260310",
-                      max_qids=10, permutations=6, budget_usd=0.5, execute=False, dry_run=True)
-    assert summary["mode"] == "dry_run" and summary["model_calls_made"] == 0
-    recs = [json.loads(l) for l in Path(summary["records"]).read_text().splitlines()]
-    assert recs and all(r["parse_status"] == "dry_run" and r["valid"] is False for r in recs)
-
-
-def test_verifier_builds_uses_core_module():
-    run = _load("run_v12b_option_permutation")
-    # The runner imports the core module functions (thin wrapper, no duplicated logic).
-    src = (next(iter((_ROOT / "scripts" / "legacy").glob("**/run_v12b_option_permutation.py")))).read_text()
-    assert "from src.layers.mcq_permutation_debiaser import" in src
-    assert "def make_permutations" not in src and "def map_back" not in src
 
 
 # --- selector wrapper + protection -------------------------------------------

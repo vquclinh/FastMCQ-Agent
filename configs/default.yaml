@@ -4,7 +4,7 @@
 # The default solver is the dependency-free baseline so the container always
 # produces a valid submission out of the box.
 
-# Which solver to use: always_a | hf_generate | hf_option_score
+# Which solver to use: always_a | hf_generate | hf_option_score | adaptive_agent
 solver: always_a
 
 # Competition I/O contract (the harness mounts these paths).
@@ -39,8 +39,8 @@ hf:
 
   # --- adaptive_agent settings (used only when solver = adaptive_agent) ------
   # Minimal Viable Agent v1: deterministic profile/route/compress + option-score
-  # backbone + margin confidence + simple fallback. Advanced methods are GATED
-  # OFF; turning one on raises NotImplementedError (see docs/ARCHITECTURE.md §14).
+  # backbone + margin confidence + simple fallback. Advanced methods are gated
+  # off; turning one on raises NotImplementedError.
   adaptive:
     primary_score_mode: label_plus_choice     # backbone score mode
     alternate_score_modes: [label_only, choice_only]   # fallback score modes
@@ -56,74 +56,6 @@ hf:
     compress_long_context: true
     log_agent_trace: true            # write the rich per-sample JSONL trace
     allow_tier2_ambiguous: false     # keep Tier 2 off by default
-
-# --- OpenRouter graph solver (Round 1) ---------------------------------------
-# Used only when solver = openrouter_graph. Requires OPENROUTER_API_KEY (env or a
-# git-ignored .env); the key is never logged/committed. Default model is the
-# competition-approved Qwen3.5 (<= 9B). No OpenAI/Gemini/Claude direct APIs.
-openrouter:
-  model: "qwen/qwen3.5-9b"
-  temperature: 0.0
-  top_p: 1.0
-  max_tokens: 512
-  timeout_sec: 60
-  max_retries: 3
-  structured_output: true
-  # Reasoning controls for reasoning-capable models. qwen3.5-9b reasons BY
-  # DEFAULT; omitting the reasoning key makes it eat the whole budget and return
-  # EMPTY content (Phase 2K.1/2K.2, verified). CORRECTNESS-FIRST fix: we send
-  # reasoning.enabled EXPLICITLY. Default false => {"enabled": false} => reasoning
-  # OFF => non-empty valid JSON for every sample, fast. Set true only with a LARGE
-  # max_tokens (the provider ignores reasoning.max_tokens). See docs/OPENROUTER_ROUND1_STRATEGY.md.
-  reasoning_enabled: false         # false => send {"enabled": false} (reasoning OFF)
-  reasoning_effort: null           # null | "low" | "medium" | "high" (when enabled)
-  reasoning_max_tokens: null       # cap reasoning tokens (when enabled; provider may ignore)
-  reasoning_exclude: true          # drop reasoning text from the response (when enabled)
-  enable_verifier: true            # deterministic/structural check (NOT an extra API call)
-  enable_repair: true              # one extra call ONLY when needed (see below)
-  repair_only_on_invalid: true     # default fast path: repair only if no valid label
-  enable_self_consistency: false   # gated: only low-confidence samples, off by default
-  self_consistency_k: 3
-  # API-call budget per sample (speed): normal path = 1 call; with a repair = 2.
-  max_api_calls_per_sample_default: 1
-  max_api_calls_per_sample_with_repair: 2
-  max_samples_for_smoke: 3
-  # Deterministic calculation helper (PAL-lite) for the calculation route. When a
-  # high-confidence closed-form family matches (decay/Hess/cylinder/elasticity/
-  # expectation/resistor), use its label and SKIP the LLM call. Conservative:
-  # overrides only at confidence >= calc_min_confidence; otherwise the LLM answers.
-  calc_enabled: true
-  calc_override_when_safe: true
-  calc_min_confidence: 0.95
-  # In-question evidence reranking for the long_context route. Reranks evidence
-  # ALREADY inside the question (no web retrieval); fights long-context noise /
-  # lost-in-the-middle. Default method is dependency-free hybrid lexical. Optional
-  # local embedding/reranker model paths fail closed to lexical if unavailable.
-  evidence_reranker:
-    enabled: true
-    apply_routes: ["long_context"]
-    method: "hybrid_lexical"        # hybrid_lexical | embedding | reranker
-    optional_embedding_model: null  # local path only; never downloaded
-    optional_reranker_model: null   # local path only; never downloaded
-    candidate_top_k: 12             # stage-1 lexical candidates fed to neural rerank
-    top_k: 4
-    max_chars: 4500
-    include_global_context: true
-    global_context_chars: 800
-    neural_fallback_to_lexical: true  # if neural backend unavailable/errors -> lexical
-    neural_batch_size: 8              # batch size for neural reranker scoring (OOM auto-shrinks)
-  # Selective second-pass MCQ verifier + option elimination. OFF by default so v1/v2
-  # behavior is unchanged. When enabled it makes ONE extra call on hard/uncertain
-  # cases only, and never overrides a deterministic calculation answer.
-  mcq_verifier:
-    enabled: false
-    apply_routes: ["long_context", "ambiguous", "law_admin", "safety_ethics"]
-    min_confidence_to_override: 0.80
-    trigger_below_confidence: 0.70
-    trigger_on_partial_parse: true
-    trigger_on_repair: true
-    trigger_on_reranked_long_context: true
-    max_extra_calls_per_sample: 1
 
 # --- Prompt / runtime placeholders (informational) ---------------------------
 prompt:

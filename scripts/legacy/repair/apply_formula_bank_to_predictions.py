@@ -3,7 +3,7 @@
 
 Starts from a base prediction and overrides an answer ONLY when a formula-bank rule
 matches safely and uniquely and changes the answer. No qid lists, no external sheet,
-no OpenRouter. Refuses to write protected files. If changes exceed
+no remote provider. Refuses to write protected files. If changes exceed
 ``--max-expected-changes`` it writes the diff for review and exits non-zero unless
 ``--allow-more-changes`` is set.
 

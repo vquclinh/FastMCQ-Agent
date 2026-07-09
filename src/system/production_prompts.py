@@ -3,9 +3,7 @@
 Pure functions that build strict-JSON MCQ prompts tailored to each route, plus a
 compact JSON repair prompt. No network, no qid logic, no answer tables. Every prompt
 instructs the model to return ONLY a JSON object with an answer key (one of the
-sample's labels) and a confidence in [0,1]. These are additive: the existing
-``openrouter_graph`` solver keeps its own prompts; this module is used by the
-production path / direct-call path when route-aware prompting is enabled.
+sample's labels) and a confidence in [0,1].
 """
 
 from __future__ import annotations

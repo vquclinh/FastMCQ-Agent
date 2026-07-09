@@ -8,7 +8,7 @@
 # the model loads and produces a valid submission before committing to a full run.
 set -euo pipefail
 
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/../../.."
 
 MODEL_PATH="${1:-}"
 SCORE_MODE="${2:-label_plus_choice}"
@@ -25,7 +25,7 @@ fi
 PY=$(command -v python || command -v python3)
 
 echo ">> REMINDER: confirm the model is allowed first:"
-echo "     $PY scripts/check_model_compliance.py --model-path \"$MODEL_PATH\""
+echo "     $PY scripts/legacy/checks/check_model_compliance.py --model-path \"$MODEL_PATH\""
 echo
 
 CMD=("$PY" run.py

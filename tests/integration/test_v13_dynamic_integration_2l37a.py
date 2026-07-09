@@ -42,8 +42,30 @@ _MULTI = {"qid": "m1", "question": "Chọn phát biểu đúng về CSDL.",
 
 
 def _base(samples):
-    return predict_base_answers(samples, model=None, execute_api=False, budget_usd=None,
+    return predict_base_answers(samples, local_backend=_FakeLocalBackend(),
                                 work_dir=None, resume=False)
+
+
+class _FakeLocalBackend:
+    def __init__(self):
+        self.generate_calls = 0
+
+    def predict_mcq(self, item, *, max_new_tokens=None):
+        return "B" if "2 + 2" in str(item.get("question", "")) else "A"
+
+    def generate_text(self, messages, *, max_new_tokens=None, temperature=0.0):
+        self.generate_calls += 1
+        text = "\n".join(m.get("content", "") for m in messages) if isinstance(messages, list) else str(messages)
+        if "ANSWER CONTENT" in text:
+            return json.dumps({"answer_content": "y", "answer_type": "term",
+                               "numeric_value": None, "evidence": "fake", "confidence": 0.8})
+        return json.dumps({"constraints": ["fake"],
+                           "option_evaluations": [{"label": "A", "passes_constraints": [False],
+                                                    "eliminated": True},
+                                                   {"label": "B", "passes_constraints": [True],
+                                                    "eliminated": False}],
+                           "final_survivor_label": "B", "confidence": 0.8,
+                           "contradiction_check": True})
 
 
 # --- target selection (feature-based) ----------------------------------------
@@ -71,25 +93,26 @@ def test_targets_feature_based_not_qid():
     assert not re.search(r"\b(test_\d{4}|private_\w+)\b", src)
 
 
-# --- no-api behavior ---------------------------------------------------------
+# --- local behavior ----------------------------------------------------------
 
-def test_v13_no_api_skips_model_layers():
+def test_v13_local_model_layers_run(tmp_path):
     s = [_MULTI]
     targets = select_v13_targets(s, _base(s), max_qids=None)
-    res = run_v13_layer(s, _base(s), targets, model=None, execute_api=False,
-                        budget_usd=None, work_dir="scratch/_t13", resume=False)
-    # multi-condition -> least_to_most + content_first model layers must be skipped_no_api
-    assert res and any(r.reason == "skipped_no_api" for r in res)
-    assert all(not r.accept for r in res if r.reason == "skipped_no_api")
+    backend = _FakeLocalBackend()
+    res = run_v13_layer(s, _base(s), targets, local_backend=backend,
+                        work_dir=str(tmp_path / "v13"), resume=False)
+    assert res and backend.generate_calls > 0
+    assert any(r.layer in {"content_first", "least_to_most"} for r in res)
 
 
-def test_v13_deterministic_programmatic_runs_without_api():
+def test_v13_deterministic_programmatic_runs_locally(tmp_path):
     s = [_NUMERIC]
     targets = select_v13_targets(s, _base(s), max_qids=None)
-    res = run_v13_layer(s, _base(s), targets, model=None, execute_api=False,
-                        budget_usd=None, work_dir="scratch/_t13", resume=False)
+    res = run_v13_layer(s, _base(s), targets, local_backend=_FakeLocalBackend(),
+                        work_dir=str(tmp_path / "v13"), resume=False)
     prog = [r for r in res if r.layer == "programmatic_solver"]
-    assert prog and prog[0].accept and prog[0].proposed_answer == "B"   # 2+2=4 -> option B
+    assert prog and prog[0].proposed_answer == "B"   # 2+2=4 -> option B
+    assert prog[0].confidence == 1.0 and prog[0].reason == "deterministic_matches_current"
 
 
 # --- system selector ---------------------------------------------------------
@@ -145,16 +168,16 @@ def test_selector_rejects_invalid_label():
 def test_dynamic_full_v13_disabled_matches_36b(tmp_path):
     s = [_NUMERIC, _MULTI]
     out = tmp_path / "pred.csv"
-    rep = run_fastmcq_system(s, str(out), FastMCQSystemConfig(enable_v13=False, execute_api=False,
-                                                             work_dir=str(tmp_path / "w")))
+    rep = run_fastmcq_system(s, str(out), FastMCQSystemConfig(
+        enable_v13=False, local_backend=_FakeLocalBackend(), work_dir=str(tmp_path / "w")))
     assert rep.v13_targets == 0 and rep.v13_overrides == 0 and rep.output_count == 2
 
 
 def test_dynamic_full_v13_enabled_outputs_exact_qids(tmp_path):
     s = [_NUMERIC, _MULTI, _PROVERB]
     out = tmp_path / "pred.csv"
-    rep = run_fastmcq_system(s, str(out), FastMCQSystemConfig(enable_v13=True, execute_api=False,
-                                                             work_dir=str(tmp_path / "w")))
+    rep = run_fastmcq_system(s, str(out), FastMCQSystemConfig(
+        enable_v13=True, local_backend=_FakeLocalBackend(), work_dir=str(tmp_path / "w")))
     rows = [l.split(",")[0] for l in out.read_text().splitlines()[1:]]
     assert rows == ["n1", "m1", "p1"] and rep.v13_enabled and rep.output_count == 3
 
@@ -172,7 +195,7 @@ def test_cli_supports_v13_flags(tmp_path):
     out = tmp_path / "pred.csv"
     mod = _final_infer()
     rc = mod.main(["--input", str(s), "--output", str(out), "--mode", "dynamic_full",
-                   "--no-api", "--enable-v13", "--v13-max-qids", "5",
+                   "--enable-v13", "--v13-max-qids", "5", "--dry-run",
                    "--system-policy", "conservative", "--max-overrides", "10"])
     assert rc == 0
 

@@ -4,7 +4,7 @@
 Starts from v7 and applies generalized concept rules (`src/concept_solver.py`) and
 the deterministic calculation candidate (`src/programmatic_solver.py`), overriding an
 answer ONLY when a rule matches safely and uniquely and changes the answer. No qid
-lists, no external sheet, no OpenRouter.
+lists, no external sheet, no remote provider.
 
 Safety: if the number of changes exceeds ``--max-expected-changes`` (default 2), the
 script STOPS — it writes the diff for review but does NOT write the v8 prediction —

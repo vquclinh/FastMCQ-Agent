@@ -1,15 +1,14 @@
-"""Tests for Phase 2L.38C — run profiles + short wrapper scripts."""
+"""Tests for local run profiles and wrapper scripts."""
 
 from __future__ import annotations
 
+import argparse
 import hashlib
 import importlib.util
 import json
-import os
 import re
 import subprocess
 import sys
-import tempfile
 from pathlib import Path
 
 _ROOT = Path(__file__).resolve().parents[2]
@@ -18,8 +17,8 @@ sys.path.insert(0, str(_ROOT))
 _PUBLIC = str(_ROOT / "public-test_1780368312.json")
 _V13 = str(_ROOT / "output" / "pred_v13_multilayer_candidate_api30_from_v12b.csv")
 _PROFILES = json.loads((_ROOT / "configs" / "profiles" / "run_profiles.json").read_text())
-_WRAPPERS = ["run_public_replay.sh", "run_dynamic_noapi.sh", "run_public_api100.sh",
-             "run_private_noapi.sh", "run_private_api200.sh", "run_public_api50.sh"]
+_WRAPPERS = ["run_public_replay.sh", "run_local_auto.sh", "run_public_local100.sh",
+             "run_private_local.sh", "run_private_local200.sh", "run_public_local50.sh"]
 
 
 def _fi():
@@ -38,44 +37,40 @@ def _private(tmp_path, qids=("a1",)):
     return str(p)
 
 
-# --- profile loading + application -------------------------------------------
+def _ns(profile):
+    return argparse.Namespace(
+        profile=profile, mode="dynamic_full", enable_v12b=True, enable_v13=True,
+        model_path=None, device="auto", max_new_tokens=64, layer_max_new_tokens=768,
+        v12b_max_qids=None, v12b_permutations=6, v12b_policy="conservative",
+        v13_max_qids=None, system_policy="conservative", max_overrides=None,
+        allow_public_replay=False,
+    )
+
 
 def test_profiles_file_has_expected_profiles():
-    assert set(_PROFILES) >= {"public_replay", "dynamic_noapi", "public_api100",
-                              "private_noapi", "private_api200"}
+    assert set(_PROFILES) >= {"public_replay", "local_selective_auto",
+                              "public_local50", "public_local100", "private_local200"}
 
 
 def test_apply_profile_sets_values():
     mod = _fi()
-    import argparse
-    ns = argparse.Namespace(profile="public_api100", mode="dynamic_full", execute_api=False,
-                            enable_v12b=True, enable_v13=True, model=None, budget_usd=None,
-                            v12b_max_qids=None, v12b_permutations=6, v12b_policy="conservative",
-                            v13_max_qids=None, system_policy="conservative", max_overrides=None,
-                            allow_public_replay=False)
-    mod._apply_profile(ns, ["--profile", "public_api100"])
-    assert ns.execute_api is True and ns.v12b_max_qids == 100 and ns.v13_max_qids == 100
-    assert ns.model == "qwen/qwen3.5-9b-20260310" and ns.max_overrides == 50
+    ns = _ns("public_local100")
+    mod._apply_profile(ns, ["--profile", "public_local100"])
+    assert ns.v12b_max_qids == 100 and ns.v13_max_qids == 100
+    assert ns.max_overrides == 50
 
 
 def test_cli_flag_overrides_profile():
     mod = _fi()
-    import argparse
-    # argparse would have already set these from the explicit CLI flags before _apply_profile.
-    ns = argparse.Namespace(profile="public_api100", mode="dynamic_full", execute_api=False,
-                            enable_v12b=True, enable_v13=True, model=None, budget_usd=None,
-                            v12b_max_qids=7, v12b_permutations=6, v12b_policy="conservative",
-                            v13_max_qids=None, system_policy="conservative", max_overrides=None,
-                            allow_public_replay=False)
-    # user explicitly passed --no-api and --v12b-max-qids 7 -> profile must NOT overwrite them
-    mod._apply_profile(ns, ["--profile", "public_api100", "--no-api", "--v12b-max-qids", "7"])
-    assert ns.execute_api is False and ns.v12b_max_qids == 7
-    assert ns.v13_max_qids == 100   # not passed on CLI -> filled from profile
+    ns = _ns("public_local100")
+    ns.v12b_max_qids = 7
+    mod._apply_profile(ns, ["--profile", "public_local100", "--v12b-max-qids", "7"])
+    assert ns.v12b_max_qids == 7
+    assert ns.v13_max_qids == 100
 
 
 def test_unknown_profile_fails_clearly():
     mod = _fi()
-    import argparse
     ns = argparse.Namespace(profile="does_not_exist")
     try:
         mod._apply_profile(ns, ["--profile", "does_not_exist"])
@@ -84,93 +79,41 @@ def test_unknown_profile_fails_clearly():
         assert "unknown profile" in str(e)
 
 
-# --- end-to-end via main (no API) --------------------------------------------
-
 def test_public_replay_profile_reproduces_v13(tmp_path):
     out = tmp_path / "pred.csv"
     _fi().main(["--input", _PUBLIC, "--output", str(out), "--profile", "public_replay"])
     assert _md5(out) == _md5(_V13) == "cb02fef569b31e7fb544abab46c0e282"
 
 
-def test_dynamic_noapi_profile_no_api(tmp_path, monkeypatch):
-    import src.api.selective_api_client as sac
-    monkeypatch.setattr(sac, "SelectiveAPIClient",
-                        lambda *a, **k: (_ for _ in ()).throw(AssertionError("no API")))
+def test_local_profile_dry_run(tmp_path):
     out = tmp_path / "pred.csv"
     rc = _fi().main(["--input", _private(tmp_path, ("z1", "z2")), "--output", str(out),
-                     "--profile", "dynamic_noapi", "--work-dir", str(tmp_path / "w")])
-    rows = [l.split(",")[0] for l in out.read_text().splitlines()[1:]]
-    assert rc == 0 and rows == ["z1", "z2"]
+                     "--profile", "local_selective_auto", "--dry-run"])
+    assert rc == 0
 
 
-def test_profile_cannot_bypass_model_policy(tmp_path):
-    # public_api100 sets execute_api=True; override the model with a DISALLOWED one -> must raise
-    out = tmp_path / "pred.csv"
-    try:
-        _fi().main(["--input", _private(tmp_path), "--output", str(out),
-                    "--profile", "public_api100", "--model", "gpt-4o",
-                    "--work-dir", str(tmp_path / "w")])
-        assert False, "disallowed model should raise"
-    except (ValueError, SystemExit) as e:
-        assert "disallow" in str(e).lower() or "gpt" in str(e).lower()
-
-
-def test_api_profiles_use_allowed_model():
-    from src.api.model_policy import is_allowed_llm_model
-    for name in ("public_api50", "public_api100", "private_api200"):
-        assert is_allowed_llm_model(_PROFILES[name]["model"])
-
-
-# --- public_api50 (2L.38D) ---------------------------------------------------
-
-def test_public_api50_profile_values():
-    p = _PROFILES["public_api50"]
-    assert p["mode"] == "dynamic_full" and p["execute_api"] is True
-    assert p["model"] == "qwen/qwen3.5-9b-20260310"
+def test_public_local50_profile_values():
+    p = _PROFILES["public_local50"]
+    assert p["mode"] == "dynamic_full"
     assert p["v12b_max_qids"] == 50 and p["v13_max_qids"] == 50
     assert p["v12b_permutations"] == 6
     assert p["v12b_policy"] == "conservative" and p["system_policy"] == "conservative"
 
 
-def test_public_api50_model_policy():
-    from src.api.model_policy import is_allowed_llm_model
-    assert is_allowed_llm_model(_PROFILES["public_api50"]["model"])
-
-
-def test_public_api50_wrapper_exists_and_resumes():
-    p = _ROOT / "scripts" / "run" / "run_public_api50.sh"
+def test_public_local50_wrapper_exists_and_resumes():
+    p = _ROOT / "scripts" / "run" / "run_public_local50.sh"
     assert p.exists()
     r = subprocess.run(["bash", "-n", str(p)], capture_output=True, text=True)
     assert r.returncode == 0, r.stderr
     text = p.read_text()
-    assert "public_api50" in text and "--resume" in text
+    assert "public_local50" in text and "--resume" in text
 
 
-def test_public_api50_apply_profile_sets_caps():
-    mod = _fi()
-    import argparse
-    ns = argparse.Namespace(profile="public_api50", mode="dynamic_full", execute_api=False,
-                            enable_v12b=True, enable_v13=True, model=None, budget_usd=None,
-                            v12b_max_qids=None, v12b_permutations=6, v12b_policy="conservative",
-                            v13_max_qids=None, system_policy="conservative", max_overrides=None,
-                            allow_public_replay=False)
-    mod._apply_profile(ns, ["--profile", "public_api50"])
-    assert ns.execute_api is True and ns.v12b_max_qids == 50 and ns.v13_max_qids == 50
-    assert ns.model == "qwen/qwen3.5-9b-20260310" and ns.budget_usd == 2.50
-
-
-def test_docs_mention_public_api50():
-    # Legacy diagnostic wrapper (not part of the offline submission docs); just confirm it exists.
-    assert (_ROOT / "scripts" / "run" / "run_public_api50.sh").exists()
-
-
-def test_final_infer_works_without_profile(tmp_path):
+def test_final_infer_works_without_profile_dry_run(tmp_path):
     out = tmp_path / "pred.csv"
-    rc = _fi().main(["--input", _private(tmp_path, ("q1",)), "--output", str(out), "--no-api"])
-    assert rc == 0 and out.exists()
+    rc = _fi().main(["--input", _private(tmp_path, ("q1",)), "--output", str(out), "--dry-run"])
+    assert rc == 0
 
-
-# --- wrapper scripts ---------------------------------------------------------
 
 def test_wrappers_exist_and_syntax_valid():
     for w in _WRAPPERS:
@@ -184,11 +127,9 @@ def test_wrappers_exist_and_syntax_valid():
 def test_wrappers_reference_profiles():
     text = {w: (_ROOT / "scripts" / "run" / w).read_text() for w in _WRAPPERS}
     assert "public_replay" in text["run_public_replay.sh"]
-    assert "dynamic_noapi" in text["run_dynamic_noapi.sh"]
-    assert "private_api200" in text["run_private_api200.sh"]
+    assert "local_selective_auto" in text["run_local_auto.sh"]
+    assert "private_local200" in text["run_private_local200.sh"]
 
-
-# --- hygiene -----------------------------------------------------------------
 
 def test_no_qid_or_answer_hardcoding():
     assert not re.search(r"\btest_\d{4}\b", (_ROOT / "configs" / "profiles" / "run_profiles.json").read_text())

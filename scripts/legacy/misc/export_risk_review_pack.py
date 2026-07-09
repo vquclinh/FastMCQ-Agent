@@ -57,7 +57,7 @@ _PACK_FIELDS = [
     "v6_answer", "v6b_answer", "confidence", "calculation_matched",
     "calculation_method", "calculation_safe_to_override", "verifier_triggered",
     "verifier_override_applied", "parsed_answer_source", "parsed_answer_error",
-    "openrouter_completion_tokens", "evidence_reranker_effective_method",
+    "model_provider_completion_tokens", "evidence_reranker_effective_method",
     "evidence_reranker_cache_hit", "suspected_root_cause", "recommended_general_fix",
     "question", "choices",
 ]
@@ -129,7 +129,7 @@ def main(argv=None) -> int:
                      f"override_applied={r.get('verifier_override_applied')}")
         lines.append(f"- **Parse**: source={r.get('parsed_answer_source')}, "
                      f"error={r.get('parsed_answer_error') or '-'}, "
-                     f"completion_tokens={r.get('openrouter_completion_tokens')}")
+                     f"completion_tokens={r.get('model_provider_completion_tokens')}")
         if r.get("route") == "long_context":
             lines.append(f"- **Reranker**: method={r.get('evidence_reranker_effective_method')}, "
                          f"cache_hit={r.get('evidence_reranker_cache_hit')}")

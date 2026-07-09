@@ -5,7 +5,7 @@
 # Usage: bash scripts/run_local.sh [INPUT] [OUTPUT]
 set -euo pipefail
 
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/../../.."
 
 INPUT="${1:-public-test_1780368312.json}"
 OUTPUT="${2:-output/pred.csv}"

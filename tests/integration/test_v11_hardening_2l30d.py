@@ -1,4 +1,4 @@
-"""Tests for Phase 2L.30D: independent v11 run hardening (preflight/resume/finalize/guard/audit)."""
+"""Tests for Phase 2L.30D: independent v11 integrity-audit hardening."""
 
 from __future__ import annotations
 
@@ -13,133 +13,11 @@ from pathlib import Path
 _ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(_ROOT))
 
-from src.selector.candidate_answer import AnswerCandidate, CandidatePool  # noqa: E402
-
-
 def _load(name):
     spec = importlib.util.spec_from_file_location(name.replace(".py", "") + "_t",
                                                   next(iter((_ROOT / "scripts" / "legacy").glob(f"**/{name}")), _ROOT / "scripts" / name))
     mod = importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)
     return mod
-
-
-_RUN = _load("run_full_v11_independent_submission.py")
-_S3 = {"qid": "q1", "question": "Q?", "choices": ["Paris", "Lyon", "Nice"]}
-_S2 = {"qid": "q1", "question": "Q?", "choices": ["A", "B"]}
-
-
-# --- Part D: _finalize_decision ----------------------------------------------
-
-def test_finalize_last_resort_uses_sample_labels_only():
-    # fallback returns a label OUTSIDE the 2-option sample -> must NOT be used
-    dec = {"final_answer": None, "needs_direct_fallback": True}
-    out = _RUN._finalize_decision(dec, _S2, direct_fallback_fn=lambda: {"answer": "C", "parse_status": "ok"})
-    assert out["final_answer"] in ("A", "B")               # never "C"
-    assert out["final_source"] == "last_resort_valid_choice"
-
-
-def test_finalize_uses_pool_valid_label_before_last_resort():
-    pool = CandidatePool(qid="q1")
-    pool.add(AnswerCandidate("q1", "B", "api:option_elimination", risk_level="high", confidence=0.6))
-    dec = {"final_answer": None, "needs_direct_fallback": True}
-    out = _RUN._finalize_decision(dec, _S2, pool=pool,
-                                  direct_fallback_fn=lambda: {"answer": None, "parse_status": "no_json"})
-    assert out["final_answer"] == "B" and out["final_source"] == "pool_valid_label_repair"
-
-
-def test_finalize_never_returns_invalid_when_choices_exist():
-    for fb in ({"answer": None}, {"answer": "Z"}, {"answer": ""}):
-        out = _RUN._finalize_decision({"final_answer": None, "needs_direct_fallback": True}, _S3,
-                                      direct_fallback_fn=lambda: fb)
-        assert out["final_answer"] in ("A", "B", "C")
-
-
-def test_finalize_raises_when_no_choices():
-    try:
-        _RUN._finalize_decision({"final_answer": None, "qid": "qx"}, {"qid": "qx", "choices": []})
-        assert False
-    except SystemExit as e:
-        assert "usable choice" in str(e).lower()
-
-
-# --- Part B: preflight -------------------------------------------------------
-
-def test_preflight_catches_missing_qid():
-    try:
-        _RUN._preflight({"": {"choices": ["A", "B"]}})
-        assert False
-    except SystemExit as e:
-        assert "qid" in str(e).lower()
-
-
-def test_preflight_catches_no_choices():
-    try:
-        _RUN._preflight({"q1": {"qid": "q1", "choices": []}})
-        assert False
-    except SystemExit as e:
-        assert "choice" in str(e).lower()
-
-
-def test_preflight_ok():
-    out = _RUN._preflight({"q1": _S2})
-    assert out["q1"] == ["A", "B"]
-
-
-# --- Part C: resume scan -----------------------------------------------------
-
-def _write_decisions(d, rows):
-    wd = Path(d) / "scratch" / "wd"; wd.mkdir(parents=True, exist_ok=True)
-    with open(wd / "v11_independent_decisions.csv", "w", newline="") as fh:
-        w = csv.DictWriter(fh, fieldnames=["qid", "final_answer", "final_source",
-                                           "needs_direct_fallback"])
-        w.writeheader(); w.writerows(rows)
-    return wd
-
-
-def test_resume_does_not_treat_invalid_as_completed():
-    d = tempfile.mkdtemp()
-    samples = {"q1": _S2, "q2": _S2, "q3": _S2}
-    wd = _write_decisions(d, [
-        {"qid": "q1", "final_answer": "A", "final_source": "formula_bank", "needs_direct_fallback": ""},
-        {"qid": "q2", "final_answer": "", "final_source": "none", "needs_direct_fallback": ""},
-        {"qid": "q3", "final_answer": "A", "final_source": "needs_fallback", "needs_direct_fallback": "True"},
-    ])
-    completed, summary = _RUN._scan_resume_decisions(wd, samples)
-    assert set(completed) == {"q1"}            # q2 (None) and q3 (flagged) are NOT completed
-    assert summary["valid"] == 1 and summary["none_or_empty"] == 1 and summary["invalid"] == 1
-
-
-def test_resume_keeps_latest_valid_for_duplicate():
-    d = tempfile.mkdtemp()
-    samples = {"q1": _S2}
-    wd = _write_decisions(d, [
-        {"qid": "q1", "final_answer": "A", "final_source": "x", "needs_direct_fallback": ""},
-        {"qid": "q1", "final_answer": "B", "final_source": "y", "needs_direct_fallback": ""},
-    ])
-    completed, summary = _RUN._scan_resume_decisions(wd, samples)
-    assert completed["q1"]["final_answer"] == "B" and summary["duplicate"] == 1
-
-
-# --- Part E: pre-output write guard ------------------------------------------
-
-def test_output_guard_catches_missing_qid_and_writes_report():
-    d = tempfile.mkdtemp(); outdir = Path(d) / "scratch" / "wd"
-    samples = {"q1": _S2, "q2": _S2}
-    decisions = [{"qid": "q1", "final_answer": "A"}]      # q2 missing
-    try:
-        _RUN._assert_ready_for_output(decisions, samples, outdir, full_dataset=True)
-        assert False
-    except SystemExit as e:
-        assert "pre-output validation failed" in str(e)
-    rep = json.loads((outdir / "v11_independent_pre_output_failure_report.json").read_text())
-    assert rep["missing"] == ["q2"]
-
-
-def test_output_guard_passes_clean():
-    d = tempfile.mkdtemp(); outdir = Path(d) / "scratch" / "wd"
-    samples = {"q1": _S2, "q2": _S2}
-    decisions = [{"qid": "q1", "final_answer": "A"}, {"qid": "q2", "final_answer": "B"}]
-    assert _RUN._assert_ready_for_output(decisions, samples, outdir, full_dataset=True)
 
 
 # --- Part F: integrity audit -------------------------------------------------
@@ -196,6 +74,6 @@ def test_integrity_validates_good_submission_and_handles_missing():
 
 
 def test_no_qid_hardcoding():
-    for name in ("run_full_v11_independent_submission.py", "audit_v11_independent_integrity.py"):
+    for name in ("audit_v11_independent_integrity.py",):
         src = (next(iter((_ROOT / "scripts" / "legacy").glob(f"**/{name}")), _ROOT / "scripts" / name)).read_text()
         assert not re.search(r"\btest_\d{4}\b", src)

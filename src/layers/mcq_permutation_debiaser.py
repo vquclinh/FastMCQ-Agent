@@ -5,7 +5,7 @@ deterministic option permutations, maps a model's permuted-space choice back to 
 option label, validates records, tallies cross-permutation votes, and decides conservative /
 balanced overrides.
 
-This module makes **no** API/OpenRouter calls and constructs **no** client — the CLI scripts
+This module makes **no** provider calls and constructs **no** client — the CLI scripts
 own prompting and I/O. Nothing here uses ground truth or hardcodes qids/answers.
 """
 

@@ -1,17 +1,9 @@
-# v3a "selective verifier" config override (Phase 2L.5).
+# Selective verifier config override for local experiments.
 #
-# Use with: --config configs/verifier_selective.yaml  (plus the CLI flags in the
-# v3a command). It enables the MCQ verifier but turns OFF the broad
-# "reranked long-context" trigger, so the verifier runs ONLY on genuinely
-# uncertain cases (partial-parse / low-confidence / repair) — ~11 samples on the
-# v2 trace instead of ~102.
-#
-# Only the keys below are overridden; everything else (model, temperature,
-# calc solver, evidence reranker, etc.) falls back to the built-in defaults in
-# OpenRouterConfig, and the CLI still supplies --openrouter-max-tokens 1024 etc.
-openrouter:
-  mcq_verifier:
-    enabled: true
-    trigger_on_reranked_long_context: false
-    # other triggers keep their defaults: partial_parse=true, repair=true,
-    # trigger_below_confidence=0.70, min_confidence_to_override=0.80.
+# This enables verifier-style routing knobs only; model-backed proposals use the
+# shared local Qwen backend when the calling entrypoint supports them.
+local_verifier:
+  enabled: true
+  trigger_on_reranked_long_context: false
+  trigger_below_confidence: 0.70
+  min_confidence_to_override: 0.80

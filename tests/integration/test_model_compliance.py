@@ -25,13 +25,13 @@ def test_config_loads():
 
 
 def test_allowed_qwen_passes():
+    verdict, _ = evaluate("Qwen3-4B-Instruct", None, CONFIG)
+    assert verdict == "PASS"
+
+
+def test_oversized_or_other_qwen_warns():
     verdict, _ = evaluate("Qwen3.5-7B", None, CONFIG)
-    assert verdict == "PASS"
-
-
-def test_allowed_gemma_passes():
-    verdict, _ = evaluate("gemma-4-9b-it", None, CONFIG)
-    assert verdict == "PASS"
+    assert verdict == "WARNING"
 
 
 def test_embedding_family_passes():
@@ -56,7 +56,7 @@ def test_unknown_model_warns():
 
 
 def test_path_basename_is_checked():
-    verdict, _ = evaluate(None, "/models/Qwen3.5-7B-Instruct", CONFIG)
+    verdict, _ = evaluate(None, "/models/qwen3-4b-instruct-2507", CONFIG)
     assert verdict == "PASS"
 
 

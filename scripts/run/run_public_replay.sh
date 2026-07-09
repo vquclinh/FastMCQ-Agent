@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Reproduce the public-best V13 79.7 artifact (exact public qids only).
 # Usage: bash scripts/run_public_replay.sh <input_test_file> [extra final_infer flags...]
-# Profile: public_replay (see configs/run_profiles.json). CLI flags after the input override the profile.
+# Profile: public_replay (see configs/profiles/run_profiles.json). CLI flags after the input override the profile.
 set -euo pipefail
 
 INPUT="${1:?usage: bash scripts/run_public_replay.sh <input_test_file> [extra flags...]}"

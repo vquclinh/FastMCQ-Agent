@@ -199,7 +199,7 @@ def test_no_qid_hardcoding_v13():
     for name in ("programmatic_solver_layer", "content_first_answerer",
                  "least_to_most_constraint_solver"):
         assert not re.search(r"\btest_\d{4}\b", (next(iter((_ROOT / "src").glob(f"**/{name}.py")))).read_text()), name
-    for name in ("build_v13_multilayer_plan", "run_v13_multilayer_verifier",
+    for name in ("build_v13_multilayer_plan",
                  "build_v13_multilayer_candidate", "audit_v13_multilayer_candidate"):
         assert not re.search(r"\btest_\d{4}\b", (next(iter((_ROOT / "scripts" / "legacy").glob(f"**/{name}.py")), _ROOT / "scripts" / f"{name}.py")).read_text()), name
 
@@ -209,5 +209,5 @@ def test_core_modules_have_no_api_dependency():
                  "least_to_most_constraint_solver"):
         code = "\n".join(ln for ln in (next(iter((_ROOT / "src").glob(f"**/{name}.py")))).read_text().splitlines()
                          if not ln.lstrip().startswith("#"))
-        assert "SelectiveAPIClient" not in code and "OpenRouterClient" not in code
+        assert "src.api" not in code
         assert "import requests" not in code

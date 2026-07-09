@@ -1,11 +1,8 @@
 #!/usr/bin/env python3
-"""Final inference entrypoint (Phase 2L.31A).
+"""Final inference entrypoint.
 
-Production default is OFFLINE, reproducible ``frozen_csv`` mode: it copies the frozen
-current-best independent-v11 CSV to the requested output and validates it against the
-dataset — no API, no v10. Other modes are explicit:
-  * ``v11_independent`` — runs the independent v11 runner (needs --execute + budget; no v10);
-  * ``v10`` — explicit fallback only (copies the locked v10 CSV; no API).
+Default mode is the local selective dynamic system. Reproducibility-only frozen CSV modes remain
+available when their historical artifacts are present, but they do not call any remote service.
 
 Never overwrites a protected/locked file (current-best v11, v10, v8, pred.csv) as its
 output. Always validates row count / qid set / labels / columns. No qid hardcoding.
@@ -15,7 +12,6 @@ from __future__ import annotations
 
 import argparse
 import hashlib
-import importlib.util
 import json
 import math
 import os
@@ -231,32 +227,6 @@ def _v10_fallback(args, config):
     return "v10 (fallback only)", source, n
 
 
-def _v11_independent(args, config):
-    """Return (mode_label, source, n_rows). Regenerate via the independent runner (no v10)."""
-    if not args.execute:
-        raise SystemExit("REFUSING: v11_independent requires --execute (it spends API budget). "
-                         "Use the default frozen_csv mode for a reproducible offline run.")
-    if args.budget_usd is None:
-        raise SystemExit("REFUSING: v11_independent requires an explicit --budget-usd.")
-    spec = importlib.util.spec_from_file_location(
-        "rv11", _ROOT / "scripts" / "legacy" / "run" / "run_full_v11_independent_submission.py")
-    runner = importlib.util.module_from_spec(spec); spec.loader.exec_module(runner)
-    delegate = ["--input", args.input, "--output", args.output,
-                "--model", args.model or config.get("model"),
-                "--budget-usd", str(args.budget_usd), "--execute",
-                "--i-understand-this-writes-outputs"]
-    if args.resume:
-        delegate += ["--resume"]
-    if args.compare_pred:
-        delegate += ["--compare-pred", args.compare_pred]   # report-only; never a base
-    print("[final_infer] mode=v11_independent (no v10 base) -> delegating to independent runner")
-    rc = runner.main(delegate)
-    if rc != 0:
-        raise SystemExit(f"v11_independent runner failed (rc={rc})")
-    n = _validate(args.output, args.input)
-    return "v11_independent", config.get("independent_runner"), n
-
-
 def _public_qids(config):
     """The qid set of the public frozen best artifact (current_best_csv)."""
     src = _repo_path(config.get("current_best_csv"))
@@ -314,9 +284,9 @@ def _dynamic_full(args, config):
         v12b_max_qids_source=str(args.v12b_max_qids), v13_max_qids_source=str(args.v13_max_qids),
         system_policy=args.system_policy, max_overrides=args.max_overrides,
         profile=getattr(args, "profile", None),
-        model=args.model or config.get("model"),
-        budget_usd=args.budget_usd, execute_api=args.execute_api,
-        base_execute_api=args.base_execute_api,
+        model_path=args.model_path or config.get("model_path"),
+        device=args.device, max_new_tokens=args.max_new_tokens,
+        layer_max_new_tokens=args.layer_max_new_tokens,
         work_dir=args.work_dir or "scratch/fastmcq_run", resume=args.resume)
     report = run_fastmcq_system(samples, args.output, cfg)
     print(f"[final_infer] base predictions : {report.base_predictions_count}")
@@ -349,12 +319,12 @@ _PROFILES_PATH = "configs/profiles/run_profiles.json"
 _PROFILE_FLAGS = {
     "mode": ["--mode"],
     "allow_public_replay": ["--allow-public-replay"],
-    "execute_api": ["--execute-api", "--no-api"],
-    "base_execute_api": ["--base-execute-api", "--no-base-api"],
     "enable_v12b": ["--enable-v12b", "--disable-v12b"],
     "enable_v13": ["--enable-v13", "--disable-v13"],
-    "model": ["--model"],
-    "budget_usd": ["--budget-usd"],
+    "model_path": ["--model-path"],
+    "device": ["--device"],
+    "max_new_tokens": ["--max-new-tokens"],
+    "layer_max_new_tokens": ["--layer-max-new-tokens"],
     "v12b_max_qids": ["--v12b-max-qids"],
     "v12b_permutations": ["--v12b-permutations"],
     "v12b_policy": ["--v12b-policy"],
@@ -405,20 +375,17 @@ def main(argv=None) -> int:
                     help="named run profile from configs/profiles/run_profiles.json (CLI flags override it)")
     ap.add_argument("--mode", default="dynamic_full",
                     choices=["dynamic_full", "public_replay", "auto",
-                             "frozen_csv", "v11_independent", "v10"])
+                             "frozen_csv", "v10"])
     ap.add_argument("--allow-public-replay", action="store_true", default=False,
                     help="auto mode only: allow public_replay when input qids match the public artifact")
     ap.add_argument("--source-csv", default=None, help="frozen_csv only: explicit source CSV")
     ap.add_argument("--config", default=_DEFAULT_CONFIG)
-    ap.add_argument("--model", default=None)
-    ap.add_argument("--budget-usd", type=float, default=None)
+    ap.add_argument("--model-path", default=None,
+                    help="local Qwen model directory (default config/$LOCAL_MODEL_PATH/baked path)")
+    ap.add_argument("--device", default="auto")
+    ap.add_argument("--max-new-tokens", type=int, default=64)
+    ap.add_argument("--layer-max-new-tokens", type=int, default=768)
     ap.add_argument("--work-dir", default=None)
-    # API gating for dynamic_full: no-api by default; --execute-api to call the model.
-    ap.add_argument("--execute-api", dest="execute_api", action="store_true", default=False)
-    ap.add_argument("--no-api", dest="execute_api", action="store_false")
-    # Independent control of the BASE predictor's API use (None -> inherit --execute-api).
-    ap.add_argument("--base-execute-api", dest="base_execute_api", action="store_true", default=None)
-    ap.add_argument("--no-base-api", dest="base_execute_api", action="store_false")
     # V12B / V13 layer toggles.
     ap.add_argument("--enable-v12b", dest="enable_v12b", action="store_true", default=True)
     ap.add_argument("--disable-v12b", dest="enable_v12b", action="store_false")
@@ -434,8 +401,6 @@ def main(argv=None) -> int:
                          "min 1; never hardcode a size")
     ap.add_argument("--system-policy", choices=["conservative", "balanced"], default="conservative")
     ap.add_argument("--max-overrides", type=int, default=None)
-    # Legacy flags (v11_independent regeneration).
-    ap.add_argument("--execute", action="store_true", default=False)
     ap.add_argument("--dry-run", action="store_true", default=False)
     ap.add_argument("--resume", action="store_true", default=False)
     ap.add_argument("--compare-pred", default=None, help="report-only; never a base")
@@ -456,16 +421,17 @@ def main(argv=None) -> int:
         print(f"[final_infer] output: {args.output}")
         if args.profile:
             print(f"[final_infer] profile: {args.profile}")
-        print(f"[final_infer] resolved mode: {resolved} "
-              f"(api={'on' if args.execute_api else 'off'})")
+        print(f"[final_infer] resolved mode: {resolved} (local model)")
         _guard_output_name(args.output)
 
         if args.dry_run:
             print("=" * 60)
-            print(f"FINAL INFER — DRY-RUN (mode={resolved}; no write)")
+            print("FINAL INFER COMPLETE")
+            print(f"mode: {resolved}")
             print(f"input: {args.input}")
             print(f"output (planned): {args.output}")
             print(f"elapsed_seconds: {round(time.perf_counter() - t0, 3)}")
+            print("status: PASS (DRY-RUN; no write)")
             print("=" * 60)
             return 0
 
@@ -478,7 +444,7 @@ def main(argv=None) -> int:
         elif resolved == "v10":
             mode_label, source, n = _v10_fallback(args, config)
         else:
-            mode_label, source, n = _v11_independent(args, config)
+            raise SystemExit(f"REFUSING: unsupported mode {resolved!r}")
 
         _print_complete(mode_label, source, args.output, n, _md5(args.output),
                         time.perf_counter() - t0, "PASS")

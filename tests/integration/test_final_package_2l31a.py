@@ -85,27 +85,27 @@ def test_refuses_protected_output_names():
 
 def test_pred_csv_allowed_without_flag():
     mod = _load("final_infer.py")
-    d = tempfile.mkdtemp(); out = f"{d}/pred.csv"         # basename pred.csv, no --allow-pred-csv
-    # public_replay reproduces the frozen best exactly; pred.csv basename needs no special flag.
-    rc = mod.main(["--input", _INPUT, "--output", out, "--mode", "public_replay"])
-    assert rc == 0 and Path(out).exists() and _md5(out) == _md5(_ROOT / _BEST)
+    d = Path(tempfile.mkdtemp())
+    inp = d / "input.json"
+    inp.write_text(json.dumps([
+        {"qid": "q1", "question": "Q?", "choices": ["A", "B"]},
+        {"qid": "q2", "question": "Q?", "choices": ["A", "B"]},
+    ]))
+    src = d / "source.csv"
+    src.write_text("qid,answer\nq1,A\nq2,B\n")
+    out = d / "pred.csv"         # basename pred.csv, no compatibility flag needed
+    rc = mod.main(["--input", str(inp), "--output", str(out), "--mode", "frozen_csv",
+                   "--source-csv", str(src)])
+    assert rc == 0 and out.exists() and _md5(out) == _md5(src)
 
 
 # --- v11_independent / v10 modes ---------------------------------------------
 
-def test_v11_independent_requires_execute_and_budget():
-    mod = _load("final_infer.py")
-    d = tempfile.mkdtemp(); out = f"{d}/out.csv"
-    try:
-        mod.main(["--input", _INPUT, "--output", out, "--mode", "v11_independent"])
-        assert False
-    except SystemExit as e:
-        assert "execute" in str(e).lower()
-    try:
-        mod.main(["--input", _INPUT, "--output", out, "--mode", "v11_independent", "--execute"])
-        assert False
-    except SystemExit as e:
-        assert "budget" in str(e).lower()
+def test_removed_v11_independent_mode_and_execute_flag_absent():
+    src = (_ROOT / "scripts" / "tools" / "final_infer.py").read_text()
+    mode_block = src[src.index('ap.add_argument("--mode"'):src.index('ap.add_argument("--allow-public-replay"')]
+    assert "v11_independent" not in mode_block
+    assert "--execute" not in src
 
 
 def test_v10_mode_is_fallback_copy():

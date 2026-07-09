@@ -50,8 +50,8 @@ which runs in an **internet-isolated** environment. The submitted **Docker Hub c
 
 The final image is **offline / local-model only**: the model weights are downloaded **at Docker
 build time** into `/models/qwen3-4b-instruct-2507` and the container runs with
-`TRANSFORMERS_OFFLINE=1` / `HF_HUB_OFFLINE=1`. There is no OpenRouter, no external API, and no web
-retrieval during evaluation. **No API key exists in the image or in GitHub.**
+`TRANSFORMERS_OFFLINE=1` / `HF_HUB_OFFLINE=1`. There is no external API and no web retrieval
+during evaluation. **No API key exists in the image or in GitHub.**
 
 BTC confirmed CUDA 12.8+ base images for the target GPU environment. This repository follows that
 confirmed target with the clean official NVIDIA base
@@ -233,8 +233,8 @@ submission.csv + submission_time.csv
 ```
 
 The default final path is offline local Transformers inference with
-`Qwen/Qwen3-4B-Instruct-2507`. It does not call OpenRouter, does not call any external API, does
-not require `OPENROUTER_API_KEY`, and is designed to run without runtime internet.
+`Qwen/Qwen3-4B-Instruct-2507`. It does not call an external API, does not require a provider key,
+and is designed to run without runtime internet.
 
 ## Data Processing
 
@@ -329,8 +329,8 @@ MCQ prompt, runs deterministic greedy generation, parses the option label, and (
 falls back to a deterministic label. It writes `submission.csv` (`qid,answer`) and
 `submission_time.csv` (`qid,answer,time`, measured per sample). No API, no internet, no vector DB.
 
-> The diagram and tables below describe the earlier **dynamic API reasoning system** (base → V12B
-> → V13 → selector). It remains in the repo as a **dev-only** path (`predict.py
+> The diagram and tables below describe the explicit **local selective reasoning system** (base →
+> V12B → V13 → selector). It remains in the repo as a **dev/research** path (`predict.py
 > --legacy-dynamic-full`) and is **not** used by the offline submission.
 
 <div align="center">
@@ -346,7 +346,7 @@ falls back to a deterministic label. It writes `submission.csv` (`qid,answer`) a
 | System Orchestration | `src/system/` | Full dynamic pipeline, production profiles, Docker-facing inference flow |
 | Base Prediction | `src/base/` | Produces complete all-qid coverage before selective reasoning |
 | Dynamic Layers | `src/layers/` | V12B/V13 selective reasoning, routing, permutation debiasing, least-to-most / content-first passes |
-| API Runtime | `src/api/` | OpenRouter client, selective API execution, allowed-model policy integration |
+| Local Model Backend | `src/local_model/` | Shared Qwen backend, MCQ prompt/parser, local candidate agents |
 | Final Selection | `src/selector/` | Candidate consistency, ranking, conservative override decisions |
 | Solvers | `src/solvers/` | Symbolic/programmatic/formula-based MCQ solvers and heuristic reasoning |
 | Evidence | `src/evidence/` | Evidence packing, reranking, sufficiency checks, option grounding |
@@ -368,7 +368,7 @@ contains all input qids**.
 ### Design Principles
 
 - **All-qid coverage first:** never rely on selective layers to produce complete output.
-- **Selective reasoning budget:** reserve expensive API reasoning for high-value qids.
+- **Selective reasoning budget:** reserve extra local model passes for high-value qids.
 - **Permutation debiasing:** test answer stability across option orderings.
 - **Conservative selection:** prefer safe overrides over noisy changes.
 - **Docker-first reproducibility:** one command reads `/data` and writes `/output/pred.csv`.
@@ -384,11 +384,10 @@ no internet, no `--ipc=host`, and no `--shm-size` are needed — only `--gpus al
 | Path | Trigger | Behavior |
 |---|---|---|
 | **Offline local model** (default) | — | loads `Qwen3-4B-Instruct-2507`, answers each qid locally |
-| Legacy dynamic API | `--legacy-dynamic-full` (dev only) | the older base→V12B→V13 pipeline; **not** used for submission |
+| Local selective system | `--legacy-dynamic-full` (dev/research only) | Dynamic Base → local V12B → local V13 → selector; **not** used for submission |
 
 `predict.py` flags: `--model-path` (default `/models/qwen3-4b-instruct-2507` or `$LOCAL_MODEL_PATH`),
-`--max-new-tokens`, `--device` (default `auto`), `--submission` / `--submission-time`. `--no-api`
-is accepted as a compatibility no-op (the offline path never uses an API).
+`--max-new-tokens`, `--device` (default `auto`), `--submission` / `--submission-time`.
 
 ## Repository Structure
 
@@ -397,14 +396,14 @@ src/                    core inference system
   system/               full-system orchestration
   base/                 base predictors and solver factory
   layers/               V12B/V13 dynamic reasoning layers
-  api/                  OpenRouter and selective API clients
+  local_model/          shared local Qwen backend and MCQ helpers
   selector/             candidate merging and final selection
   solvers/              symbolic/programmatic MCQ solvers
   evidence/             evidence packing and reranking
   utils/                IO, labels, logging, parsing
 
 scripts/                CLI/Docker entrypoints and validation tools
-configs/                production profiles and model-policy configuration
+configs/                production profiles and local runtime configuration
 tests/                  unit and integration tests
 docs/FINAL_SYSTEM.md    method and architecture (source of truth)
 DOCKER_SUBMISSION.md    Docker-specific submission details
@@ -416,7 +415,7 @@ docs/audits/            audit trail of major changes and validations
 ```bash
 .venv/bin/python -m compileall -q src scripts tests
 .venv/bin/python -m pytest -q
-.venv/bin/python scripts/audit_model_policy.py
+.venv/bin/python scripts/tools/final_infer.py --input public-test_1780368312.json --output output/pred.csv --dry-run
 ```
 
 - The Docker contract (BTC JSON in / `submission.csv` + `submission_time.csv` out) and the legacy
@@ -432,15 +431,15 @@ docs/audits/            audit trail of major changes and validations
 
 ## Security & Compliance
 
-- **Offline at runtime:** the final image uses **no OpenRouter, no external API, and no internet**
+- **Offline at runtime:** the final image uses **no external API and no internet**
   — a single local open-weight model (`Qwen/Qwen3-4B-Instruct-2507`, 4.0B < 5B, Apache-2.0).
 - Model weights are downloaded **at build time** and are **never committed** — `models/` is
   git-ignored.
 - CUDA choice: BTC confirmed CUDA 12.8+ base images for the target environment. This final GPU
   image uses CUDA 12.8+ accordingly. The older CUDA 12.2 template is only historical context and
   is not used here.
-- **No API key anywhere:** `.env` is git-ignored; `Dockerfile.api` (a dev-only API-capable build)
-  is local-only and git-ignored — neither is part of the committed repository.
+- **No provider key required:** `.env` is git-ignored; local-only Docker variants are not part of
+  the committed submission path.
 - Resource initialization: no vector database / index; no model-weight init at runtime beyond
   loading the baked weights; runs under `TRANSFORMERS_OFFLINE=1` / `HF_HUB_OFFLINE=1`.
 

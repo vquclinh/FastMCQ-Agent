@@ -1,6 +1,6 @@
 """Tests for the Phase 2L.16 adaptive branch calibration suite.
 
-No network, no real model. Loads script modules via importlib; runs no-API audits
+No network, no real model. Loads script modules via importlib; runs local audits
 into a temp dir; unit-tests evidence sufficiency and the shared override gate.
 """
 
@@ -78,9 +78,9 @@ def test_override_gate_blocks_uncertain_and_low_conf_and_same():
     assert not override_gate(dict(_GOOD, reason=""), "A", ["A", "B"], allow_override=True)
 
 
-# --- candidate audits: no API, write a CSV, return 0 --------------------------
+# --- candidate audits: local/offline, write a CSV, return 0 -------------------
 
-def test_law_admin_candidate_audit_no_api():
+def test_law_admin_candidate_audit_local():
     if not _HAVE_DATA:
         return
     mod = _load("audit_law_admin_verifier_candidates.py")
@@ -89,7 +89,7 @@ def test_law_admin_candidate_audit_no_api():
     assert rc == 0 and Path(out).exists()
 
 
-def test_ambiguous_candidate_audit_no_api():
+def test_ambiguous_candidate_audit_local():
     if not _HAVE_DATA:
         return
     mod = _load("audit_ambiguous_adjudicator_candidates.py")
@@ -98,38 +98,13 @@ def test_ambiguous_candidate_audit_no_api():
     assert rc == 0 and Path(out).exists()
 
 
-def test_self_consistency_candidate_audit_no_api():
+def test_self_consistency_candidate_audit_local():
     if not _HAVE_DATA:
         return
     mod = _load("audit_self_consistency_candidates.py")
     out = _tmp("sc.csv")
     rc = mod.main(["--input", _INPUT, "--base-pred", _PRED, "--base-log", _LOG, "--output", out])
     assert rc == 0 and Path(out).exists()
-
-
-# --- runners: dry-run default, no API -----------------------------------------
-
-def test_law_admin_runner_dry_run_no_api():
-    if not _HAVE_DATA:
-        return
-    mod = _load("run_law_admin_verifier_sample.py")
-    rc = mod.main(["--input", _INPUT, "--base-pred", _PRED, "--base-log", _LOG,
-                   "--max-calls", "7",
-                   "--output-jsonl", _tmp("la.jsonl"), "--output-csv", _tmp("la2.csv")])
-    assert rc == 0   # dry-run default -> no API, no exception
-
-
-def test_self_consistency_runner_dry_run_no_api():
-    if not _HAVE_DATA:
-        return
-    cand_mod = _load("audit_self_consistency_candidates.py")
-    cand = _tmp("sc_cand.csv")
-    cand_mod.main(["--input", _INPUT, "--base-pred", _PRED, "--base-log", _LOG, "--output", cand])
-    run_mod = _load("run_selective_self_consistency_sample.py")
-    rc = run_mod.main(["--input", _INPUT, "--candidates", cand, "--base-pred", _PRED,
-                       "--max-calls", "5",
-                       "--output-jsonl", _tmp("sc.jsonl"), "--output-csv", _tmp("sc2.csv")])
-    assert rc == 0
 
 
 # --- unified analyzer: graceful with missing files ----------------------------
@@ -144,19 +119,16 @@ def test_unified_analyzer_handles_missing_files():
 
 def test_branch_source_safety():
     import re as _re
-    scripts = ["audit_law_admin_verifier_candidates.py", "run_law_admin_verifier_sample.py",
-               "audit_ambiguous_adjudicator_candidates.py", "run_ambiguous_adjudicator_sample.py",
-               "audit_self_consistency_candidates.py", "run_selective_self_consistency_sample.py",
+    scripts = ["audit_law_admin_verifier_candidates.py",
+               "audit_ambiguous_adjudicator_candidates.py",
+               "audit_self_consistency_candidates.py",
                "analyze_adaptive_branch_proposals.py", "audit_long_context_evidence_sufficiency.py"]
     for name in scripts:
         src = (next(iter((_ROOT / "scripts" / "legacy").glob(f"**/{name}")), _ROOT / "scripts" / name)).read_text()
-        assert ".env" not in src and "OPENROUTER_API_KEY" not in src, name
+        assert ".env" not in src, name
         assert "first100_external" not in src, name        # never reads the answer sheet
         for pat in (r'qid\s*==', r'==\s*["\']test_0'):
             assert not _re.search(pat, src), f"qid hardcoding in {name}"
-        # OpenRouter client (if used) must be imported lazily under the execute path.
-        if "OpenRouterClient" in src:
-            assert "if not dry_run:" in src, name
     # source modules too
     for name in ("evidence_sufficiency.py", "adaptive_proposal_common.py"):
         src = next(iter((_ROOT / "src").glob(f"**/{name}"))).read_text()

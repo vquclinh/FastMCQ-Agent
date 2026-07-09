@@ -178,7 +178,7 @@ def main(argv=None) -> int:
               "confidence", "calculation_matched", "calculation_method",
               "calculation_safe_to_override", "verifier_triggered",
               "verifier_override_applied", "parsed_answer_source", "parsed_answer_error",
-              "openrouter_completion_tokens", "evidence_reranker_effective_method",
+              "model_provider_completion_tokens", "evidence_reranker_effective_method",
               "evidence_reranker_cache_hit", "suspected_root_cause", "recommended_general_fix"]
 
     out_rows = []
@@ -230,7 +230,7 @@ def main(argv=None) -> int:
             "verifier_override_applied": tr.get("verifier_override_applied"),
             "parsed_answer_source": tr.get("parsed_answer_source"),
             "parsed_answer_error": tr.get("parsed_answer_error"),
-            "openrouter_completion_tokens": tr.get("openrouter_completion_tokens"),
+            "model_provider_completion_tokens": tr.get("model_provider_completion_tokens"),
             "evidence_reranker_effective_method": tr.get("evidence_reranker_effective_method"),
             "evidence_reranker_cache_hit": tr.get("evidence_reranker_cache_hit"),
             "suspected_root_cause": cause, "recommended_general_fix": fix,

@@ -1,44 +1,34 @@
-# Adaptive reasoning orchestrator config (Phase 2L.15A).
+# Adaptive reasoning orchestrator config.
 #
-# Overlay config: use with `--config configs/adaptive_reasoning.yaml` (or just
-# `--adaptive-reasoning` to flip `enabled` on). DEFAULT IS OFF. In `trace_only`
-# mode the orchestrator only analyzes route/risk and logs an `adaptive` object per
-# sample — it NEVER changes a final answer, NEVER calls an extra API, and NEVER
-# overwrites predictions. v6b remains the stable fallback.
-#
-# Only `enabled` and `mode` are wired into the solver in 2L.15A; the per-branch
-# sub-blocks below document the intended Phase 2L.15B–E behavior and are consumed
-# by AdaptiveConfig.from_dict() (kept inert while mode == trace_only).
-openrouter:
-  adaptive_reasoning:
+# Overlay config for local-only trace/assist experiments. These settings never
+# contact a remote provider and never read credentials.
+adaptive_reasoning:
+  enabled: false
+  mode: "trace_only"
+  calculation_programmatic:
+    enabled: true
+    allow_override: false
+  short_knowledge_verifier:
     enabled: false
-    mode: "trace_only"            # trace_only | assist | active  (only trace_only wired)
-    calculation_programmatic:
-      enabled: true
-      allow_override: false       # 2L.15B will gate real overrides here
-    short_knowledge_verifier:     # 2L.15C — selective, gated, OFF by default
-      enabled: false
-      allow_override: false       # never change an answer until explicitly enabled
-      trigger_confidence_max: 0.95
-      max_verifier_calls: 0       # 0 = dry-run only (no API)
-      require_strong_confidence: true
-    long_context_evidence_check:     # 2L.15D / 2L.16 — diagnostic sufficiency scoring
-      enabled: true
-      allow_answer_change: false     # never changes a long_context answer
-    law_admin_verifier:              # 2L.16 — proposal-only, OFF by default
-      enabled: false
-      allow_override: false
-      trigger_confidence_max: 0.95
-      max_verifier_calls: 0          # 0 = dry-run only (no API)
-    ambiguous_adjudicator:           # 2L.16 — proposal-only, OFF by default
-      enabled: false
-      allow_override: false
-      max_adjudicator_calls: 0
-    selective_self_consistency:      # 2L.16 — proposal-only, OFF by default
-      enabled: false
-      n_samples: 3
-      temperature: 0.2
-      max_calls: 0                   # 0 = dry-run only (no API)
-      allow_override: false          # override NOT implemented this phase
-    self_consistency:                # legacy alias (kept for back-compat)
-      enabled: false
+    allow_override: false
+    trigger_confidence_max: 0.95
+    max_local_model_calls: 0
+    require_strong_confidence: true
+  long_context_evidence_check:
+    enabled: true
+    allow_answer_change: false
+  law_admin_verifier:
+    enabled: false
+    allow_override: false
+    trigger_confidence_max: 0.95
+    max_local_model_calls: 0
+  ambiguous_adjudicator:
+    enabled: false
+    allow_override: false
+    max_local_model_calls: 0
+  selective_self_consistency:
+    enabled: false
+    n_samples: 3
+    temperature: 0.2
+    max_local_model_calls: 0
+    allow_override: false

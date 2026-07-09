@@ -2,7 +2,7 @@
 #
 # Vietnamese Student HackAIthon — Bảng C Innovator. Internet-isolated runtime: ONE open-weight
 # local model (Qwen/Qwen3-4B-Instruct-2507, 4.0B < 5B, Apache-2.0) via Hugging Face Transformers.
-# NO OpenRouter / external API / web retrieval at runtime.
+# NO external model provider / web retrieval at runtime.
 #
 # Container runs predict.py (via inference.sh): reads /code/private_test.json and writes
 # /code/submission.csv (qid,answer) + /code/submission_time.csv (qid,answer,time, REAL per-sample).

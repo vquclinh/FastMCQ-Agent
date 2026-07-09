@@ -17,7 +17,7 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass, field
 
 from src.utils.labels import labels_for
-from src.api.openrouter_prompts import format_choices
+from src.utils.prompting import format_choices
 # Reuse the robust JSON extraction + helpers from the answer parser.
 from src.utils.structured_answer import _clamp_conf, _extract_json, _normalize_label
 

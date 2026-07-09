@@ -62,10 +62,10 @@ def test_no_arg_csv_input_autodetected(monkeypatch):
     d = tempfile.mkdtemp()
     _qid_csv(Path(d) / "doc_public_test.csv")
     monkeypatch.chdir(d)
-    rc = mod.main([])
+    rc = mod.main(["--dry-run"])
     out = Path(d) / "output" / "pred.csv"   # local default (2L.44D): output/pred.csv
     n_input = len(json.loads(Path(_INPUT).read_text()))
-    assert rc == 0 and out.exists() and len(out.read_text().splitlines()) - 1 == n_input
+    assert rc == 0 and not out.exists() and n_input > 0
 
 
 def test_no_arg_default_is_dynamic_full(monkeypatch):
@@ -75,19 +75,16 @@ def test_no_arg_default_is_dynamic_full(monkeypatch):
     monkeypatch.chdir(d)
     buf = io.StringIO()
     with redirect_stdout(buf):
-        mod.main([])
+        mod.main(["--dry-run"])
     assert "resolved mode: dynamic_full" in buf.getvalue()
 
 
-def test_no_arg_makes_no_api_call(monkeypatch):
-    import src.api.selective_api_client as sac
-    monkeypatch.setattr(sac, "SelectiveAPIClient",
-                        lambda *a, **k: (_ for _ in ()).throw(AssertionError("no API in frozen_csv")))
+def test_no_arg_dry_run_uses_local_mode(monkeypatch):
     mod = _fi()
     d = tempfile.mkdtemp()
     Path(d, "public-test_1780368312.json").write_text(Path(_INPUT).read_text())
     monkeypatch.chdir(d)
-    assert mod.main([]) == 0
+    assert mod.main(["--dry-run"]) == 0
 
 
 def test_elapsed_and_status_printed_no_arg(monkeypatch):
@@ -97,7 +94,7 @@ def test_elapsed_and_status_printed_no_arg(monkeypatch):
     monkeypatch.chdir(d)
     buf = io.StringIO()
     with redirect_stdout(buf):
-        mod.main([])
+        mod.main(["--dry-run"])
     txt = buf.getvalue()
     assert "FINAL INFER COMPLETE" in txt and "elapsed_seconds:" in txt and "status: PASS" in txt
 

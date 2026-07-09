@@ -22,9 +22,9 @@ _NEW_PATHS = [
     "src.layers.v12b_dynamic_layer",
     "src.layers.v13_dynamic_layer",
     "src.layers.mcq_permutation_debiaser",
-    "src.api.openrouter_client",
-    "src.api.selective_api_client",
-    "src.api.model_policy",
+    "src.local_model.local_qwen_backend",
+    "src.local_model.qwen_mcq_predictor",
+    "src.local_model.candidate_agents",
     "src.selector.system_candidate_selector",
     "src.solvers.calculation_solver",
     "src.solvers.pot_lite",
@@ -68,5 +68,5 @@ def test_kept_subpackages_still_importable():
 
 
 def test_subpackages_present():
-    for sub in ("system", "base", "layers", "api", "selector", "solvers", "evidence", "utils"):
+    for sub in ("system", "base", "layers", "local_model", "selector", "solvers", "evidence", "utils"):
         assert (_ROOT / "src" / sub / "__init__.py").exists(), sub
