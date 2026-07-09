@@ -37,7 +37,13 @@ RUN python -m pip install -r requirements.txt
 # notebooks, large logs and model weights OUT of the build context.
 COPY . /code
 
-RUN chmod +x inference.sh 2>/dev/null || true
+# Defensive line-ending hardening (see AUDIT 62): strip any trailing CR from
+# shell scripts copied into the image so they run under Linux bash even if the
+# build context came from a CRLF checkout. CRLF breaks `set -o pipefail`. This
+# only touches *.sh text; it never alters model weights, prompts, or runtime mode.
+RUN find /code -type f -name "*.sh" \
+      -exec sed -i 's/\r$//' {} + \
+    && chmod +x /code/inference.sh
 
 # Download the single open-weight model into the image at BUILD time so inference is fully
 # offline. SKIP_MODEL_DOWNLOAD is for CI/smoke ONLY — the final build uses the default (=0).
