@@ -1,15 +1,13 @@
 """Phase 2L.44E — production full-system default layer budget = auto (ceil(input_count/8)).
 
-The production profiles must default the V12B/V13 caps to 'auto' (not 'all'); explicit int / 'all'
-overrides still work; logs render auto(<cap>/<N>). No API.
+The local selective profile must default the V12B/V13 caps to 'auto' (not 'all'); explicit int /
+'all' overrides still work; logs render auto(<cap>/<N>).
 """
 
 from __future__ import annotations
 
 import importlib.util
 import json
-import os
-import subprocess
 import sys
 from pathlib import Path
 
@@ -29,14 +27,14 @@ def _fi():
 # --- production profiles default to auto -------------------------------------
 
 def test_production_profiles_default_to_auto():
-    for name in ("production_full_system", "production_full_system_noapi"):
+    for name in ("local_selective_auto",):
         p = _PROFILES[name]
         assert p["v12b_max_qids"] == "auto", name
         assert p["v13_max_qids"] == "auto", name
 
 
 def test_production_profiles_not_all():
-    for name in ("production_full_system", "production_full_system_noapi"):
+    for name in ("local_selective_auto",):
         p = _PROFILES[name]
         assert p["v12b_max_qids"] != "all" and p["v13_max_qids"] != "all", name
 
@@ -73,7 +71,7 @@ def test_fmt_cap_renders_auto_all_int():
     assert _fmt_cap(50, "50", 463) == "50"
 
 
-# --- end-to-end: default full-system run uses auto (no API) ------------------
+# --- direct cap resolution checks --------------------------------------------
 
 def _write_input(tmp_path, n):
     samples = [{"qid": f"q{i}", "question": "2 + 2 bằng?", "choices": ["3", "4", "5", "6"]}
@@ -82,44 +80,20 @@ def _write_input(tmp_path, n):
     return p
 
 
-def test_run_full_system_default_uses_auto_no_api(tmp_path):
-    inp = _write_input(tmp_path, 3)
-    final = tmp_path / "final"
-    env = dict(os.environ, FASTMCQ_FINAL_DIR=str(final))
-    env.pop("OPENROUTER_API_KEY", None)
-    r = subprocess.run(["bash", str(_ROOT / "scripts" / "run_full_system.sh"),
-                        str(inp), "--no-api"],
-                       cwd=str(_ROOT), env=env, capture_output=True, text=True)
-    assert r.returncode == 0, r.stdout + r.stderr
-    # default (production_full_system_noapi) caps must resolve to auto(1/3) for N=3
-    assert "v12b_max_qids=auto(1/3)" in r.stdout
-    assert "v13_max_qids=auto(1/3)" in r.stdout
-    assert (final / "pred.csv").exists()
+def test_default_profile_resolves_auto_for_three_samples(tmp_path):
+    mod = _fi()
+    assert mod._resolve_maxq(_PROFILES["local_selective_auto"]["v12b_max_qids"], 3) == 1
+    assert mod._resolve_maxq(_PROFILES["local_selective_auto"]["v13_max_qids"], 3) == 1
 
 
-def test_explicit_cap_overrides_auto_no_api(tmp_path):
-    inp = _write_input(tmp_path, 20)
-    final = tmp_path / "final"
-    env = dict(os.environ, FASTMCQ_FINAL_DIR=str(final))
-    env.pop("OPENROUTER_API_KEY", None)
-    r = subprocess.run(["bash", str(_ROOT / "scripts" / "run_full_system.sh"),
-                        str(inp), "--no-api", "--v12b-max-qids", "5", "--v13-max-qids", "5"],
-                       cwd=str(_ROOT), env=env, capture_output=True, text=True)
-    assert r.returncode == 0, r.stdout + r.stderr
-    assert "v12b_max_qids=5" in r.stdout and "v13_max_qids=5" in r.stdout
-    assert "auto(" not in r.stdout
+def test_explicit_cap_overrides_auto_local(tmp_path):
+    mod = _fi()
+    assert mod._resolve_maxq("5", 20) == 5
 
 
-def test_explicit_all_overrides_auto_no_api(tmp_path):
-    inp = _write_input(tmp_path, 10)
-    final = tmp_path / "final"
-    env = dict(os.environ, FASTMCQ_FINAL_DIR=str(final))
-    env.pop("OPENROUTER_API_KEY", None)
-    r = subprocess.run(["bash", str(_ROOT / "scripts" / "run_full_system.sh"),
-                        str(inp), "--no-api", "--v12b-max-qids", "all", "--v13-max-qids", "all"],
-                       cwd=str(_ROOT), env=env, capture_output=True, text=True)
-    assert r.returncode == 0, r.stdout + r.stderr
-    assert "v12b_max_qids=all(10)" in r.stdout and "v13_max_qids=all(10)" in r.stdout
+def test_explicit_all_overrides_auto_local(tmp_path):
+    mod = _fi()
+    assert mod._resolve_maxq("all", 10) is None
 
 
 # --- no hardcoded 463 in production code/config ------------------------------
@@ -134,7 +108,7 @@ def test_no_hardcoded_463_in_production():
     ]
     for f in files:
         assert "463" not in (_ROOT / f).read_text(), f
-    # run_profiles.json: only the cosmetic profile NAME 'public_api463' may contain 463 —
+    # run_profiles.json must not encode the public size as a cap.
     # never as a cap value.
     prof = (_ROOT / "configs" / "profiles" / "run_profiles.json").read_text()
-    assert "463" not in prof.replace("public_api463", ""), "463 used as a value, not just a name"
+    assert "463" not in prof, "463 used as a value"

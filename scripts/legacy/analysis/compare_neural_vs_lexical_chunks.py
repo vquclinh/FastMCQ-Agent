@@ -2,7 +2,7 @@
 """Compare lexical vs neural in-question chunk selection on long-context samples.
 
 Diagnostic only: it inspects WHICH evidence chunks each method selects. It does
-NOT call OpenRouter, does NOT produce a prediction CSV, does NOT use ground truth
+NOT call remote provider, does NOT produce a prediction CSV, does NOT use ground truth
 or answer correctness, and does NOT read qids for any decision. The neural backend
 is LOCAL-only and fails closed to lexical when unavailable (nothing is downloaded).
 
@@ -44,7 +44,7 @@ def _load_samples(path: str) -> list:
 
 
 def main(argv=None) -> int:
-    ap = argparse.ArgumentParser(description="Lexical vs neural chunk-selection comparison (no OpenRouter)")
+    ap = argparse.ArgumentParser(description="Lexical vs neural chunk-selection comparison (no remote provider)")
     ap.add_argument("--input", required=True)
     ap.add_argument("--method", choices=["reranker", "embedding"], default="reranker")
     ap.add_argument("--model-path", default=None, help="LOCAL model dir (never downloaded)")
@@ -60,7 +60,7 @@ def main(argv=None) -> int:
     rer = args.model_path if args.method == "reranker" else None
     scorer, available, reason = build_neural_scorer(args.method, emb, rer)
     print("=" * 60)
-    print("NEURAL vs LEXICAL CHUNK COMPARISON (read-only; no OpenRouter)")
+    print("NEURAL vs LEXICAL CHUNK COMPARISON (read-only; no remote provider)")
     print("=" * 60)
     print(f"method        : {args.method}")
     print(f"model-path    : {args.model_path or '(none)'}")

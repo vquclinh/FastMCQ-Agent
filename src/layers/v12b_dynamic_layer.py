@@ -1,9 +1,6 @@
-"""Official V12B option-permutation debiaser as a dynamic architecture layer (Phase 2L.36B).
+"""V12B option-permutation debiaser as a dynamic architecture layer.
 
-Wraps ``src.mcq_permutation_debiaser`` so the V12B debiaser runs over ARBITRARY inputs (not the
-public frozen CSV). Target selection is purely feature-based (no qid hardcoding). The layer only
-calls the model under explicit ``execute_api=True``; otherwise it reports the selected targets as
-skipped (``skipped_no_api``) and applies nothing.
+Runs over arbitrary inputs with feature-based target selection and the shared local Qwen backend.
 """
 
 from __future__ import annotations
@@ -16,6 +13,7 @@ from src.utils.labels import labels_for
 from src.layers.mcq_permutation_debiaser import (
     build_option_permutations, map_permuted_answer_to_original,
     summarize_permutation_votes, select_permutation_override)
+from src.local_model.local_qwen_backend import get_local_qwen_backend, parse_json_object
 
 
 def _log(msg):
@@ -45,7 +43,7 @@ def _load_completed_v12b(path):
 
 _MULTI_COND_HINTS = ("đúng", "sai", "phát biểu", "chọn câu", "không đúng", "ngoại trừ",
                      "statement", "which of the following", "true", "false", "except")
-_WEAK_SOURCE_TOKENS = ("fallback", "weak", "single_source", "api:", "dynamic_api")
+_WEAK_SOURCE_TOKENS = ("fallback", "weak", "single_source", "dynamic_local_qwen")
 
 
 @dataclass
@@ -128,23 +126,13 @@ def _prompt(perm, question):
             {"role": "user", "content": f"Question:\n{question}\n\nOptions:\n{opts}\n\nReturn JSON now."}]
 
 
-def run_v12b_layer(samples, base_predictions, targets, *, model=None, execute_api=False,
-                   budget_usd=None, permutations=6, policy="conservative",
+def run_v12b_layer(samples, base_predictions, targets, *, model_path=None, local_backend=None,
+                   max_new_tokens=384, permutations=6, policy="conservative",
                    work_dir="scratch/v12b_dynamic", resume=False):
     by_qid = {s["qid"]: s for s in samples}
     cur = {bp.qid: bp.answer for bp in base_predictions}
-
-    if not execute_api:
-        # Do NOT pretend to run — report each target as skipped, apply nothing.
-        return [V12BLayerResult(qid=t.qid, proposed_answer=None, accept=False,
-                                reason="skipped_no_api", vote_counts={}, valid_votes=0,
-                                records_path=None,
-                                metadata={"priority_score": t.priority_score}) for t in targets]
-
-    from src.api.model_policy import assert_allowed_llm_model
-    assert_allowed_llm_model(model)
-    from src.api.selective_api_client import SelectiveAPIClient
-    client = SelectiveAPIClient(model=model)
+    backend = local_backend or get_local_qwen_backend(
+        model_path, default_max_new_tokens=max_new_tokens)
 
     work = Path(work_dir); work.mkdir(parents=True, exist_ok=True)
     rec_path = work / "v12b_dynamic_records.jsonl"
@@ -175,16 +163,25 @@ def run_v12b_layer(samples, base_predictions, targets, *, model=None, execute_ap
                     records.append(completed[key])
                     continue
                 _log(f"[V12B] qid={t.qid} permutation={j}/{len(perms)}")
-                content, _u = client.chat(_prompt(perm, s.get("question", "")))
-                parsed = client.parse_json(content) or {}
-                res = map_permuted_answer_to_original(
-                    s, perm, parsed.get("selected_label"), parsed.get("selected_option_text"),
-                    parsed.get("label_matches_option"))
-                rec = {"original_qid": t.qid, "permutation_id": perm.permutation_id,
-                       "mapped_original_label": res.mapped_original_label,
-                       "parse_status": "ok" if parsed else "parse_error",
-                       "label_option_match": res.label_option_match, "valid": res.valid,
-                       "confidence": parsed.get("confidence")}
+                try:
+                    content = backend.generate_text(
+                        _prompt(perm, s.get("question", "")),
+                        max_new_tokens=max_new_tokens)
+                    parsed = parse_json_object(content) or {}
+                    res = map_permuted_answer_to_original(
+                        s, perm, parsed.get("selected_label"), parsed.get("selected_option_text"),
+                        parsed.get("label_matches_option"))
+                    rec = {"original_qid": t.qid, "permutation_id": perm.permutation_id,
+                           "mapped_original_label": res.mapped_original_label,
+                           "parse_status": "ok" if parsed else "parse_error",
+                           "label_option_match": res.label_option_match, "valid": res.valid,
+                           "failure_reason": res.failure_reason,
+                           "confidence": parsed.get("confidence")}
+                except Exception as exc:
+                    rec = {"original_qid": t.qid, "permutation_id": perm.permutation_id,
+                           "mapped_original_label": None, "parse_status": "local_error",
+                           "label_option_match": False, "valid": False,
+                           "failure_reason": type(exc).__name__, "confidence": None}
                 records.append(rec); _emit(rec); n_recs += 1
             summ = summarize_permutation_votes(t.qid, cur.get(t.qid, ""), records)
             dec = select_permutation_override(summ, policy=policy)

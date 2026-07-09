@@ -1,13 +1,8 @@
-"""Dynamic base predictor (Phase 2L.36B).
+"""Dynamic base predictor.
 
-Produces one valid label for EVERY input sample using the repo's deterministic solvers — works
-for ARBITRARY qids (public, private, unseen) and never references a public frozen CSV or any
-qid-specific answer artifact.
-
-No-API mode: route + deterministic formula/concept/calculation bank (``solve_formula_bank_sample``);
-unresolved questions get a conservative fallback to a valid label, marked weak/high-risk.
-Execute-API mode: unresolved questions may additionally be sent to the allowed model (guarded by
-``assert_allowed_llm_model``) for a single-label answer.
+Produces one valid label for every input sample using deterministic solvers first and the shared
+local Qwen backend for unresolved questions. It works for arbitrary qids and never references a
+public frozen CSV or qid-specific answer artifact.
 """
 
 from __future__ import annotations
@@ -16,6 +11,7 @@ from dataclasses import dataclass, field
 
 from src.utils.labels import labels_for, is_valid_label
 from src.solvers.formula_bank_solver import solve_formula_bank_sample
+from src.local_model.local_qwen_backend import get_local_qwen_backend
 
 try:
     from src.layers.question_router import route_question
@@ -54,33 +50,19 @@ def _fallback_label(labels):
     return labels[0] if labels else "A"
 
 
-def _api_answer(sample, labels, client):
-    """One guarded model call returning a valid label, or None on any problem."""
-    opts = "\n".join(f"{lab}. {txt}" for lab, txt in zip(labels, sample.get("choices") or []))
-    messages = [
-        {"role": "system", "content":
-            "Answer the multiple-choice question. Respond with a SINGLE JSON object only: "
-            '{"answer": "<one option letter>"}. No prose.'},
-        {"role": "user", "content": f"Question:\n{sample.get('question','')}\n\nOptions:\n{opts}\n\nJSON:"},
-    ]
+def _local_answer(sample, labels, backend, *, max_new_tokens):
+    """One local model call returning a valid label, or None on any problem."""
     try:
-        content, _usage = client.chat(messages)
-        parsed = client.parse_json(content) or {}
-        ans = str(parsed.get("answer") or "").strip().upper()[:1]
+        ans = backend.predict_mcq(sample, max_new_tokens=max_new_tokens)
+        ans = str(ans or "").strip().upper()[:1]
         return ans if ans in labels else None
     except Exception:
         return None
 
 
-def predict_base_answers(samples, *, model=None, execute_api=False, budget_usd=None,
+def predict_base_answers(samples, *, model_path=None, local_backend=None, max_new_tokens=64,
                          work_dir=None, resume=False):
-    client = None
-    if execute_api:
-        from src.api.model_policy import assert_allowed_llm_model
-        assert_allowed_llm_model(model)
-        from src.api.selective_api_client import SelectiveAPIClient
-        client = SelectiveAPIClient(model=model)
-
+    backend = local_backend or get_local_qwen_backend(model_path, default_max_new_tokens=max_new_tokens)
     preds = []
     n = len(samples)
     for i, s in enumerate(samples, start=1):
@@ -98,17 +80,16 @@ def predict_base_answers(samples, *, model=None, execute_api=False, budget_usd=N
                 pred = BasePrediction(qid, fb.selected_answer, f"formula_bank:{fb.rule_id}",
                                       float(fb.confidence), route, "deterministic_match",
                                       {"matched_option_text": fb.matched_option_text})
-            elif execute_api and client is not None and (_a := _api_answer(s, labels, client)):
-                pred = BasePrediction(qid, _a, "dynamic_api", 0.6, route,
-                                      "single_source_model", {"model": model})
+            elif (_a := _local_answer(s, labels, backend, max_new_tokens=max_new_tokens)):
+                pred = BasePrediction(qid, _a, "dynamic_local_qwen", 0.6, route,
+                                      "single_source_local_model", {"model_path": model_path})
             else:
-                # Conservative fallback — valid label, explicitly weak/high-risk.
+                # Conservative fallback: valid label, explicitly weak/high-risk.
                 pred = BasePrediction(qid, _fallback_label(labels), "dynamic_fallback", None, route,
-                                      "no_deterministic_solver;weak"
-                                      + (";no_api" if not execute_api else ";api_unparsed"), {})
+                                      "local_model_unparsed;weak", {})
         preds.append(pred)
         cat = ("formula_bank" if pred.source.startswith("formula_bank")
-               else "api" if pred.source == "dynamic_api" else "fallback")
+               else "local_qwen" if pred.source == "dynamic_local_qwen" else "fallback")
         _log(f"[BASE] {i}/{n} qid={qid} source={cat}")
     return preds
 

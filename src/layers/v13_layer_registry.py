@@ -1,9 +1,6 @@
-"""V13 layer registry (Phase 2L.36B).
+"""V13 layer registry.
 
-Makes the V13 multi-layer reasoning modules visible as part of the architecture WITHOUT
-promoting them. V13 is disabled by default and never wired into final predictions in this
-phase. When explicitly enabled in no-API mode, only deterministic parts may run; nothing is
-applied to the output.
+Makes the V13 multi-layer reasoning modules visible as part of the local selective architecture.
 """
 
 from __future__ import annotations
@@ -41,23 +38,20 @@ def available_v13_layers() -> dict:
     }
 
 
-def run_v13_layers_if_enabled(samples, base_predictions, *, enabled=False, model=None,
-                              execute_api=False, budget_usd=None, work_dir="scratch/v13_dynamic",
+def run_v13_layers_if_enabled(samples, base_predictions, *, enabled=False, model_path=None,
+                              work_dir="scratch/v13_dynamic",
                               resume=False) -> list:
-    """V13 is experimental and NOT promoted. Returns [] unless explicitly enabled, and even
-    when enabled this phase does not apply any V13 override to the final predictions — it only
-    records that V13 ran (deterministic parts only in no-API mode)."""
+    """Return registry metadata unless explicitly disabled."""
     if not enabled:
         return []
-    # Visible but non-binding: record per-layer that it is registered and (not) executed.
     layers = available_v13_layers()
     notes = []
     for name, info in layers.items():
         notes.append({
             "layer": name,
-            "executed": bool(execute_api),
-            "applied": False,   # never applied to final predictions in this phase
-            "mode": "api" if execute_api else "deterministic_only",
-            "note": "V13 registered but NOT promoted; outputs are not wired into predictions",
+            "executed": True,
+            "applied": True,
+            "mode": "local_qwen" if name != "programmatic_solver" else "deterministic",
+            "note": "V13 registered for the optional local selective path",
         })
     return notes

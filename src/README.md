@@ -6,7 +6,7 @@ subpackage, e.g.:
 ```python
 from src.system.fastmcq_system import run_fastmcq_system, FastMCQSystemConfig
 from src.layers.v13_dynamic_layer import run_v13_layer
-from src.api.openrouter_client import OpenRouterClient
+from src.local_model.local_qwen_backend import get_local_qwen_backend
 from src.utils.data_io import load_dataset
 from src.utils import log
 ```
@@ -32,10 +32,8 @@ subpackage. (The earlier flat `src/<name>.py` paths from Phase 2L.43F were remov
 `adaptive_orchestrator.py`, `adaptive_agent_solver.py`, `adaptive_accuracy_planner.py`,
 `adaptive_proposal_common.py`, `adaptive_types.py`).
 
-### `api/` — allowed-model API access + policy
-`openrouter_client.py`, `selective_api_client.py`, `openrouter_prompts.py`,
-`openrouter_graph_solver.py`, `api_candidate_agents.py`, `model_policy.py`
-(`is_allowed_llm_model` — competition allowlist).
+### `local_model/` — shared local Qwen backend
+`local_qwen_backend.py`, `qwen_mcq_predictor.py`, and `candidate_agents.py`.
 
 ### `selector/` — candidate selection / verification
 `system_candidate_selector.py`, `independent_answer_selector.py`, `candidate_answer.py`,

@@ -21,10 +21,10 @@ def _load(name):
 def _plan(d, n_cheap=25, n_tool=5):
     p = Path(d) / "plan.csv"
     lines = ["qid,route,v10_answer,has_tool_candidate,tool_answer,evidence_pack_status,"
-             "consistency_issues,recommended_layer,est_api_calls,priority_score,reason"]
+             "consistency_issues,recommended_layer,est_local_calls,priority_score,reason"]
     routes = ["calculation", "short_knowledge", "long_context"]
     for i in range(n_cheap):
-        lines.append(f"q{i},{routes[i % 3]},A,False,,True,0,cheap_api,2,{2.0 - (i % 3) * 0.5},calc")
+        lines.append(f"q{i},{routes[i % 3]},A,False,,True,0,local_light,2,{2.0 - (i % 3) * 0.5},calc")
     for i in range(n_tool):
         lines.append(f"t{i},calculation,B,True,B,True,0,tool_only,0,0.0,deterministic")
     p.write_text("\n".join(lines) + "\n")
@@ -67,64 +67,11 @@ def test_selector_refuses_non_scratch():
 
 def test_no_qid_hardcoding_in_sources():
     import re
-    for name in ("select_adaptive_pilot_qids.py", "run_adaptive_pilot.py",
-                 "build_pilot_decision_report.py", "build_full_adaptive_submission_candidate.py"):
+    for name in ("select_adaptive_pilot_qids.py", "build_pilot_decision_report.py",
+                 "build_full_adaptive_submission_candidate.py"):
         src = (next(iter((_ROOT / "scripts" / "legacy").glob(f"**/{name}")), _ROOT / "scripts" / name)).read_text()
         assert not re.search(r"test_\d{3,}", src), f"{name} hardcodes a qid"
         assert not re.search(r"\bq\d{3,}\b", src), f"{name} hardcodes a qid"
-
-
-# --- Part B: pilot runner -----------------------------------------------------
-
-def _pilot_qids(d):
-    p = Path(d) / "pilot_qids.csv"
-    p.write_text("qid,route,recommended_layer,priority_score,reason,expected_calls\n"
-                 "q1,calculation,cheap_api,2.0,calc,3\nq2,short_knowledge,cheap_api,2.0,k,3\n")
-    inp = Path(d) / "in.json"
-    inp.write_text(json.dumps([{"qid": "q1", "question": "Q?", "choices": ["A", "B"]},
-                               {"qid": "q2", "question": "Q2?", "choices": ["A", "B"]}]))
-    base = Path(d) / "v10.csv"; base.write_text("qid,answer\nq1,A\nq2,B\n")
-    return str(inp), str(base), str(p)
-
-
-def test_pilot_runner_dry_run_no_api(monkeypatch):
-    import src.api.selective_api_client as sac
-
-    def _boom(*a, **k):
-        raise AssertionError("API client must NOT be constructed during dry-run")
-    monkeypatch.setattr(sac, "SelectiveAPIClient", _boom)
-    mod = _load("run_adaptive_pilot.py")
-    d = tempfile.mkdtemp(); inp, base, pq = _pilot_qids(d)
-    rc = mod.main(["--input", inp, "--base-pred", base, "--pilot-qids", pq,
-                   "--output-dir", "scratch/_pilot_t", "--mode", "cheap", "--dry-run"])
-    assert rc == 0
-
-
-def test_pilot_runner_refuses_outputs_and_mutual_exclusive():
-    mod = _load("run_adaptive_pilot.py")
-    d = tempfile.mkdtemp(); inp, base, pq = _pilot_qids(d)
-    try:
-        mod.main(["--input", inp, "--base-pred", base, "--pilot-qids", pq, "--output-dir", "output/x"])
-        assert False
-    except SystemExit as e:
-        assert "scratch/" in str(e)
-    try:
-        mod.main(["--input", inp, "--base-pred", base, "--pilot-qids", pq,
-                  "--output-dir", "scratch/x", "--dry-run", "--execute"])
-        assert False
-    except SystemExit as e:
-        assert "mutually exclusive" in str(e)
-
-
-def test_pilot_runner_rejects_disallowed_model():
-    mod = _load("run_adaptive_pilot.py")
-    d = tempfile.mkdtemp(); inp, base, pq = _pilot_qids(d)
-    try:
-        mod.main(["--input", inp, "--base-pred", base, "--pilot-qids", pq,
-                  "--output-dir", "scratch/x", "--model", "gpt-4o", "--dry-run"])
-        assert False
-    except ValueError:
-        pass
 
 
 # --- Part C: decision report --------------------------------------------------
@@ -135,7 +82,7 @@ def _report_fixture(d, agree_v10=False):
     base = Path(d) / "v10.csv"; base.write_text("qid,answer\nq1,A\n")
     pq = Path(d) / "pilot_qids.csv"
     pq.write_text("qid,route,recommended_layer,priority_score,reason,expected_calls\n"
-                  "q1,short_knowledge,cheap_api,2.0,k,3\n")
+                  "q1,short_knowledge,local_light,2.0,k,3\n")
     ans = "A" if agree_v10 else "B"
     cands = Path(d) / "pilot_api_candidates.jsonl"
     recs = [{"qid": "q1", "agent": a, "answer": ans, "confidence": 0.9,

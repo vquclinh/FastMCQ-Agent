@@ -84,7 +84,7 @@ def main(argv=None) -> int:
     # API calls.
     api = [r.get("api_calls") for r in rows if isinstance(r.get("api_calls"), int)]
     print("-" * 70)
-    print(f"total OpenRouter api_calls (sum) : {sum(api)}")
+    print(f"total remote provider api_calls (sum) : {sum(api)}")
     print(f"rows with api_calls==0 (override): {sum(1 for a in api if a == 0)}")
 
     # Parse quality.
@@ -138,8 +138,8 @@ def main(argv=None) -> int:
     print("-" * 70)
     helpful = ["evidence_reranker_load_seconds", "evidence_reranker_score_seconds",
                "evidence_reranker_cache_hit", "evidence_reranker_batch_size",
-               "evidence_reranker_pair_count", "openrouter_call_seconds",
-               "verifier_call_seconds", "openrouter_completion_tokens", "openrouter_total_tokens"]
+               "evidence_reranker_pair_count", "model_provider_call_seconds",
+               "verifier_call_seconds", "model_provider_completion_tokens", "model_provider_total_tokens"]
     present = set(rows[0].keys()) if rows else set()
     missing = [h for h in helpful if h not in present]
     print(f"timing fields MISSING (added by this phase): {missing}")

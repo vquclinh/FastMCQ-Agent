@@ -4,7 +4,7 @@ Phase 2L.47G final static verification before Docker build.
 
 Final image target: `vquclinh/fastmcq-agent:latest`
 
-Final mode: offline local GPU inference with `Qwen/Qwen3-4B-Instruct-2507` through Hugging Face Transformers. No OpenRouter/API final path, no runtime internet, no API key, no vLLM, no `uv`, no `--torch-backend=cu128`, no `--ipc=host`, and no `--shm-size`.
+Final mode: offline local GPU inference with `Qwen/Qwen3-4B-Instruct-2507` through Hugging Face Transformers. No external API final path, no runtime internet, no API key, no vLLM, no `uv`, no `--torch-backend=cu128`, no `--ipc=host`, and no `--shm-size`.
 
 ## Summary
 
@@ -172,8 +172,8 @@ Repository evidence:
 - `requirements.txt:6-14` exact-pins all final direct dependency lines.
 - `requirements.txt:3-5` documents that torch is intentionally omitted from `requirements.txt` because `Dockerfile:29-30` installs `torch==2.7.1` from the CUDA 12.8 `cu128` index.
 - `Dockerfile:33-34` installs only `requirements.txt`.
-- `Dockerfile` does not install `requirements-openrouter.txt`.
-- Final docs do not require `requirements-openrouter.txt` for the final path; it remains legacy/dev-only.
+- `Dockerfile` installs only `requirements.txt`.
+- The retired remote-provider requirement file is absent from the active repository.
 
 Why this satisfies BTC:
 - The final dependency set is pinned and the GPU-sensitive torch wheel is pinned in the only place where the CUDA 12.8 wheel index is configured.

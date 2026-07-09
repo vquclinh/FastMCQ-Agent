@@ -1,0 +1,8 @@
+# Line-ending policy (see docs/audits/62-fix-docker-shell-line-endings.md).
+# Shell scripts and Dockerfiles MUST be checked out with Unix LF endings so the
+# Linux container never receives CRLF — CRLF breaks `set -o pipefail` in bash
+# (": invalid option name set: pipefail"). Rules are intentionally narrow so no
+# binary file is ever rewritten.
+*.sh text eol=lf
+Dockerfile text eol=lf
+Dockerfile.* text eol=lf

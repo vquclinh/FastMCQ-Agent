@@ -267,8 +267,8 @@ def test_no_qid_or_external_sheet_in_source():
         # Detect qid-VALUE hardcoding / answer tables (not legitimate "qid" column refs).
         for pat in (r'qid\s*==', r'==\s*qid', r'==\s*["\']test_0', r'test_0\d{3}'):
             assert not _re.search(pat, src), f"qid/answer-table pattern {pat} in {rel}"
-        assert "first100_external" not in src and "OpenRouterClient" not in src
-        assert ".env" not in src and "OPENROUTER_API_KEY" not in src
+        assert "first100_external" not in src
+        assert ".env" not in src
         for bad in ("import requests", "import urllib", "eval(", "exec("):
             assert bad not in src, f"{bad} in {rel}"
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Select an exact N-question adaptive pilot set from the overall accuracy plan (no API).
+"""Select an exact N-question adaptive pilot set from the overall accuracy plan (local-only).
 
-Picks the highest-priority API-eligible questions for the chosen mode (excluding
+Picks the highest-priority local-model-eligible questions for the chosen mode (excluding
 ``tool_only``), preferring route diversity when priority scores tie. Pure CSV in / CSV
 out: no qid hardcoding, no answer table, no inference. Output stays under scratch/.
 """
@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import argparse
 import csv
-import importlib.util
 import sys
 from pathlib import Path
 
@@ -18,13 +17,24 @@ _ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(_ROOT))
 
 _FIELDS = ["qid", "route", "recommended_layer", "priority_score", "reason", "expected_calls"]
+_MODE_LAYERS = {
+    "cheap": {"local_light"},
+    "balanced": {"local_light", "local_deep"},
+    "rich": {"local_light", "local_deep"},
+}
 
 
-def _adaptive():
-    spec = importlib.util.spec_from_file_location(
-        "run_adaptive_selective_api", _ROOT / "scripts" / "legacy" / "run" / "run_adaptive_selective_api.py")
-    mod = importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)
-    return mod
+def _agents_for(layer, route):
+    if layer == "local_light":
+        if route == "calculation":
+            return ["calculation_solver"]
+        return ["challenger", "option_elimination"]
+    if layer == "local_deep":
+        base = ["route_specialist", "challenger", "option_elimination"]
+        if route == "calculation":
+            return ["calculation_solver"] + base
+        return base
+    return []
 
 
 def _guard_scratch(path):
@@ -62,8 +72,7 @@ def _diversify(rows):
 
 
 def select_pilot(plan_rows, count, mode):
-    mode_layers = _adaptive()._MODE_LAYERS[mode]
-    atfn = _adaptive()._agents_temps_for
+    mode_layers = _MODE_LAYERS[mode]
     eligible = [r for r in plan_rows
                 if r.get("recommended_layer") != "tool_only"
                 and r.get("recommended_layer") in mode_layers]
@@ -71,17 +80,17 @@ def select_pilot(plan_rows, count, mode):
     out = []
     for r in chosen:
         layer = r.get("recommended_layer")
-        ags, temps = atfn(layer)
+        ags = _agents_for(layer, r.get("route"))
         out.append({"qid": r.get("qid"), "route": r.get("route"),
                     "recommended_layer": layer,
                     "priority_score": _float(r.get("priority_score")),
                     "reason": r.get("reason", ""),
-                    "expected_calls": len(ags) * len(temps) + 1})  # +1 possible judge
+                    "expected_calls": len(ags) + 1})  # +1 possible judge
     return out
 
 
 def main(argv=None) -> int:
-    ap = argparse.ArgumentParser(description="Select adaptive pilot qids (no API)")
+    ap = argparse.ArgumentParser(description="Select adaptive pilot qids (local-only)")
     ap.add_argument("--plan", default="scratch/accuracy_engine_2l27/overall_accuracy_plan.csv")
     ap.add_argument("--output", default="scratch/adaptive_pilot_2l28/pilot_qids.csv")
     ap.add_argument("--count", type=int, default=20)
@@ -100,7 +109,7 @@ def main(argv=None) -> int:
 
     from collections import Counter
     print("=" * 60)
-    print(f"PILOT SELECTION ({args.mode}) — no API")
+    print(f"PILOT SELECTION ({args.mode}) — local-only")
     print("=" * 60)
     print(f"plan eligible -> selected: {len(pilot)} (requested {args.count})")
     print(f"routes: {dict(Counter(p['route'] for p in pilot))}")

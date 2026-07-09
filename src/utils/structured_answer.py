@@ -1,4 +1,4 @@
-"""Structured-output schema + robust parser for the OpenRouter graph solver.
+"""Structured-output schema + robust parser for local model JSON answers.
 
 The model is asked to return strict JSON with these fields:
   * ``answer``      — the chosen label (must be one of the available labels)
@@ -157,7 +157,7 @@ def parse_structured_answer(text: str, valid_labels: list[str]) -> StructuredAns
                             error=("json_answer_invalid" if obj is not None else "unparseable"))
 
 
-# JSON schema usable as an OpenRouter response_format (json_schema) hint.
+# JSON schema usable as a structured response-format hint.
 def response_format_schema() -> dict:
     return {
         "type": "json_schema",

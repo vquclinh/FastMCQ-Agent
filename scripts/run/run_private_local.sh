@@ -1,32 +1,30 @@
 #!/usr/bin/env bash
-# Medium-size API pilot on the public test through the full dynamic V13 system
-# (V12B/V13 API layers capped at 50 high-risk qids; budget $2.50).
-# Usage: bash scripts/run_public_api50.sh <input_test_file> [extra final_infer flags...]
-# Profile: public_api50 (see configs/run_profiles.json). CLI flags after the input override it.
+# Full local selective system on a private test.
+# Usage: bash scripts/run_private_local.sh <input_test_file> [extra final_infer flags...]
+# Profile: local_selective_auto (see configs/profiles/run_profiles.json).
 set -euo pipefail
 
-INPUT="${1:?usage: bash scripts/run_public_api50.sh <input_test_file> [extra flags...]}"
+INPUT="${1:?usage: bash scripts/run_private_local.sh <input_test_file> [extra flags...]}"
 shift || true
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 PY="$ROOT/.venv/bin/python"; [ -x "$PY" ] || PY="python"
 TS="$(date +%Y%m%d_%H%M%S)"
-RUN_DIR="$ROOT/scratch/runs/public_api50_$TS"
+RUN_DIR="$ROOT/scratch/runs/private_local_$TS"
 mkdir -p "$RUN_DIR/work"
 OUT="$RUN_DIR/pred.csv"
 
 START=$(date +%s)
 set +e
 "$PY" "$ROOT/scripts/final_infer.py" \
-  --profile public_api50 \
   --input "$INPUT" --output "$OUT" \
-  --work-dir "$RUN_DIR/work" --resume "$@" 2>&1 | tee "$RUN_DIR/run.log"
+  --profile local_selective_auto --work-dir "$RUN_DIR/work" "$@" 2>&1 | tee "$RUN_DIR/run.log"
 rc=${PIPESTATUS[0]}
 set -e
 END=$(date +%s); EL=$((END-START))
 
 echo "------------------------------------------------------------"
-echo "profile : public_api50"
+echo "profile : local_selective_auto"
 echo "output  : $OUT"
 if [ -f "$OUT" ]; then echo "md5     : $(md5sum "$OUT" | awk '{print $1}')"; fi
 echo "elapsed : ${EL}s ($((EL/60))m$((EL%60))s)"

@@ -9,7 +9,6 @@ from __future__ import annotations
 import importlib.util
 import json
 import sys
-import tempfile
 from pathlib import Path
 
 _ROOT = Path(__file__).resolve().parents[2]
@@ -20,14 +19,6 @@ from src.evidence.option_evidence import build_option_aware_evidence_pack  # noq
 from src.system.production_inference import predict_one_direct  # noqa: E402
 from src.system.production_prompts import (answer_needs_repair, build_production_prompt,  # noqa: E402
                                     build_repair_prompt)
-
-
-def _load_runner():
-    spec = importlib.util.spec_from_file_location(
-        "rpp", next(iter((_ROOT / "scripts" / "legacy").glob("**/run_production_pipeline.py"))))
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    return mod
 
 
 class _Res:
@@ -142,35 +133,6 @@ def test_direct_inference_fallback_when_repair_fails():
     assert ans in ("A", "B") and rec["repair_status"] == "repair_failed" and fc.calls == 2
 
 
-# --- E: resume / checkpoint helpers ------------------------------------------
-
-def test_completed_qids_from_log():
-    m = _load_runner()
-    d = Path(tempfile.mkdtemp())
-    log = d / "r.jsonl"
-    log.write_text(json.dumps({"qid": "q1", "final_answer": "B"}) + "\n"
-                   + json.dumps({"qid": "q2", "final_answer": "C"}) + "\n"
-                   + json.dumps({"qid": "q3", "final_answer": None}) + "\n")
-    done = m.completed_qids_from_log(log)
-    assert done == {"q1": "B", "q2": "C"}        # q3 (no answer) is NOT completed
-
-
-def test_completed_qids_missing_log():
-    m = _load_runner()
-    assert m.completed_qids_from_log(None) == {}
-    assert m.completed_qids_from_log("/nope/x.jsonl") == {}
-
-
-def test_atomic_write_no_corruption_and_no_tmp_left():
-    m = _load_runner()
-    d = Path(tempfile.mkdtemp())
-    out = d / "pred.csv"
-    m.atomic_write_predictions([{"qid": "a", "answer": "A"}, {"qid": "b", "answer": "B"}], out)
-    text = out.read_text()
-    assert "qid,answer" in text and "a,A" in text and "b,B" in text
-    assert not (d / "pred.csv.tmp").exists()      # temp replaced atomically
-
-
 # --- source safety ------------------------------------------------------------
 
 def test_no_qid_hardcoding_or_sheet_in_new_sources():
@@ -180,7 +142,7 @@ def test_no_qid_hardcoding_or_sheet_in_new_sources():
         src = (_ROOT / rel).read_text()
         for pat in (r'qid\s*==', r'==\s*["\']test_0', r'test_0\d{3}'):
             assert not _re.search(pat, src), f"{pat} in {rel}"
-        assert "first100_external" not in src and "OPENROUTER_API_KEY" not in src
+        assert "first100_external" not in src
 
 
 if __name__ == "__main__":

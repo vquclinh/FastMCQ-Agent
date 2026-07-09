@@ -26,7 +26,7 @@ from src.system.production_policy import branch_of  # noqa: E402
 _NUM = re.compile(r"\d+(?:[.,]\d+)?")
 _LOW_CONF = 0.7
 _FIELDS = ["qid", "route", "v10_answer", "base_llm_answer", "final_answer", "override_applied",
-           "rule_id", "model_confidence", "openrouter_call_seconds", "api_calls",
+           "rule_id", "model_confidence", "model_provider_call_seconds", "api_calls",
            "question_length", "numeric_count", "branch", "risk_bucket",
            "question_preview", "choices_compact"]
 
@@ -85,7 +85,7 @@ def main(argv=None) -> int:
             "base_llm_answer": tr.get("parsed_answer", {}).get("answer") if isinstance(tr.get("parsed_answer"), dict) else None,
             "final_answer": tr.get("final_answer"), "override_applied": tr.get("verifier_override_applied"),
             "rule_id": tr.get("calculation_method") or (det.rule_id if det else None),
-            "model_confidence": conf, "openrouter_call_seconds": tr.get("openrouter_call_seconds"),
+            "model_confidence": conf, "model_provider_call_seconds": tr.get("model_provider_call_seconds"),
             "api_calls": tr.get("api_calls"), "question_length": tr.get("question_length") or len(q),
             "numeric_count": len(_NUM.findall(q)), "branch": branch_of(s), "risk_bucket": bucket,
             "question_preview": q[:120],

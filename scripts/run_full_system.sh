@@ -4,16 +4,13 @@
 #
 # Usage:
 #   bash scripts/run_full_system.sh [<test_json_or_csv>] [extra final_infer flags...]
-#   bash scripts/run_full_system.sh <test_file> --no-api            # fully offline
 #   bash scripts/run_full_system.sh <test_file> --fail-on-quality-guard
 #
 # Input priority  : <test_file> (CLI) > $INPUT_FILE > /data/private_test.csv > /data/public_test.csv
 #                   > /data/private_test.json > /data/public_test.json   (resolved by final_infer.py;
 #                   the positional <test_file> is OPTIONAL — omit it to use $INPUT_FILE / the /data
 #                   defaults).
-# Profile         : OPENROUTER_API_KEY present -> production_full_system (API; dynamic_full;
-#                   V12B+V13+selector); absent -> production_full_system_noapi (offline). Pass
-#                   --no-api to force offline regardless of the key.
+# Profile         : local_selective_auto (dynamic_full; local Base + V12B + V13 + selector).
 # Final local artifact: output/pred.csv (override dir with FASTMCQ_FINAL_DIR). Timestamped run
 # logs/records stay under scratch/runs/full_system_<ts>/ but are NOT the official artifact.
 set -euo pipefail
@@ -32,22 +29,15 @@ RUN_OUT="$RUN_DIR/pred.csv"
 FINAL_DIR="${FASTMCQ_FINAL_DIR:-$ROOT/output}"
 FINAL_OUT="$FINAL_DIR/pred.csv"
 
-# Strip --fail-on-quality-guard (handled here, not by final_infer); detect --no-api.
-FAIL_GUARD=0; NOAPI=0; PASS_ARGS=()
+# Strip --fail-on-quality-guard (handled here, not by final_infer).
+FAIL_GUARD=0; PASS_ARGS=()
 for a in "$@"; do
   case "$a" in
     --fail-on-quality-guard) FAIL_GUARD=1 ;;
-    --no-api) NOAPI=1; PASS_ARGS+=("$a") ;;
     *) PASS_ARGS+=("$a") ;;
   esac
 done
-# Default profile by API-key presence (no secret is baked in); --no-api always forces offline.
-if [ -n "${OPENROUTER_API_KEY:-}" ]; then
-  PROFILE="production_full_system"
-else
-  PROFILE="production_full_system_noapi"
-fi
-[ "$NOAPI" -eq 1 ] && PROFILE="production_full_system_noapi"
+PROFILE="local_selective_auto"
 
 # Pass --input only when a CLI input was given; otherwise final_infer resolves it (BTC priority).
 FI_INPUT_ARGS=()

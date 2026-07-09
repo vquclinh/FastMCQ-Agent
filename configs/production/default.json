@@ -19,11 +19,11 @@
   },
   "baseline_v10_csv": "output/pred_v10_full_production_user_run.csv",
   "fallback_v10_md5": "c12e32fdf16ee5472e6a791c1e52e86a",
-  "model": "qwen/qwen3.5-9b-20260310",
+  "model_path": "/models/qwen3-4b-instruct-2507",
   "no_v10_base": true,
   "v10_compare_only": true,
   "output_validation_required": true,
-  "model_policy_audit_required": true,
+  "local_model_required": true,
   "changed_vs_v12b": 9,
   "changed_qids": {
     "test_0034": "A->B", "test_0082": "B->D", "test_0103": "E->A", "test_0123": "B->F",
@@ -39,10 +39,10 @@
     "output/pred.csv"
   ],
   "notes": [
-    "CURRENT PRODUCTION BEST: V13 multi-layer reasoning candidate, public 79.7 (+0.87 over V12B 78.83, +1.30 over v11 78.40).",
-    "The REAL production system is dynamic_full (src/fastmcq_system.py): dynamic base predictor -> V12B debiaser layer -> V13 multilayer (programmatic/content-first/least-to-most) -> unified system_candidate_selector. It runs over ANY input and outputs predictions for exactly the input qids.",
+    "HISTORICAL FROZEN BEST: V13 multi-layer reasoning candidate, public 79.7 (+0.87 over V12B 78.83, +1.30 over v11 78.40). This score is historical and is not claimed for the migrated local implementation until separately reproduced.",
+    "The current dynamic_full system (src/fastmcq_system.py): dynamic base predictor -> local V12B debiaser layer -> local V13 multilayer (programmatic/content-first/least-to-most) -> unified system_candidate_selector. It runs over ANY input and outputs predictions for exactly the input qids.",
     "frozen_csv / public_replay reproduce this 79.7 CSV ONLY when the input qid set matches the public test; they are NOT the private/BTC path.",
-    "V12B and V13 are both official architecture layers, enabled by default; API is called only under explicit --execute-api and validated via src/model_policy.py.",
-    "no secrets/API keys are stored in this config or the image."
+    "V12B and V13 are optional selective architecture layers backed by the shared local Qwen model.",
+    "no secrets or model-provider credentials are stored in this config or the image."
   ]
 }

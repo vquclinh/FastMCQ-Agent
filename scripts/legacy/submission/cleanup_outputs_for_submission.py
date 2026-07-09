@@ -18,7 +18,7 @@ OUTPUTS = Path("output")
 # Final run/submission outputs that must always be kept.
 KEEP = {
     "pred.csv", "pred_phase2i0_baseline.csv",
-    "pred_phase2k3_openrouter_full.csv", "run_phase2k3_openrouter_full.jsonl",
+    "pred_phase2k3_model_provider_full.csv", "run_phase2k3_model_provider_full.jsonl",
     "pred_v2_calc_rerank.csv", "run_v2_calc_rerank.jsonl",
     "pred_v6_qwen_rerank_calc_verifier.csv", "run_v6_qwen_rerank_calc_verifier.jsonl",
     "pred_v6b_qwen_rerank_calc_verifier_fast.csv", "run_v6b_qwen_rerank_calc_verifier_fast.jsonl",

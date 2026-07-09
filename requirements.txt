@@ -14,10 +14,5 @@ sentencepiece==0.2.1          # tokenizer dependency for some models
 # --- Core utilities ---
 PyYAML==6.0.3                 # config loading
 
-# --- Legacy / dev only (NOT used by the offline final path) ---
-# httpx is the HTTP client for the older OpenRouter dynamic pipeline, reachable only via the
-# explicit dev flag `--legacy-dynamic-full`. Kept so that path + its tests still import.
-httpx==0.28.1
-
 # --- Testing (not required at inference time) ---
 pytest==9.1.0

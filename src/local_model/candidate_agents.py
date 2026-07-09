@@ -1,9 +1,9 @@
-"""API candidate agents — prompt builders + parsers only (Phase 2L.26A; no API here).
+"""Local candidate agents: prompt builders and parsers.
 
 Each agent builds strict-JSON chat messages and parses the model's reply into a
-normalized dict. No network is contacted in this module; the selective runner injects
-a client. No qid logic, no answer table, no ground truth. Strict JSON is enforced and
-the answer must be one of the sample's labels (else parse_status reflects the failure).
+normalized dict. No network is contacted in this module. No qid logic, no answer table,
+no ground truth. Strict JSON is enforced and the answer must be one of the sample's labels
+(else parse_status reflects the failure).
 """
 
 from __future__ import annotations

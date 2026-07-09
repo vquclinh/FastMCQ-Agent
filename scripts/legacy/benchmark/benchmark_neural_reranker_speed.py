@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Benchmark neural reranker speed on long-context samples (no OpenRouter, no CSV).
+"""Benchmark neural reranker speed on long-context samples (no remote provider, no CSV).
 
 Measures model load time (cache miss) vs warm rerank time (cache hits), confirming
 weights load ONCE per process. Uses LOCAL models only (`local_files_only`); no
@@ -45,7 +45,7 @@ def _load(path):
 
 
 def main(argv=None) -> int:
-    ap = argparse.ArgumentParser(description="Neural reranker speed benchmark (no OpenRouter)")
+    ap = argparse.ArgumentParser(description="Neural reranker speed benchmark (no remote provider)")
     ap.add_argument("--input", required=True)
     ap.add_argument("--method", choices=["reranker", "embedding"], default="reranker")
     ap.add_argument("--model-path", required=True)
@@ -60,7 +60,7 @@ def main(argv=None) -> int:
 
     clear_neural_model_cache()
     print("=" * 64)
-    print("NEURAL RERANKER SPEED BENCHMARK (read-only; no OpenRouter)")
+    print("NEURAL RERANKER SPEED BENCHMARK (read-only; no remote provider)")
     print("=" * 64)
     print(f"method={args.method}  model={args.model_path}  batch_size={args.batch_size}")
 

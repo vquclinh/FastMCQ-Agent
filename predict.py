@@ -9,10 +9,10 @@ Vietnamese Student HackAIthon — Bảng C Innovator, internet-isolated runtime.
 
 The FINAL path is fully offline: one open-weight local model
 (`Qwen/Qwen3-4B-Instruct-2507`, 4.0B < 5B, Apache-2.0) loaded once via Hugging Face Transformers,
-answering each question deterministically. No OpenRouter / external API / internet at runtime.
+answering each question deterministically. No external model provider / internet at runtime.
 
-`--legacy-dynamic-full` keeps the older API-capable dynamic pipeline available for development
-only; it is NOT the default and is never used in the offline submission.
+`--legacy-dynamic-full` keeps the optional local selective pipeline available for development
+only; it is NOT the default and is never used in the BTC no-argument submission path.
 """
 
 from __future__ import annotations
@@ -123,16 +123,11 @@ def _mirror(src_csv, dest):
 
 
 def _run_legacy_dynamic_full(args, inp, submission):
-    """DEV-ONLY: delegate to the older dynamic pipeline (scripts/tools/final_infer.py)."""
+    """DEV-ONLY: delegate to the optional local selective pipeline."""
     p = _ROOT / "scripts" / "tools" / "final_infer.py"
     spec = importlib.util.spec_from_file_location("final_infer", p)
     fi = importlib.util.module_from_spec(spec); spec.loader.exec_module(fi)
-    noapi = args.no_api or not os.environ.get("OPENROUTER_API_KEY")
-    profile = "production_full_system_noapi" if noapi else "production_full_system"
-    fi_argv = ["--input", inp, "--output", submission, "--profile", profile]
-    if args.no_api:
-        fi_argv.append("--no-api")
-    return fi.main(fi_argv)
+    return fi.main(["--input", inp, "--output", submission, "--profile", "local_selective_auto"])
 
 
 def main(argv=None) -> int:
@@ -148,9 +143,7 @@ def main(argv=None) -> int:
     ap.add_argument("--max-new-tokens", type=int, default=64)
     ap.add_argument("--device", default="auto")
     ap.add_argument("--legacy-dynamic-full", action="store_true", default=False,
-                    help="DEV ONLY: use the older dynamic pipeline instead of the local model")
-    ap.add_argument("--no-api", action="store_true", default=False,
-                    help="compatibility no-op (the offline final path never uses an API)")
+                    help="DEV ONLY: use the optional local selective pipeline")
     args, _extra = ap.parse_known_args(argv)
 
     inp = _resolve_input(args.input)

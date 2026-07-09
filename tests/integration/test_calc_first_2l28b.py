@@ -3,17 +3,15 @@
 from __future__ import annotations
 
 import importlib.util
-import io
 import json
 import sys
 import tempfile
-from contextlib import redirect_stdout
 from pathlib import Path
 
 _ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(_ROOT))
 
-from src.api import api_candidate_agents as A  # noqa: E402
+from src.local_model import candidate_agents as A  # noqa: E402
 from src.solvers import calculation_first_planner as P  # noqa: E402
 from src.solvers.formula_bank_solver import (labels_for, try_percent_change,  # noqa: E402
                                      try_simple_linear_equation)
@@ -122,33 +120,6 @@ def test_simple_linear_positive_and_decline():
     L = labels_for(4)
     assert try_simple_linear_equation("Giải 2x + 3 = 11.", ["2", "3", "4", "5"], L).selected_answer == "C"
     assert try_simple_linear_equation("Không có phương trình ở đây.", ["1", "2", "3", "4"], L) is None
-
-
-# --- Part D: route-aware runner ----------------------------------------------
-
-def test_runner_route_aware_agents():
-    mod = _load("run_adaptive_selective_api.py")
-    assert mod._agents_temps_for("cheap_api", "calculation") == (["calculation_solver"], [0.0])
-    assert mod._agents_temps_for("cheap_api", "short_knowledge") == (["challenger", "option_elimination"], [0.0])
-    assert "calculation_solver" in mod._agents_temps_for("rich_api", "calculation")[0]
-
-
-def test_runner_calc_upper_bound_includes_fallback():
-    mod = _load("run_adaptive_selective_api.py")
-    d = tempfile.mkdtemp()
-    plan = Path(d) / "plan.csv"
-    plan.write_text("qid,route,recommended_layer,priority_score\n"
-                    "q1,calculation,cheap_api,2.0\nq2,calculation,cheap_api,2.0\n")
-    inp = Path(d) / "in.json"
-    inp.write_text(json.dumps([{"qid": "q1", "question": "Q?", "choices": ["A", "B"]},
-                               {"qid": "q2", "question": "Q?", "choices": ["A", "B"]}]))
-    base = Path(d) / "v10.csv"; base.write_text("qid,answer\nq1,A\nq2,A\n")
-    buf = io.StringIO()
-    with redirect_stdout(buf):
-        mod.main(["--input", str(inp), "--base-pred", str(base), "--plan", str(plan),
-                  "--output-dir", "scratch/_calc_t", "--mode", "cheap", "--max-qids", "10"])
-    # 2 qids * (1 calc agent + 1 fallback + 1 judge) = 6
-    assert "upper-bound calls: 6" in buf.getvalue()
 
 
 # --- Part A: failure analyzer -------------------------------------------------

@@ -30,7 +30,7 @@ from src.selector.mcq_verifier import should_run_verifier  # noqa: E402
 
 
 class _VerifierCfg:
-    """Mirror of the OpenRouterConfig verifier fields for a given policy."""
+    """Mirror of the remote providerConfig verifier fields for a given policy."""
 
     def __init__(self, policy: str):
         self.mcq_verifier_enabled = True
