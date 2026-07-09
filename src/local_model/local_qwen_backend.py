@@ -54,15 +54,148 @@ def build_mcq_prompt(item: dict) -> tuple[str, list[str]]:
     return "\n".join(lines), labels
 
 
-def parse_mcq_label(text: str, labels: list[str]) -> str | None:
-    """Pull the first valid option label out of the model's output. Robust to extra text."""
+# --- Answer-label parsing -------------------------------------------------
+# Conservative, deterministic MCQ label extraction. It NEVER scans arbitrary
+# prose for the first A–K letter (that turned "The answer is clearly option B."
+# into "A" and "Grace Hopper" into "G"). Precedence: structured JSON answer
+# field > exact bare label > explicit answer marker > a single isolated final
+# label. Ambiguous or answer-free text returns None so the caller applies its
+# own deterministic fallback (the parser never silently picks "A").
+
+# A whole-output bare label, optionally wrapped: "B", "b", "B.", "(B)", "[B]".
+# Brace wrapping is intentionally excluded so "{...}" is treated as JSON, not a label.
+_BARE_LABEL_RE = re.compile(r"^\s*[\(\[]?\s*([A-Za-z])\s*[\)\]\.:,]?\s*$")
+
+# Explicit answer markers (Vietnamese + English), longest/most specific first so
+# the alternation prefers them. A separator (space/colon/dot/dash/open bracket)
+# must sit between the marker and the label, so "optionB" or "answer cannot"
+# never yield a label; the label must not be embedded in a larger word.
+_MARKER_LABEL_RE = re.compile(
+    r"(?:the\s+answer\s+is(?:\s+clearly)?(?:\s+option)?"
+    r"|final\s+answer"
+    r"|đáp\s*án(?:\s+đúng)?(?:\s+là)?"
+    r"|lựa\s*chọn(?:\s+đúng)?(?:\s+là)?"
+    r"|tôi\s+chọn"
+    r"|chọn\s+đáp\s+án"
+    r"|chọn"
+    r"|answer"
+    r"|choice"
+    r"|option)"
+    r"[\s:.\-]+[\(\[]?\s*"        # required separator, optional open bracket
+    r"([A-Za-z])(?![A-Za-z])",   # the label, not inside a larger word
+    re.IGNORECASE)
+
+# A single letter standing alone as a token (not inside a word).
+_ISOLATED_LABEL_RE = re.compile(r"(?<![A-Za-z])([A-Za-z])(?![A-Za-z])")
+
+# "... B or C" / "... B/C" style ambiguity immediately after a marker label.
+_OR_AFTER_RE = re.compile(r"^\s*(?:or|hoặc|/|,)\s*[A-Za-z](?![A-Za-z])", re.IGNORECASE)
+
+_ANSWER_KEYS = ("answer", "label", "choice")
+
+
+def _allowed_labels(labels) -> set[str]:
+    return {str(lab).strip().upper() for lab in (labels or []) if str(lab).strip()}
+
+
+def _bare_label(text, allowed) -> str | None:
     if not text:
         return None
-    allowed = {lab.upper() for lab in labels}
-    for m in re.finditer(r"[A-K]", text.upper()):
-        if m.group(0) in allowed:
-            return m.group(0)
+    m = _BARE_LABEL_RE.match(str(text))
+    if not m:
+        return None
+    lab = m.group(1).upper()
+    return lab if lab in allowed else None
+
+
+def _marker_label(text, allowed) -> str | None:
+    """Return the label of the LAST explicit answer marker (a final answer
+    overrides earlier exploratory mentions); None if none is unambiguous."""
+    if not text:
+        return None
+    found = None
+    for m in _MARKER_LABEL_RE.finditer(str(text)):
+        lab = m.group(1).upper()
+        if lab not in allowed:
+            continue
+        if _OR_AFTER_RE.match(str(text)[m.end():]):   # "answer: B or C" -> ambiguous
+            continue
+        found = lab
+    return found
+
+
+def _isolated_final_label(text, allowed) -> str | None:
+    """Accept a single isolated label only when exactly one distinct allowed
+    label appears as a standalone token AND it is the final meaningful token."""
+    if not text:
+        return None
+    hits = [g.upper() for g in _ISOLATED_LABEL_RE.findall(str(text)) if g.upper() in allowed]
+    distinct = set(hits)
+    if len(distinct) != 1:
+        return None
+    lab = next(iter(distinct))
+    tokens = str(text).split()
+    if not tokens:
+        return None
+    last = tokens[-1].strip("()[]{}.,:;\"'").upper()
+    return lab if last == lab else None
+
+
+def _json_label(text, allowed) -> str | None:
+    """Resolve an explicit answer/label/choice field of a JSON object to one
+    allowed label. Reuses the shared parse_json_object; rejects prose values."""
+    obj = parse_json_object(text)
+    if not isinstance(obj, dict):
+        return None
+    lowered = {str(k).lower(): v for k, v in obj.items()}
+    for key in _ANSWER_KEYS:
+        if key in lowered:
+            val = lowered[key]
+            if isinstance(val, str):
+                lab = _bare_label(val, allowed) or _marker_label(val, allowed)
+                if lab:
+                    return lab
     return None
+
+
+def parse_mcq_label(text: str, labels: list[str]) -> str | None:
+    """Extract exactly one allowed option label from model output, or None.
+
+    Conservative precedence (never a blind first-letter scan, never a silent 'A'):
+      1. a structured JSON answer/label/choice field;
+      2. an exact bare label (optionally wrapped: 'B', 'b', '(B)', 'B.');
+      3. an explicit answer marker + label (Vietnamese/English; last marker wins);
+      4. a single isolated final label, only when unambiguous.
+    Ambiguous or answer-free text returns None so the caller applies its own
+    deterministic fallback.
+    """
+    if not text:
+        return None
+    allowed = _allowed_labels(labels)
+    if not allowed:
+        return None
+    s = str(text).strip()
+
+    # 1) structured JSON answer field.
+    lab = _json_label(s, allowed)
+    if lab:
+        return lab
+    # A whole-output JSON object with no safe answer field must not be prose-scanned.
+    if s.startswith("{") or s.startswith("```"):
+        return None
+
+    # 2) exact bare label.
+    lab = _bare_label(s, allowed)
+    if lab:
+        return lab
+
+    # 3) explicit answer marker.
+    lab = _marker_label(s, allowed)
+    if lab:
+        return lab
+
+    # 4) single isolated final label (conservative).
+    return _isolated_final_label(s, allowed)
 
 
 def parse_json_object(content: str | None) -> dict[str, Any] | None:
