@@ -148,6 +148,50 @@ def load_v12b_config(source=None) -> "V12BShadowConfig":
     return _validate_v12b(_load_block(source, "confidence_v12b"))
 
 
+# --- Phase 3B full confidence pipeline config (opt-in; answer-CHANGING) --------
+# UNLIKE confidence_v12b/shadow_router above, this mode DOES change the official
+# answer once activated. The CLI flag (--confidence-full-pipeline) is the ONLY
+# execution opt-in; `enabled` here is a structural/default-disabled marker, NOT a
+# second activation gate (mirrors the Phase 2/3A-1 convention). It reuses the
+# `confidence_v12b` block's `permutation_count` for its internal V12B pass; V13 has
+# no exposed tunables in this first pass (fixed runner default max_new_tokens).
+@dataclass(frozen=True)
+class FullPipelineConfig:
+    enabled: bool = False
+    require_router_selected: bool = True
+
+
+# Fields that must never be honored in the first full-pipeline pass.
+_FULL_PIPELINE_FORBIDDEN_FIELDS = (
+    "answer_override", "merge", "merge_threshold", "balanced_policy",
+    "self_reported_confidence", "min_valid_permutations", "consensus_votes",
+    "max_new_tokens", "v13_max_new_tokens", "final_threshold", "api_key",
+    "openrouter", "ground_truth", "calibration_threshold",
+)
+
+
+def _validate_full_pipeline(block: dict) -> "FullPipelineConfig":
+    b = block or {}
+    present = tuple(f for f in _FULL_PIPELINE_FORBIDDEN_FIELDS if f in b)
+    if present:
+        raise ValueError(
+            f"confidence_full_pipeline forbidden/unexposed fields in first pass: {list(present)}")
+    if b.get("require_router_selected", True) is not True:
+        raise ValueError("confidence_full_pipeline.require_router_selected must be true")
+    return FullPipelineConfig(
+        enabled=bool(b.get("enabled", False)),
+        require_router_selected=True,
+    )
+
+
+def load_full_pipeline_config(source=None) -> "FullPipelineConfig":
+    """Return a validated FullPipelineConfig (opt-in; disabled by default). This
+    pipeline DOES change official answers for router-selected records once
+    activated via --confidence-full-pipeline; `enabled` here is a structural
+    marker only, not a second activation gate."""
+    return _validate_full_pipeline(_load_block(source, "confidence_full_pipeline"))
+
+
 def _load_block(source, key) -> dict:
     """Shared block loader: dict / path / None -> the ``key`` sub-mapping (or {}).
 

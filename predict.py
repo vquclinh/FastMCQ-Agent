@@ -114,6 +114,8 @@ _DEFAULT_SHADOW_PATH = "scratch/fastmcq_run/confidence_shadow_router.jsonl"
 _DEFAULT_SHADOW_SUMMARY_PATH = "scratch/fastmcq_run/confidence_shadow_router_summary.json"
 _DEFAULT_V12B_PATH = "scratch/fastmcq_run/confidence_v12b_shadow.jsonl"
 _DEFAULT_V12B_SUMMARY_PATH = "scratch/fastmcq_run/confidence_v12b_shadow_summary.json"
+_DEFAULT_FULL_PIPELINE_PATH = "scratch/fastmcq_run/confidence_full_pipeline.jsonl"
+_DEFAULT_FULL_PIPELINE_SUMMARY_PATH = "scratch/fastmcq_run/confidence_full_pipeline_summary.json"
 
 
 def _compute_score(predictor, item, *, enabled=True):
@@ -263,12 +265,29 @@ def main(argv=None) -> int:
                     help=f"v12b-shadow per-record JSONL (default {_DEFAULT_V12B_PATH})")
     ap.add_argument("--v12b-shadow-summary-path", default=_DEFAULT_V12B_SUMMARY_PATH,
                     help=f"v12b-shadow summary JSON (default {_DEFAULT_V12B_SUMMARY_PATH})")
+    ap.add_argument("--confidence-full-pipeline", action="store_true", default=False,
+                    help="Full Base -> V12B -> V13 -> deterministic-selector pipeline. CHANGES the "
+                         "official answer for router-selected records via a conservative selector "
+                         "(never self-reported confidence, never organizer ground truth, never an "
+                         "external API). Mutually exclusive with --legacy-dynamic-full and "
+                         "--confidence-v12b-shadow. Not the default.")
+    ap.add_argument("--confidence-full-pipeline-path", default=_DEFAULT_FULL_PIPELINE_PATH,
+                    help=f"full-pipeline per-record JSONL (default {_DEFAULT_FULL_PIPELINE_PATH})")
+    ap.add_argument("--confidence-full-pipeline-summary-path", default=_DEFAULT_FULL_PIPELINE_SUMMARY_PATH,
+                    help=f"full-pipeline summary JSON (default {_DEFAULT_FULL_PIPELINE_SUMMARY_PATH})")
     args, _extra = ap.parse_known_args(argv)
 
-    # Mode conflict must fail explicitly BEFORE any model construction/loading (AUDIT 87 §15).
+    # Mode conflicts must fail explicitly BEFORE any model construction/loading (AUDIT 87 §15).
     if args.legacy_dynamic_full and args.confidence_v12b_shadow:
         raise SystemExit(
             "REFUSING: --legacy-dynamic-full and --confidence-v12b-shadow are mutually exclusive")
+    if args.legacy_dynamic_full and args.confidence_full_pipeline:
+        raise SystemExit(
+            "REFUSING: --legacy-dynamic-full and --confidence-full-pipeline are mutually exclusive")
+    if args.confidence_v12b_shadow and args.confidence_full_pipeline:
+        raise SystemExit(
+            "REFUSING: --confidence-v12b-shadow and --confidence-full-pipeline are mutually "
+            "exclusive (each would run its own V12B pass)")
 
     inp = _resolve_input(args.input)
     submission = _resolve_out(args.submission, os.environ.get("SUBMISSION_FILE"), "submission.csv")
@@ -284,6 +303,10 @@ def main(argv=None) -> int:
 
     v12b_ready = False            # Phase 3A-1 V12B shadow runs strictly AFTER the official CSV write.
     _v12b_ctx = None
+    pipeline_ready = False        # Phase 3B full pipeline runs BEFORE the official CSV write (it may
+    _pipeline_ctx = None          # change `rows`); its diagnostics are written after, like V12B shadow.
+    _pipeline_records = None
+    _pipeline_summary = None
     if args.legacy_dynamic_full:
         print("[predict] mode: LEGACY dynamic-full (dev only)")
         rc = _run_legacy_dynamic_full(args, inp, submission)
@@ -297,9 +320,10 @@ def main(argv=None) -> int:
         # Opt-in observational modes (Phase 1 telemetry + Phase 2 shadow router + Phase 3A-1 V12B).
         # V12B shadow internally requires scoring + one router decision set; the router runs once
         # and is shared with Phase 2 shadow when both are on.
-        score_enabled, shadow_cfg, v12b_cfg = True, None, None
+        score_enabled, shadow_cfg, v12b_cfg, full_pipeline_cfg = True, None, None, None
         want_v12b = bool(args.confidence_v12b_shadow)
-        want_router = bool(args.confidence_shadow_router or want_v12b)
+        want_full_pipeline = bool(args.confidence_full_pipeline)
+        want_router = bool(args.confidence_shadow_router or want_v12b or want_full_pipeline)
         want_score = bool(args.confidence_telemetry or want_router)
         if want_score:
             try:
@@ -324,20 +348,33 @@ def main(argv=None) -> int:
                 except Exception as e:        # fail closed: no router, official output unaffected
                     print(f"[predict] WARN shadow-router config load failed ({type(e).__name__}: {e}); "
                           "router disabled")
-        if want_v12b:
+        if want_v12b or want_full_pipeline:
             if not score_enabled:
-                print("[predict] confidence-v12b-shadow: SKIPPED (choice_scoring disabled)")
+                print("[predict] confidence-v12b/full-pipeline: SKIPPED (choice_scoring disabled)")
             elif shadow_cfg is None:
-                print("[predict] confidence-v12b-shadow: SKIPPED (router unavailable)")
+                print("[predict] confidence-v12b/full-pipeline: SKIPPED (router unavailable)")
             else:
                 try:
                     from src.local_model.confidence_config import load_v12b_config
                     v12b_cfg = load_v12b_config()
-                    print("[predict] confidence-v12b-shadow: ON (observational; router-selected "
-                          "records only; no answer change, no V13/selector/legacy)")
+                    if want_v12b:
+                        print("[predict] confidence-v12b-shadow: ON (observational; router-selected "
+                              "records only; no answer change, no V13/selector/legacy)")
                 except Exception as e:        # fail closed: no V12B, official output unaffected
                     print(f"[predict] WARN v12b config load failed ({type(e).__name__}: {e}); "
-                          "v12b shadow disabled")
+                          "v12b/full-pipeline disabled")
+        if want_full_pipeline and v12b_cfg is not None:
+            try:
+                from src.local_model.confidence_config import load_full_pipeline_config
+                full_pipeline_cfg = load_full_pipeline_config()
+                print("[predict] confidence-full-pipeline: ON (Base -> V12B -> V13 -> deterministic "
+                      "selector; router-selected records only; official answer may change ONLY for "
+                      "those records; no self-reported confidence, no organizer ground truth, no "
+                      "external API, no legacy V12B/V13/selector orchestration)")
+            except Exception as e:            # fail closed: no full pipeline, official output unaffected
+                print(f"[predict] WARN full-pipeline config load failed ({type(e).__name__}: {e}); "
+                      "full pipeline disabled")
+                full_pipeline_cfg = None
         samples = load_dataset(inp)
         predictor = _build_predictor(args)
         rows, times = [], []
@@ -392,6 +429,43 @@ def main(argv=None) -> int:
             _v12b_ctx = (samples, decisions, router_summary, predictor, v12b_cfg)
             v12b_ready = True
 
+        if want_full_pipeline and full_pipeline_cfg is not None and v12b_cfg is not None \
+                and decisions is not None:
+            _pipeline_ctx = (samples, decisions, predictor, v12b_cfg)
+            pipeline_ready = True
+
+        # Full pipeline CHANGES official answers, so (unlike V12B shadow) it must run
+        # BEFORE the official CSV write. Any failure anywhere in this block reverts
+        # `rows` to the untouched Base rows already computed above -- a global
+        # optional-layer failure must still allow a Base submission to be written.
+        if pipeline_ready and _pipeline_ctx is not None:
+            _fp_samples, _fp_decisions, _fp_predictor, _fp_v12b_cfg = _pipeline_ctx
+            _base_rows = list(rows)
+            try:
+                from src.local_model.confidence_full_pipeline import run_full_pipeline
+                _pipeline_records, _pipeline_summary = run_full_pipeline(
+                    samples=_fp_samples, decisions=_fp_decisions, backend=_fp_predictor.backend,
+                    v12b_config=_fp_v12b_cfg)
+                if len(_pipeline_records) != len(_base_rows):
+                    raise AssertionError(
+                        "full pipeline record count does not match Base row count")
+                new_rows = []
+                for (qid, base_ans), rec in zip(_base_rows, _pipeline_records):
+                    sample = _fp_samples[rec.source_record_ordinal]
+                    ans = rec.final_answer
+                    if not (isinstance(ans, str) and is_valid_label(ans, sample)):
+                        ans = base_ans   # extra safety net: never write a non-canonical label
+                    new_rows.append((qid, ans))
+                rows = new_rows
+                print(f"[predict] full pipeline: {_pipeline_summary.total_v12b_accepted} v12b + "
+                      f"{_pipeline_summary.total_v13_accepted} v13 override(s), "
+                      f"{_pipeline_summary.total_base_fallback} base-fallback")
+            except Exception as e:        # any failure -> official output stays Base
+                print(f"[predict] WARN full pipeline failed ({type(e).__name__}); "
+                      "official output falls back to Base")
+                rows = _base_rows
+                _pipeline_records = _pipeline_summary = None
+
     # Write submission.csv (qid,answer) and submission_time.csv (qid,answer,time = REAL per-sample s).
     Path(submission).parent.mkdir(parents=True, exist_ok=True)
     with open(submission, "w", newline="", encoding="utf-8") as fh:
@@ -420,6 +494,20 @@ def main(argv=None) -> int:
                 jsonl_path=args.v12b_shadow_path, summary_path=args.v12b_shadow_summary_path)
         except Exception as e:            # any V12B failure must not affect the official output
             print(f"[predict] WARN v12b shadow failed ({type(e).__name__}); "
+                  "official output unaffected")
+
+    # Full-pipeline diagnostics: best-effort, AFTER the official CSV (already written
+    # from `rows`, which the pipeline block above may have already substituted). An
+    # artifact-write failure here must never suppress or alter the official submission.
+    if _pipeline_records is not None and _pipeline_summary is not None:
+        try:
+            from src.local_model.confidence_full_pipeline_artifacts import write_full_pipeline_artifacts
+            write_full_pipeline_artifacts(
+                records=_pipeline_records, summary=_pipeline_summary,
+                jsonl_path=args.confidence_full_pipeline_path,
+                summary_path=args.confidence_full_pipeline_summary_path)
+        except Exception as e:            # any write failure must not affect the official output
+            print(f"[predict] WARN full pipeline artifacts failed ({type(e).__name__}); "
                   "official output unaffected")
 
     # Legacy compatibility: explicit --output / $OUTPUT_FILE, and /output/pred.csv when writable.

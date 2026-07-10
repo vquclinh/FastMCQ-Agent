@@ -46,3 +46,14 @@ confidence_v12b:
   observational_only: true             # must be true (structural invariant)
   require_router_selected: true        # must be true (structural invariant)
   permutation_count: 6                 # up to 6 unique permutations per selected record (1..6)
+
+# Phase 3B full confidence-routed pipeline (Base -> V12B -> V13 -> deterministic
+# selector). UNLIKE the shadow modes above, this pipeline DOES change the official
+# answer for router-selected records once activated. The CLI flag
+# (--confidence-full-pipeline) is the only execution opt-in; `enabled` below is a
+# structural marker, not a second gate. Disabled by default. Reuses the
+# `confidence_v12b` block above for its internal V12B pass (permutation_count);
+# V13 has no exposed tunables in this first pass.
+confidence_full_pipeline:
+  enabled: false
+  require_router_selected: true        # must be true (structural invariant)
