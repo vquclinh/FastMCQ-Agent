@@ -1,12 +1,11 @@
 # FASTMCQ-Agent — Final System (Source of Truth)
 
 This is the single, current source-of-truth document for understanding and presenting
-FASTMCQ-Agent. It supersedes the earlier `ARCHITECTURE.md`, `METHOD.md`, `MODEL_COMPLIANCE.md`, the
-`docs/archive/` research notes, and the phase-by-phase `docs/audits/` history (all consolidated here
-and removed from the tree; Git history preserves them). The `docs/audits/` directory continues to
-receive one immutable record per validated change; the current governing state is
-[`docs/audits/96-default-full-pipeline-and-budget-divisor20.md`](audits/96-default-full-pipeline-and-budget-divisor20.md)
-and [`docs/audits/97-documentation-sync-current-architecture.md`](audits/97-documentation-sync-current-architecture.md).
+FASTMCQ-Agent. It supersedes the earlier `ARCHITECTURE.md`, `METHOD.md`, `MODEL_COMPLIANCE.md`, and
+the phase-by-phase development audit trail (all consolidated here; the repository now retains only
+the final production system, essential documentation, and validation tests — the historical
+phase-by-phase audit records were removed once their conclusions were folded into this document).
+This document is self-contained: it does not require any external audit file to be understood.
 
 Companion documents retained alongside this one:
 - `docs/BTC_SUBMISSION_COMPLIANCE.md`, `docs/BTC_FINAL_COMPLIANCE_MATRIX.md` — competition compliance.
@@ -185,8 +184,9 @@ Evidence in parentheses is the current source of truth.
 
 Only records the router actually selects (at most this many) ever reach V12B; only the subset V12B
 leaves unresolved ever reaches V13. It is normal, and expected, for the realized candidate count to
-be smaller than the cap. Full derivation, the `ceil` vs. `floor` decision, and the divisor-8→20
-promotion evidence: [AUDIT 96](audits/96-default-full-pipeline-and-budget-divisor20.md).
+be smaller than the cap. `ceil`, not `floor`, is used deliberately so that a nonzero remainder
+always rounds up to at least one additional candidate (confirmed by the budget-cap unit tests in
+`tests/unit/test_confidence_shadow_router_2l48d.py`).
 
 ---
 
@@ -223,8 +223,8 @@ promotion evidence: [AUDIT 96](audits/96-default-full-pipeline-and-budget-diviso
   accuracy is unknown until the organizers score it.
 - **V12B/V13 add generation cost only for the routed subset:** worst case still bounds to
   `ceil(N/20)` extra records, but that subset's wall-clock is higher than a pure Base run; not yet
-  benchmarked against a hard per-submission time budget beyond the runs recorded in AUDIT 94–96.
-  Diagnostic-mode timing is not necessarily representative of default full-pipeline-mode timing.
+  benchmarked against a hard per-submission time budget. Diagnostic-mode timing is not necessarily
+  representative of default full-pipeline-mode timing.
 - **Parser scope:** the label parser scans `[A-K]` only (labels beyond K, if a future set had them,
   would fall back), and picks the first matching letter. Mitigated by the answer-only prompt.
 - **`base_fallback` is generic:** when the selector cannot accept `v12b`/`v13` and must fall back, it
@@ -238,7 +238,7 @@ promotion evidence: [AUDIT 96](audits/96-default-full-pipeline-and-budget-diviso
   machine have intermittently hit a Docker Desktop/WSL2 "unexpected EOF" crash immediately after
   model-weight loading, requiring a manual Docker Desktop restart. This is host/OS tooling
   instability, not a defect in the image itself, but is worth the evaluator knowing about if a
-  first run appears to hang or die right after weight loading (AUDIT 94, AUDIT 96).
+  first run appears to hang or die right after weight loading.
 - **V12B/V13 coverage is not identical to the legacy prototype's scope:** e.g. the current
   `programmatic_solver` layer is a safe AST-based evaluator, not necessarily the same ~25-family
   formula registry described for the legacy prototype in §7 — exact family coverage should be
@@ -257,7 +257,7 @@ baseline solver (AlwaysASolver)
   -> competition offline constraint (internet-isolated, single <=5B model)
   -> local Qwen3-4B production redesign (predict.py offline path, Base-only)
   -> accepted Round-2 Docker system (vquclinh/fastmcq-agent:latest, Base-only)
-  -> confidence-routed pipeline (offline, local-model V12B/V13, budget-capped; AUDIT 92-96)
+  -> confidence-routed pipeline (offline, local-model V12B/V13, budget-capped)
   -> current final submission (vquclinh/fastmcq-agent-final:latest, this document, §2)
 ```
 
@@ -327,8 +327,8 @@ mechanism or scope — only the underlying idea carries over.
 The design intent originally sketched here — first-pass local prediction, an offline risk/confidence
 signal, budget-gated selective refinement for hard questions, and a conservative final selector, all
 without changing the Docker command or output contract — **is now the current default pipeline**
-described in §2–§3. It was implemented and promoted across AUDIT 92, 94, 95, and 96 (shadow-router →
-V12B-shadow → full pipeline default → budget divisor 8→20).
+described in §2–§3. It was implemented and promoted incrementally (shadow-router → V12B-shadow →
+full pipeline default → budget divisor 8→20), with each step validated before promotion.
 
 What remains genuinely unimplemented, per §7:
 
@@ -338,9 +338,9 @@ What remains genuinely unimplemented, per §7:
   ~25-family registry.
 - Any accuracy measurement against real organizer ground truth (synthetic diagnostics only, to date).
 
-Any further change to this pipeline must be evidence-validated (as AUDIT 92–96 were) before adoption
-— no accuracy claim without evidence, and no change to the Docker command, model identifier, input
-priority, or output schemas without an explicit, documented decision.
+Any further change to this pipeline must be evidence-validated before adoption — no accuracy claim
+without evidence, and no change to the Docker command, model identifier, input priority, or output
+schemas without an explicit, documented decision.
 
 ---
 
@@ -398,7 +398,7 @@ final policy.
 
 ---
 
-*Historical detail (phase audits, OpenRouter strategy, adaptive-orchestrator design, neural-reranker
-benchmarks, per-version freeze notes) is intentionally not reproduced in full here; it remains
-recoverable from Git history and `docs/audits/`. This document plus the retained compliance docs,
-dataset profile, and the two PDFs are the current documentation set.*
+*Historical detail (phase-by-phase development history, OpenRouter strategy, adaptive-orchestrator
+design, neural-reranker benchmarks, per-version freeze notes) is intentionally not reproduced in
+full here; it remains recoverable from Git history. This document plus the retained compliance
+docs, dataset profile, and the two PDFs are the current documentation set.*

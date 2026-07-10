@@ -34,33 +34,13 @@ parameters** and no external API. The submitted Docker Hub container reads
 
 ## Final architecture
 
-```text
-private_test.json
-   |
-   v
-Base Qwen3-4B generation (every record, once)
-   |
-   v
-One-forward confidence scoring (top1 / top2 / logit margin / normalized entropy)
-   |
-   v
-Confidence router  --------------------------->  not selected (most records) --\
-   | selected: at most ceil(N / 20) records                                    |
-   v                                                                            |
-V12B: option-permutation majority vote                                         |
-   | valid_unique_majority --------------------------------------------------->|
-   | otherwise, unresolved                                                     |
-   v                                                                            |
-V13: programmatic_solver / content_first / least_to_most (one layer, chosen    |
-     automatically) --------------------------------------------------------->|
-   | on failure -----------------------------------------------------------\  |
-   v                                                                        v  v
-                                                              Deterministic selector
-                                                                       |
-                                                                       v
-                                                  submission.csv + submission_time.csv
-                                                  + privacy-safe diagnostics (optional)
-```
+![FASTMCQ-Agent offline local Qwen confidence-routed architecture](assets/archi.png)
+
+Pipeline: input resolver → MCQ normalizer → Base generation → confidence scoring → confidence
+router → V12B (option-permutation majority vote) → V13 (deterministic reasoning) → selector →
+output writer. At most `ceil(N / 20)` records are ever escalated past Base; a record not selected
+by the router keeps its Base answer; only V12B-unresolved records reach V13; any failure anywhere
+in this chain falls back to the already-computed Base answer.
 
 Full per-stage detail, the execution-mode table, safety/fallback design, and known limitations
 live in [`docs/FINAL_SYSTEM.md`](docs/FINAL_SYSTEM.md).
@@ -151,29 +131,28 @@ ceiling, not a target. **N = 2000 → maximum 100 records escalated**, N = 120 �
 cap never backfills with high-confidence records to reach the budget; if fewer questions are
 genuinely uncertain, fewer are escalated. Only the subset V12B leaves unresolved proceeds to V13 —
 V12B and V13 do not both run on every selected record. Full derivation and test evidence:
-[AUDIT 96](docs/audits/96-default-full-pipeline-and-budget-divisor20.md).
+[`docs/FINAL_SYSTEM.md`](docs/FINAL_SYSTEM.md) §3 and
+`tests/unit/test_confidence_shadow_router_2l48d.py`.
 
 ## Offline / no external API
 
 No OpenRouter, no external LLM API, no web retrieval at runtime — a single local open-weight model
 loaded once per process. Verified by static import analysis and by direct observation of container
-network activity across every real-model validation run (AUDIT 92, 94, 95, 96).
+network activity across every real-model validation run.
 
 ## Documentation
 
 - [`docs/FINAL_SYSTEM.md`](docs/FINAL_SYSTEM.md) — full architecture, component-by-component
   detail, execution-mode table, and known limitations (source of truth).
 - [`DOCKER_SUBMISSION.md`](DOCKER_SUBMISSION.md) — the authoritative Docker build/run/retrieve guide.
-- [`docs/audits/`](docs/audits/) — the full audit trail of every validated change, including
-  real-model/GPU evidence (AUDIT 92, 94, 95, 96 are the current governing state).
 
 ## Evidence and limitations — stated honestly
 
 All accuracy figures anywhere in this repository come from **self-authored synthetic diagnostic
 sets**, never organizer ground truth — true competition accuracy is not known in-repo. The
 confidence-routed default was promoted deliberately, with explicit disclosure of the evidence
-behind that decision (see AUDIT 94/95/96) — it is not presented as a guaranteed accuracy
-improvement. GPU peak memory across all real-model validation runs has stayed at
+behind that decision — it is not presented as a guaranteed accuracy improvement. GPU peak memory
+across all real-model validation runs has stayed at
 **≈6.2–6.4 GiB**, comfortably inside an 8 GiB card, but this is not a guarantee for arbitrarily
 large inputs. See [`docs/FINAL_SYSTEM.md`](docs/FINAL_SYSTEM.md) §5 for the full, current
 limitations list.

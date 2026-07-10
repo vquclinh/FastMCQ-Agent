@@ -2,14 +2,13 @@
 
 Phase 2L.47G final static verification before Docker build.
 
-> **Notice (documentation sync, AUDIT 97):** this is a point-in-time static-verification snapshot.
-> The final image target below has been updated to the current submission image, but the specific
-> `README.md:NN-NN` line-number citations throughout this document were captured against an earlier
-> README structure and were **not** re-verified line-by-line during the AUDIT 97 documentation sync
-> (README.md was substantially rewritten and shortened). The architecture, flag, and Docker-flag
-> claims in this matrix remain accurate; for current, line-accurate references use
-> [`../README.md`](../README.md), [`FINAL_SYSTEM.md`](FINAL_SYSTEM.md), and
-> [`../DOCKER_SUBMISSION.md`](../DOCKER_SUBMISSION.md) directly.
+> **Notice:** this is a point-in-time static-verification snapshot. The final image target below has
+> been updated to the current submission image, but the specific `README.md:NN-NN` line-number
+> citations throughout this document were captured against an earlier README structure and have
+> **not** been re-verified line-by-line since README.md was substantially rewritten and shortened.
+> The architecture, flag, and Docker-flag claims in this matrix remain accurate; for current,
+> line-accurate references use [`../README.md`](../README.md), [`FINAL_SYSTEM.md`](FINAL_SYSTEM.md),
+> and [`../DOCKER_SUBMISSION.md`](../DOCKER_SUBMISSION.md) directly.
 
 Final image target: `vquclinh/fastmcq-agent-final:latest`
 (<https://hub.docker.com/r/vquclinh/fastmcq-agent-final>)

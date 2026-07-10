@@ -25,7 +25,7 @@ modules, kept for reference only.
 | `analysis/` | `analyze_*`, `compare_*`, `profile_*`, `inspect_*`, `inventory_*` — dataset/result analysis |
 | `audit/` | `audit_*` — candidate/quality/risk audits |
 | `build/` | `build_*`, `plan_*` — candidate/plan builders (non-submission) |
-| `run/` | `run_*` — experiment/pipeline runners (incl. the experimental `run_full_v11_independent_submission.py` used by `final_infer.py --mode v11_independent`, and the legacy `run_production_pipeline.py` used by `docker_entrypoint.sh`) |
+| `run/` | `run_*` — legacy OpenRouter-era experiment runners (`run_llm_full.sh`, `run_llm_smoke.sh`, `run_local.sh`) |
 | `review/` | `review_*` — candidate reviews |
 | `repair/` | `repair_*`, `apply_*` — prediction repair / post-hoc fix appliers |
 | `benchmark/` | `benchmark_*` — runtime / speed benchmarks |
