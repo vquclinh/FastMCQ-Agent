@@ -35,3 +35,14 @@ shadow_router:
     - 12.5
     - 15.0
     - 20.0
+
+# Phase 3A-1 confidence-routed V12B SHADOW (observational only; AUDIT 86/87).
+# Runs the in-memory Phase 3A-0 permutation runner ONLY on router-selected records,
+# emits privacy-safe diagnostics, and NEVER changes a generated answer or official
+# output. The CLI flag (--confidence-v12b-shadow) is the only execution opt-in;
+# `enabled` below is a structural marker, not a second gate. Disabled by default.
+confidence_v12b:
+  enabled: false
+  observational_only: true             # must be true (structural invariant)
+  require_router_selected: true        # must be true (structural invariant)
+  permutation_count: 6                 # up to 6 unique permutations per selected record (1..6)

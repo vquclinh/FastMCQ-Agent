@@ -112,6 +112,8 @@ def _build_predictor(args):
 _DEFAULT_TELEMETRY_PATH = "scratch/fastmcq_run/choice_score_telemetry.jsonl"
 _DEFAULT_SHADOW_PATH = "scratch/fastmcq_run/confidence_shadow_router.jsonl"
 _DEFAULT_SHADOW_SUMMARY_PATH = "scratch/fastmcq_run/confidence_shadow_router_summary.json"
+_DEFAULT_V12B_PATH = "scratch/fastmcq_run/confidence_v12b_shadow.jsonl"
+_DEFAULT_V12B_SUMMARY_PATH = "scratch/fastmcq_run/confidence_v12b_shadow_summary.json"
 
 
 def _compute_score(predictor, item, *, enabled=True):
@@ -252,7 +254,21 @@ def main(argv=None) -> int:
                     help=f"shadow-router decisions JSONL (default {_DEFAULT_SHADOW_PATH})")
     ap.add_argument("--shadow-router-summary-path", default=_DEFAULT_SHADOW_SUMMARY_PATH,
                     help=f"shadow-router summary JSON (default {_DEFAULT_SHADOW_SUMMARY_PATH})")
+    ap.add_argument("--confidence-v12b-shadow", action="store_true", default=False,
+                    help="DEV ONLY: Phase 3A-1 observational V12B shadow; runs the in-memory "
+                         "permutation runner ONLY on router-selected records and writes privacy-safe "
+                         "diagnostics (never runs V13/selector/legacy, never changes answers or the "
+                         "official CSV)")
+    ap.add_argument("--v12b-shadow-path", default=_DEFAULT_V12B_PATH,
+                    help=f"v12b-shadow per-record JSONL (default {_DEFAULT_V12B_PATH})")
+    ap.add_argument("--v12b-shadow-summary-path", default=_DEFAULT_V12B_SUMMARY_PATH,
+                    help=f"v12b-shadow summary JSON (default {_DEFAULT_V12B_SUMMARY_PATH})")
     args, _extra = ap.parse_known_args(argv)
+
+    # Mode conflict must fail explicitly BEFORE any model construction/loading (AUDIT 87 §15).
+    if args.legacy_dynamic_full and args.confidence_v12b_shadow:
+        raise SystemExit(
+            "REFUSING: --legacy-dynamic-full and --confidence-v12b-shadow are mutually exclusive")
 
     inp = _resolve_input(args.input)
     submission = _resolve_out(args.submission, os.environ.get("SUBMISSION_FILE"), "submission.csv")
@@ -266,6 +282,8 @@ def main(argv=None) -> int:
     print(f"[predict] submission_time  : {submission_time}")
     print("=" * 60)
 
+    v12b_ready = False            # Phase 3A-1 V12B shadow runs strictly AFTER the official CSV write.
+    _v12b_ctx = None
     if args.legacy_dynamic_full:
         print("[predict] mode: LEGACY dynamic-full (dev only)")
         rc = _run_legacy_dynamic_full(args, inp, submission)
@@ -276,9 +294,13 @@ def main(argv=None) -> int:
         times = [0.0] * len(rows)
     else:
         print(f"[predict] mode: offline local model ({args.model_path})")
-        # Opt-in observational modes (Phase 1 telemetry + Phase 2 shadow router).
-        score_enabled, shadow_cfg = True, None
-        want_score = bool(args.confidence_telemetry or args.confidence_shadow_router)
+        # Opt-in observational modes (Phase 1 telemetry + Phase 2 shadow router + Phase 3A-1 V12B).
+        # V12B shadow internally requires scoring + one router decision set; the router runs once
+        # and is shared with Phase 2 shadow when both are on.
+        score_enabled, shadow_cfg, v12b_cfg = True, None, None
+        want_v12b = bool(args.confidence_v12b_shadow)
+        want_router = bool(args.confidence_shadow_router or want_v12b)
+        want_score = bool(args.confidence_telemetry or want_router)
         if want_score:
             try:
                 from src.local_model.confidence_config import load_choice_scoring_config
@@ -289,18 +311,33 @@ def main(argv=None) -> int:
         if args.confidence_telemetry:
             print(f"[predict] confidence-telemetry: ON (scoring={'enabled' if score_enabled else 'disabled'}; "
                   "answers unchanged)")
-        if args.confidence_shadow_router:
+        if want_router:
             if not score_enabled:
-                print("[predict] confidence-shadow-router: SKIPPED (choice_scoring disabled)")
+                print("[predict] confidence-router: SKIPPED (choice_scoring disabled)")
             else:
                 try:
                     from src.local_model.confidence_config import load_shadow_router_config
                     shadow_cfg = load_shadow_router_config()
-                    print("[predict] confidence-shadow-router: ON (observational; no answer change, "
-                          "no V12B/V13)")
-                except Exception as e:        # fail closed: no shadow, official output unaffected
+                    if args.confidence_shadow_router:
+                        print("[predict] confidence-shadow-router: ON (observational; no answer "
+                              "change, no V12B/V13)")
+                except Exception as e:        # fail closed: no router, official output unaffected
                     print(f"[predict] WARN shadow-router config load failed ({type(e).__name__}: {e}); "
-                          "shadow router disabled")
+                          "router disabled")
+        if want_v12b:
+            if not score_enabled:
+                print("[predict] confidence-v12b-shadow: SKIPPED (choice_scoring disabled)")
+            elif shadow_cfg is None:
+                print("[predict] confidence-v12b-shadow: SKIPPED (router unavailable)")
+            else:
+                try:
+                    from src.local_model.confidence_config import load_v12b_config
+                    v12b_cfg = load_v12b_config()
+                    print("[predict] confidence-v12b-shadow: ON (observational; router-selected "
+                          "records only; no answer change, no V13/selector/legacy)")
+                except Exception as e:        # fail closed: no V12B, official output unaffected
+                    print(f"[predict] WARN v12b config load failed ({type(e).__name__}: {e}); "
+                          "v12b shadow disabled")
         samples = load_dataset(inp)
         predictor = _build_predictor(args)
         rows, times = [], []
@@ -336,15 +373,24 @@ def main(argv=None) -> int:
         print(f"[predict] predicted {len(rows)} samples ({failures} fell back to deterministic)")
         if telemetry is not None:
             _write_telemetry(args.telemetry_path, telemetry)
+        decisions = router_summary = None
         if shadow_inputs is not None:
-            try:                                  # shadow routing/writing must never break output
+            try:                                  # shadow routing must never break output
                 from src.local_model.confidence_shadow_router import run_shadow_router
-                decisions, summary = run_shadow_router(shadow_inputs, shadow_cfg)
-                _write_shadow(args.shadow_router_path, args.shadow_router_summary_path,
-                              decisions, summary)
+                decisions, router_summary = run_shadow_router(shadow_inputs, shadow_cfg)
             except Exception as e:
                 print(f"[predict] WARN shadow router failed ({type(e).__name__}: {e}); "
                       "official output unaffected")
+                decisions = router_summary = None
+            # Phase 2 shadow artifacts are written ONLY when Phase 2 shadow is requested;
+            # V12B shadow reuses the same decisions without requiring Phase 2 artifacts.
+            if args.confidence_shadow_router and decisions is not None:
+                _write_shadow(args.shadow_router_path, args.shadow_router_summary_path,
+                              decisions, router_summary)
+        # Defer V12B shadow (compute + write) until AFTER the official CSV is written.
+        if want_v12b and v12b_cfg is not None and decisions is not None:
+            _v12b_ctx = (samples, decisions, router_summary, predictor, v12b_cfg)
+            v12b_ready = True
 
     # Write submission.csv (qid,answer) and submission_time.csv (qid,answer,time = REAL per-sample s).
     Path(submission).parent.mkdir(parents=True, exist_ok=True)
@@ -360,6 +406,21 @@ def main(argv=None) -> int:
 
     print(f"[predict] wrote {submission} ({len(rows)} rows)")
     print(f"[predict] wrote {submission_time} (total={round(sum(times), 3)}s)")
+
+    # Phase 3A-1 observational V12B shadow: compute + write STRICTLY AFTER the official
+    # CSV, under one broad fail-closed boundary. It reads only router-selected records,
+    # never changes official output, and never runs V13/selector/legacy code.
+    if v12b_ready and _v12b_ctx is not None:
+        _samples, _decisions, _router_summary, _predictor, _v12b_cfg = _v12b_ctx
+        try:
+            from src.local_model.confidence_v12b_artifacts import run_and_write_v12b_shadow
+            run_and_write_v12b_shadow(
+                samples=_samples, decisions=_decisions, router_summary=_router_summary,
+                backend=_predictor.backend, v12b_config=_v12b_cfg,
+                jsonl_path=args.v12b_shadow_path, summary_path=args.v12b_shadow_summary_path)
+        except Exception as e:            # any V12B failure must not affect the official output
+            print(f"[predict] WARN v12b shadow failed ({type(e).__name__}); "
+                  "official output unaffected")
 
     # Legacy compatibility: explicit --output / $OUTPUT_FILE, and /output/pred.csv when writable.
     legacy_out = args.output or os.environ.get("OUTPUT_FILE")

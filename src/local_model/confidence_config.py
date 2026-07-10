@@ -100,6 +100,54 @@ def load_shadow_router_config(source=None):
     return _validate_shadow(_load_block(source, "shadow_router"))
 
 
+# --- Phase 3A-1 confidence-routed V12B shadow config (opt-in; observational) ---
+# The CLI flag (--confidence-v12b-shadow) is the ONLY execution opt-in; `enabled`
+# here is a structural/default-disabled marker, NOT a second activation gate
+# (mirrors the Phase 2 shadow_router convention). `min_valid_permutations`,
+# `consensus_votes`, and `max_new_tokens` are deliberately NOT exposed in the first
+# 3A-1 pass (AUDIT 85 L2 / AUDIT 87 §16/§17): the runner keeps its approved defaults.
+@dataclass(frozen=True)
+class V12BShadowConfig:
+    enabled: bool = False
+    observational_only: bool = True
+    require_router_selected: bool = True
+    permutation_count: int = 6
+
+
+# Fields that must never be honored in Phase 3A-1 (present => fail closed).
+_V12B_FORBIDDEN_FIELDS = (
+    "answer_override", "merge", "merge_threshold", "balanced_policy",
+    "self_reported_confidence", "v13", "selector",
+    "min_valid_permutations", "consensus_votes", "max_new_tokens",
+)
+
+
+def _validate_v12b(block: dict) -> "V12BShadowConfig":
+    b = block or {}
+    present = tuple(f for f in _V12B_FORBIDDEN_FIELDS if f in b)
+    if present:
+        raise ValueError(
+            f"confidence_v12b forbidden/unexposed fields in first 3A-1 pass: {list(present)}")
+    if b.get("observational_only", True) is not True:
+        raise ValueError("confidence_v12b.observational_only must be true")
+    if b.get("require_router_selected", True) is not True:
+        raise ValueError("confidence_v12b.require_router_selected must be true")
+    perm = b.get("permutation_count", 6)
+    if isinstance(perm, bool) or not isinstance(perm, int) or not (1 <= perm <= 6):
+        raise ValueError("confidence_v12b.permutation_count must be an integer in 1..6")
+    return V12BShadowConfig(
+        enabled=bool(b.get("enabled", False)),
+        observational_only=True,
+        require_router_selected=True,
+        permutation_count=int(perm),
+    )
+
+
+def load_v12b_config(source=None) -> "V12BShadowConfig":
+    """Return a validated V12BShadowConfig (opt-in; disabled by default; observational)."""
+    return _validate_v12b(_load_block(source, "confidence_v12b"))
+
+
 def _load_block(source, key) -> dict:
     """Shared block loader: dict / path / None -> the ``key`` sub-mapping (or {}).
 

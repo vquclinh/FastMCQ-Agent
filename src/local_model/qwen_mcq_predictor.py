@@ -6,6 +6,7 @@ from pathlib import Path
 
 from src.local_model.local_qwen_backend import (
     DEFAULT_MODEL_PATH,
+    LocalQwenBackendProtocol,
     build_mcq_prompt,
     get_local_qwen_backend,
     parse_mcq_label,
@@ -30,6 +31,14 @@ class QwenMCQPredictor:
         """Load the tokenizer + model once through the process-wide backend."""
         self._backend.load()
         return self
+
+    @property
+    def backend(self) -> LocalQwenBackendProtocol:
+        """Read-only access to the exact backend instance already used by
+        ``predict_one`` and ``score_choices`` (Phase 3A-1 injection). Performs no
+        model load, path resolution, cache lookup, or backend replacement — it just
+        returns ``self._backend`` so callers never trigger a second model load."""
+        return self._backend
 
     def predict_one(self, item: dict) -> str | None:
         """Return a single option label for ``item``; None if it could not be parsed."""
