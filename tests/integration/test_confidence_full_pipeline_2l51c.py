@@ -1,14 +1,18 @@
-"""Integration: --confidence-full-pipeline through predict.py main().
+"""Integration: default full-pipeline promotion through predict.py main().
 
-Proves: no-flag stays Base-only; --confidence-v12b-shadow stays observational
-(official CSV unchanged); --confidence-full-pipeline CAN change the official
+Proves: the no-flag default now runs the full confidence pipeline;
+--confidence-full-pipeline is an explicit alias for that exact same default (never
+executed twice); --base-only is the escape hatch that reproduces the pre-promotion
+Base-only behavior exactly; --confidence-v12b-shadow stays observational (official
+CSV unchanged, does not invoke the default selector); --legacy-dynamic-full never
+accidentally invokes the new pipeline; the full pipeline CAN change the official
 answer for a router-selected record via the deterministic selector while leaving
 non-selected records on Base; row count/qid order are preserved; a global
-full-pipeline failure still writes a Base submission; an artifact-write failure
-does not suppress the submission; the three modes are pairwise mutually exclusive
-and refuse before any model construction; artifacts are privacy-safe; and the
-same injected backend instance serves V12B and V13 (no second model load). No
-torch/GPU/network (fake predictor/backend).
+full-pipeline failure still writes a complete Base submission; an artifact-write
+failure does not suppress the submission; all four modes are pairwise mutually
+exclusive and refuse before any model construction; artifacts are privacy-safe;
+and the same injected backend instance serves V12B and V13 (no second model
+load). No torch/GPU/network (fake predictor/backend).
 """
 
 from __future__ import annotations
@@ -88,7 +92,7 @@ class _FakeBackend:
 
 
 class _FakePredictor:
-    """q1 (2+2) gets a LOW score margin -> the single selected record (cap=ceil(2/8)=1)."""
+    """q1 (2+2) gets a LOW score margin -> the single selected record (cap=ceil(2/20)=1)."""
     def __init__(self, backend, mode="ok"):
         self._backend = backend
         self.mode = mode
@@ -146,22 +150,112 @@ def _fp_argv(tmp_path, *extra):
             "--confidence-full-pipeline-summary-path", str(tmp_path / "fp.json"), *extra]
 
 
-def test_no_flag_stays_base_only(tmp_path, monkeypatch):
+def test_no_flag_runs_full_pipeline_by_default(tmp_path, monkeypatch):
+    """The no-flag default is now the full confidence pipeline: q1's answer is
+    overridden from Base "B" to V13's "C", exactly like --confidence-full-pipeline."""
     mod = _predict()
     _, sub = _run(mod, monkeypatch, tmp_path, [])
-    assert sub.read_text().splitlines()[1].startswith("q1,B")
+    lines = sub.read_text().splitlines()
+    assert lines[1] == "q1,C"      # overridden by the default pipeline, not Base "B"
+    assert lines[2] == "q2,A"
+
+
+def test_confidence_full_pipeline_alias_matches_no_flag_and_runs_once(tmp_path, monkeypatch):
+    mod = _predict()
+    no_flag = tmp_path / "no_flag"; no_flag.mkdir()
+    explicit = tmp_path / "explicit"; explicit.mkdir()
+    backend_a = _FakeBackend()
+    pred_a = _FakePredictor(backend_a)
+    _, sub_no_flag = _run(mod, monkeypatch, no_flag, [], predictor=pred_a, backend=backend_a)
+    backend_b = _FakeBackend()
+    pred_b = _FakePredictor(backend_b)
+    _, sub_explicit = _run(mod, monkeypatch, explicit, ["--confidence-full-pipeline"],
+                           predictor=pred_b, backend=backend_b)
+    assert sub_no_flag.read_bytes() == sub_explicit.read_bytes()
+    # Identical call counts prove the pipeline ran exactly once in both cases, not twice.
+    assert pred_a.score_calls == pred_b.score_calls == len(_SAMPLES)
+    assert backend_a.calls == backend_b.calls
+
+
+def test_base_only_reproduces_pre_promotion_base_behavior(tmp_path, monkeypatch):
+    """--base-only must reproduce the exact pre-promotion Base-only output: q1
+    stays "B" (never overridden), no confidence router/V12B/V13/selector runs."""
+    mod = _predict()
+    pred = _FakePredictor(_FakeBackend())
+    _, sub = _run(mod, monkeypatch, tmp_path, ["--base-only"], predictor=pred)
+    lines = sub.read_text().splitlines()
+    assert lines[1] == "q1,B" and lines[2] == "q2,A"
+    assert pred.score_calls == 0    # no scoring at all under plain --base-only
+
+
+def test_base_only_allows_compatible_diagnostic_scoring_flags(tmp_path, monkeypatch):
+    """--base-only + --confidence-shadow-router is a permitted diagnostic combo: it
+    scores/routes for observation only and still never runs V12B/V13/selector."""
+    mod = _predict()
+    pred = _FakePredictor(_FakeBackend())
+    _, sub = _run(mod, monkeypatch, tmp_path,
+                  ["--base-only", "--confidence-shadow-router",
+                   "--shadow-router-path", str(tmp_path / "sr.jsonl"),
+                   "--shadow-router-summary-path", str(tmp_path / "sr.json")],
+                  predictor=pred)
+    lines = sub.read_text().splitlines()
+    assert lines[1] == "q1,B"                        # official answer still pure Base
+    assert pred.score_calls == len(_SAMPLES)          # scoring did run (diagnostic only)
+    assert (tmp_path / "sr.jsonl").exists()           # Phase 2 shadow diagnostics written
+    assert not (tmp_path / "fastmcq_run" / "confidence_full_pipeline.jsonl").exists()
 
 
 def test_v12b_shadow_stays_observational(tmp_path, monkeypatch):
     mod = _predict()
     base = tmp_path / "base"; base.mkdir()
     run = tmp_path / "run"; run.mkdir()
-    _, sub_base = _run(mod, monkeypatch, base, [])
+    _, sub_base = _run(mod, monkeypatch, base, ["--base-only"])
     _, sub_run = _run(mod, monkeypatch, run,
                       ["--confidence-v12b-shadow",
                        "--v12b-shadow-path", str(tmp_path / "v.jsonl"),
                        "--v12b-shadow-summary-path", str(tmp_path / "v.json")])
-    assert sub_base.read_bytes() == sub_run.read_bytes()
+    assert sub_base.read_bytes() == sub_run.read_bytes()   # official answer stays Base under v12b-shadow
+
+
+def test_v12b_shadow_does_not_invoke_default_selector(tmp_path, monkeypatch):
+    mod = _predict()
+
+    def _boom(**kwargs):
+        raise AssertionError("the default full-pipeline selector must not run under --confidence-v12b-shadow")
+
+    import src.local_model.confidence_full_pipeline as fp_mod
+    monkeypatch.setattr(fp_mod, "run_full_pipeline", _boom)
+    _run(mod, monkeypatch, tmp_path,
+         ["--confidence-v12b-shadow",
+          "--v12b-shadow-path", str(tmp_path / "v.jsonl"),
+          "--v12b-shadow-summary-path", str(tmp_path / "v.json")])
+
+
+def test_legacy_mode_never_invokes_new_pipeline(tmp_path, monkeypatch):
+    mod = _predict()
+
+    def _boom_pipeline(**kwargs):
+        raise AssertionError("the default full-pipeline selector must not run under --legacy-dynamic-full")
+
+    def _boom_v12b(*a, **k):
+        raise AssertionError("V12B must not run under --legacy-dynamic-full")
+
+    import src.local_model.confidence_full_pipeline as fp_mod
+    monkeypatch.setattr(fp_mod, "run_full_pipeline", _boom_pipeline)
+    monkeypatch.setattr(mod, "_build_predictor", _boom_v12b)
+
+    inp = tmp_path / "in.json"; inp.write_text(json.dumps(_SAMPLES), encoding="utf-8")
+    sub = tmp_path / "submission.csv"
+
+    def _fake_legacy(args, inp_path, submission):
+        Path(submission).write_text("qid,answer\nq1,A\nq2,A\n", encoding="utf-8")
+        return 0
+
+    monkeypatch.setattr(mod, "_run_legacy_dynamic_full", _fake_legacy)
+    monkeypatch.setenv("SUBMISSION_FILE", str(sub))
+    monkeypatch.delenv("OUTPUT_FILE", raising=False)
+    rc = mod.main(["--input", str(inp), "--legacy-dynamic-full"])
+    assert rc == 0
 
 
 def test_full_pipeline_overrides_selected_record_only(tmp_path, monkeypatch):
@@ -174,11 +268,11 @@ def test_full_pipeline_overrides_selected_record_only(tmp_path, monkeypatch):
     assert len(lines) == 3        # row count unchanged (header + 2 rows)
 
 
-def test_full_pipeline_differs_from_base_only_csv(tmp_path, monkeypatch):
+def test_full_pipeline_differs_from_base_only_escape_hatch_csv(tmp_path, monkeypatch):
     mod = _predict()
     base = tmp_path / "base"; base.mkdir()
     run = tmp_path / "run"; run.mkdir()
-    _, sub_base = _run(mod, monkeypatch, base, [])
+    _, sub_base = _run(mod, monkeypatch, base, ["--base-only"])
     _, sub_run = _run(mod, monkeypatch, run, _fp_argv(tmp_path))
     assert sub_base.read_bytes() != sub_run.read_bytes()   # full pipeline DID change output
     assert [l.split(",")[0] for l in sub_base.read_text().splitlines()] == \
@@ -213,7 +307,7 @@ def test_full_pipeline_global_failure_preserves_base_submission(tmp_path, monkey
     mod = _predict()
     base = tmp_path / "base"; base.mkdir()
     run = tmp_path / "run"; run.mkdir()
-    _, sub_base = _run(mod, monkeypatch, base, [])
+    _, sub_base = _run(mod, monkeypatch, base, ["--base-only"])
 
     def _boom(**kwargs):
         raise RuntimeError("synthetic full-pipeline failure")
@@ -222,6 +316,26 @@ def test_full_pipeline_global_failure_preserves_base_submission(tmp_path, monkey
     monkeypatch.setattr(fp_mod, "run_full_pipeline", _boom)
     _, sub_run = _run(mod, monkeypatch, run, _fp_argv(tmp_path))
     assert sub_run.read_bytes() == sub_base.read_bytes()   # official output fell back to Base
+
+
+def test_default_no_flag_global_failure_produces_complete_base_rows(tmp_path, monkeypatch):
+    """Same as above, but exercising the actual no-flag default (not the explicit
+    alias) -- a global pipeline failure under the promoted default must still yield
+    a complete, correctly-shaped Base submission, never a partial or missing one."""
+    mod = _predict()
+    base = tmp_path / "base"; base.mkdir()
+    run = tmp_path / "run"; run.mkdir()
+    _, sub_base = _run(mod, monkeypatch, base, ["--base-only"])
+
+    def _boom(**kwargs):
+        raise RuntimeError("synthetic default-pipeline failure")
+
+    import src.local_model.confidence_full_pipeline as fp_mod
+    monkeypatch.setattr(fp_mod, "run_full_pipeline", _boom)
+    _, sub_run = _run(mod, monkeypatch, run, [])   # no flag at all
+    assert sub_run.read_bytes() == sub_base.read_bytes()
+    lines = sub_run.read_text().splitlines()
+    assert len(lines) == 3 and lines[0] == "qid,answer"   # complete: header + 2 rows, not partial
 
 
 def test_full_pipeline_artifact_write_failure_preserves_submission(tmp_path, monkeypatch):
@@ -294,9 +408,61 @@ def test_full_pipeline_scoring_and_router_run_once_when_combined_with_shadow(tmp
     assert (tmp_path / "sr.jsonl").exists() and (tmp_path / "fp.jsonl").exists()
 
 
-def test_no_full_pipeline_files_when_flag_off(tmp_path, monkeypatch):
+def test_no_full_pipeline_files_under_base_only(tmp_path, monkeypatch):
+    """Path-only flags remain inert when the active mode is --base-only, even
+    though the same flags DO produce files under the (now-default) full pipeline."""
+    mod = _predict()
+    _run(mod, monkeypatch, tmp_path,
+         ["--base-only",
+          "--confidence-full-pipeline-path", str(tmp_path / "fp.jsonl"),
+          "--confidence-full-pipeline-summary-path", str(tmp_path / "fp.json")])
+    assert not (tmp_path / "fp.jsonl").exists() and not (tmp_path / "fp.json").exists()
+
+
+def test_full_pipeline_files_written_under_default_no_flag(tmp_path, monkeypatch):
+    """The mirror case: under the promoted no-flag default, the same path flags DO
+    produce full-pipeline diagnostic files (they are no longer inert by default)."""
     mod = _predict()
     _run(mod, monkeypatch, tmp_path,
          ["--confidence-full-pipeline-path", str(tmp_path / "fp.jsonl"),
           "--confidence-full-pipeline-summary-path", str(tmp_path / "fp.json")])
-    assert not (tmp_path / "fp.jsonl").exists() and not (tmp_path / "fp.json").exists()
+    assert (tmp_path / "fp.jsonl").exists() and (tmp_path / "fp.json").exists()
+
+
+# --- mode conflicts: --base-only pairs -----------------------------------------
+
+def test_base_only_plus_full_pipeline_conflict_errors_before_model_load(tmp_path, monkeypatch):
+    mod = _predict()
+
+    def _boom(*a, **k):
+        raise AssertionError("model path must not be reached on a mode conflict")
+
+    monkeypatch.setattr(mod, "_build_predictor", _boom)
+    inp = tmp_path / "in.json"; inp.write_text(json.dumps(_SAMPLES), encoding="utf-8")
+    with pytest.raises(SystemExit):
+        mod.main(["--input", str(inp), "--base-only", "--confidence-full-pipeline"])
+
+
+def test_base_only_plus_v12b_shadow_conflict_errors_before_model_load(tmp_path, monkeypatch):
+    mod = _predict()
+
+    def _boom(*a, **k):
+        raise AssertionError("model path must not be reached on a mode conflict")
+
+    monkeypatch.setattr(mod, "_build_predictor", _boom)
+    inp = tmp_path / "in.json"; inp.write_text(json.dumps(_SAMPLES), encoding="utf-8")
+    with pytest.raises(SystemExit):
+        mod.main(["--input", str(inp), "--base-only", "--confidence-v12b-shadow"])
+
+
+def test_base_only_plus_legacy_conflict_errors_before_model_load(tmp_path, monkeypatch):
+    mod = _predict()
+
+    def _boom(*a, **k):
+        raise AssertionError("model/legacy path must not be reached on a mode conflict")
+
+    monkeypatch.setattr(mod, "_build_predictor", _boom)
+    monkeypatch.setattr(mod, "_run_legacy_dynamic_full", _boom)
+    inp = tmp_path / "in.json"; inp.write_text(json.dumps(_SAMPLES), encoding="utf-8")
+    with pytest.raises(SystemExit):
+        mod.main(["--input", str(inp), "--base-only", "--legacy-dynamic-full"])

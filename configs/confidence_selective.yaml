@@ -23,7 +23,7 @@ shadow_router:
   enabled: false
   provisional_margin_threshold: 10.0   # SHADOW-ONLY; NOT a final production threshold
   entropy_threshold: null              # null -> entropy does not affect selection
-  budget_divisor: 8                    # budget cap = ceil(N / budget_divisor)
+  budget_divisor: 20                   # budget cap = ceil(N / budget_divisor); N=2000 -> 100
   max_targets_override: null           # null -> use ceil(N / budget_divisor)
   include_scoring_invalid: true
   include_parser_failure: true

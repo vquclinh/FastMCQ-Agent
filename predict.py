@@ -11,8 +11,14 @@ The FINAL path is fully offline: one open-weight local model
 (`Qwen/Qwen3-4B-Instruct-2507`, 4.0B < 5B, Apache-2.0) loaded once via Hugging Face Transformers,
 answering each question deterministically. No external model provider / internet at runtime.
 
-`--legacy-dynamic-full` keeps the optional local selective pipeline available for development
-only; it is NOT the default and is never used in the BTC no-argument submission path.
+The no-argument BTC default runs the full confidence-routed pipeline (Base -> one-forward
+scoring -> confidence router -> V12B on selected records -> V13 on V12B-unresolved records ->
+deterministic selector). `--confidence-full-pipeline` is an explicit alias for this same default
+(it never runs the pipeline twice). `--base-only` is the escape hatch that reproduces the prior
+Base-only behavior exactly. `--confidence-v12b-shadow` remains an observational diagnostic mode
+whose official answer stays Base. `--legacy-dynamic-full` keeps the optional local selective
+pipeline available for development only; it is never used in the BTC no-argument submission path.
+These four modes are mutually exclusive (see `_resolve_mode`).
 """
 
 from __future__ import annotations
@@ -230,6 +236,48 @@ def _run_legacy_dynamic_full(args, inp, submission):
     return fi.main(["--input", inp, "--output", submission, "--profile", "local_selective_auto"])
 
 
+# --- Execution-mode resolution ------------------------------------------------
+# One clear resolver instead of scattered boolean conditions. The four modes are
+# pairwise mutually exclusive; conflicts are rejected BEFORE any model construction
+# or loading. `--confidence-full-pipeline` is an explicit alias for FULL_PIPELINE,
+# which is also what "no relevant mode flag" resolves to (the promoted default) --
+# both reach the exact same code path exactly once, so the pipeline is never run
+# twice regardless of which of the two selected it.
+_MODE_LEGACY = "legacy"
+_MODE_BASE_ONLY = "base_only"
+_MODE_V12B_SHADOW = "v12b_shadow"
+_MODE_FULL_PIPELINE = "full_pipeline"
+
+
+def _resolve_mode(args) -> str:
+    """Return one of the `_MODE_*` constants, or raise `SystemExit` on a conflict."""
+    conflicts = (
+        (args.base_only and args.confidence_full_pipeline,
+         "--base-only and --confidence-full-pipeline are mutually exclusive"),
+        (args.base_only and args.confidence_v12b_shadow,
+         "--base-only and --confidence-v12b-shadow are mutually exclusive"),
+        (args.base_only and args.legacy_dynamic_full,
+         "--base-only and --legacy-dynamic-full are mutually exclusive"),
+        (args.confidence_full_pipeline and args.confidence_v12b_shadow,
+         "--confidence-full-pipeline and --confidence-v12b-shadow are mutually exclusive "
+         "(each would run its own V12B pass)"),
+        (args.confidence_full_pipeline and args.legacy_dynamic_full,
+         "--confidence-full-pipeline and --legacy-dynamic-full are mutually exclusive"),
+        (args.legacy_dynamic_full and args.confidence_v12b_shadow,
+         "--legacy-dynamic-full and --confidence-v12b-shadow are mutually exclusive"),
+    )
+    for conflict, message in conflicts:
+        if conflict:
+            raise SystemExit(f"REFUSING: {message}")
+    if args.legacy_dynamic_full:
+        return _MODE_LEGACY
+    if args.base_only:
+        return _MODE_BASE_ONLY
+    if args.confidence_v12b_shadow:
+        return _MODE_V12B_SHADOW
+    return _MODE_FULL_PIPELINE   # explicit --confidence-full-pipeline OR no relevant flag (default)
+
+
 def main(argv=None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
     ap = argparse.ArgumentParser(description="FASTMCQ — official BTC submission (offline local model)")
@@ -244,6 +292,13 @@ def main(argv=None) -> int:
     ap.add_argument("--device", default="auto")
     ap.add_argument("--legacy-dynamic-full", action="store_true", default=False,
                     help="DEV ONLY: use the optional local selective pipeline")
+    ap.add_argument("--base-only", action="store_true", default=False,
+                    help="Escape hatch: reproduce the pre-promotion Base-only behavior exactly "
+                         "(no confidence router/V12B/V13/selector), even though the no-flag default "
+                         "now runs the full confidence pipeline. May combine with "
+                         "--confidence-telemetry/--confidence-shadow-router (diagnostics only). "
+                         "Mutually exclusive with --confidence-full-pipeline, "
+                         "--confidence-v12b-shadow, and --legacy-dynamic-full.")
     ap.add_argument("--confidence-telemetry", action="store_true", default=False,
                     help="DEV ONLY: shadow per-choice uncertainty scoring; writes a diagnostics "
                          "JSONL and does NOT change answers or the official CSV output")
@@ -269,25 +324,18 @@ def main(argv=None) -> int:
                     help="Full Base -> V12B -> V13 -> deterministic-selector pipeline. CHANGES the "
                          "official answer for router-selected records via a conservative selector "
                          "(never self-reported confidence, never organizer ground truth, never an "
-                         "external API). Mutually exclusive with --legacy-dynamic-full and "
-                         "--confidence-v12b-shadow. Not the default.")
+                         "external API). This is an explicit alias for the no-flag default (same "
+                         "code path, runs exactly once either way). Mutually exclusive with "
+                         "--legacy-dynamic-full, --confidence-v12b-shadow, and --base-only.")
     ap.add_argument("--confidence-full-pipeline-path", default=_DEFAULT_FULL_PIPELINE_PATH,
                     help=f"full-pipeline per-record JSONL (default {_DEFAULT_FULL_PIPELINE_PATH})")
     ap.add_argument("--confidence-full-pipeline-summary-path", default=_DEFAULT_FULL_PIPELINE_SUMMARY_PATH,
                     help=f"full-pipeline summary JSON (default {_DEFAULT_FULL_PIPELINE_SUMMARY_PATH})")
     args, _extra = ap.parse_known_args(argv)
 
-    # Mode conflicts must fail explicitly BEFORE any model construction/loading (AUDIT 87 §15).
-    if args.legacy_dynamic_full and args.confidence_v12b_shadow:
-        raise SystemExit(
-            "REFUSING: --legacy-dynamic-full and --confidence-v12b-shadow are mutually exclusive")
-    if args.legacy_dynamic_full and args.confidence_full_pipeline:
-        raise SystemExit(
-            "REFUSING: --legacy-dynamic-full and --confidence-full-pipeline are mutually exclusive")
-    if args.confidence_v12b_shadow and args.confidence_full_pipeline:
-        raise SystemExit(
-            "REFUSING: --confidence-v12b-shadow and --confidence-full-pipeline are mutually "
-            "exclusive (each would run its own V12B pass)")
+    # Mode resolution + all conflict checks happen BEFORE any model construction/loading
+    # (AUDIT 87 §15, extended to --base-only).
+    mode = _resolve_mode(args)
 
     inp = _resolve_input(args.input)
     submission = _resolve_out(args.submission, os.environ.get("SUBMISSION_FILE"), "submission.csv")
@@ -307,7 +355,7 @@ def main(argv=None) -> int:
     _pipeline_ctx = None          # change `rows`); its diagnostics are written after, like V12B shadow.
     _pipeline_records = None
     _pipeline_summary = None
-    if args.legacy_dynamic_full:
+    if mode == _MODE_LEGACY:
         print("[predict] mode: LEGACY dynamic-full (dev only)")
         rc = _run_legacy_dynamic_full(args, inp, submission)
         if rc != 0:
@@ -316,13 +364,21 @@ def main(argv=None) -> int:
         rows = [(r["qid"], r["answer"]) for r in read_predictions(submission)]
         times = [0.0] * len(rows)
     else:
-        print(f"[predict] mode: offline local model ({args.model_path})")
-        # Opt-in observational modes (Phase 1 telemetry + Phase 2 shadow router + Phase 3A-1 V12B).
+        want_v12b = (mode == _MODE_V12B_SHADOW)
+        want_full_pipeline = (mode == _MODE_FULL_PIPELINE)
+        if mode == _MODE_BASE_ONLY:
+            print(f"[predict] mode: offline local model, BASE-ONLY escape hatch ({args.model_path})")
+        elif mode == _MODE_V12B_SHADOW:
+            print(f"[predict] mode: offline local model, V12B-SHADOW observational ({args.model_path})")
+        else:
+            alias = "explicit --confidence-full-pipeline" if args.confidence_full_pipeline else "default"
+            print(f"[predict] mode: offline local model, FULL CONFIDENCE PIPELINE ({args.model_path}) "
+                  f"[{alias}]")
+        # Opt-in observational modes (Phase 1 telemetry + Phase 2 shadow router + Phase 3A-1 V12B)
+        # remain available under --base-only; V12B/full-pipeline are forced off by `mode` itself.
         # V12B shadow internally requires scoring + one router decision set; the router runs once
         # and is shared with Phase 2 shadow when both are on.
         score_enabled, shadow_cfg, v12b_cfg, full_pipeline_cfg = True, None, None, None
-        want_v12b = bool(args.confidence_v12b_shadow)
-        want_full_pipeline = bool(args.confidence_full_pipeline)
         want_router = bool(args.confidence_shadow_router or want_v12b or want_full_pipeline)
         want_score = bool(args.confidence_telemetry or want_router)
         if want_score:

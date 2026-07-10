@@ -98,7 +98,7 @@ def test_shadow_artifacts_schema_and_no_text(tmp_path, monkeypatch):
             assert banned not in d
         json.dumps(d, allow_nan=False)                        # JSON-safe
     summary = json.loads(sp.read_text())
-    assert summary["n_input"] == 2 and summary["budget_cap"] == 1   # ceil(2/8)=1
+    assert summary["n_input"] == 2 and summary["budget_cap"] == 1   # ceil(2/20)=1
     assert "question" not in json.dumps(summary)
     # q1 (low margin) is the candidate/selected; q2 not
     q1 = next(d for d in decs if d["qid"] == "q1")

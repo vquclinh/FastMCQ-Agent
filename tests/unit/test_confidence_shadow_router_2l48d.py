@@ -162,6 +162,15 @@ def test_budget_cap_formula(n, cap):
     assert s.budget_cap == cap
 
 
+def test_candidate_count_below_budget_still_limits_selection():
+    """With divisor=20, budget_cap(30)=2, but only one record actually qualifies as a
+    candidate -> selected_count must be 1, never backfilled to reach the cap."""
+    recs = [_inp(f"q{i}", i, margin=99.0) for i in range(30)]   # none low-margin
+    recs[5] = _inp("q5", 5, margin=0.0)                          # exactly one candidate
+    _, s = run_shadow_router(recs, _cfg(provisional_margin_threshold=10.0, budget_divisor=20))
+    assert s.budget_cap == 2 and s.candidate_count == 1 and s.selected_count == 1
+
+
 def test_max_targets_override():
     recs = [_inp(f"q{i}", i, margin=0.0) for i in range(30)]
     _, s = run_shadow_router(recs, _cfg(provisional_margin_threshold=10.0, max_targets_override=2))
@@ -235,13 +244,50 @@ def test_nonfinite_margin_does_not_reach_json():
 # --- config loader ----------------------------------------------------------
 def test_shadow_config_defaults_disabled():
     cfg = load_shadow_router_config({"shadow_router": {}})
-    assert cfg.enabled is False and cfg.provisional_margin_threshold == 10.0 and cfg.budget_divisor == 8
+    assert cfg.enabled is False and cfg.provisional_margin_threshold == 10.0 and cfg.budget_divisor == 20
 
 
 def test_shadow_config_from_repo_yaml():
     cfg = load_shadow_router_config("configs/confidence_selective.yaml")
     assert cfg.enabled is False and cfg.entropy_threshold is None
     assert cfg.analysis_margin_thresholds == (5.0, 7.5, 10.0, 12.5, 15.0, 20.0)
+    assert cfg.budget_divisor == 20   # effective runtime config; no hidden divisor=8 default remains
+
+
+@pytest.mark.parametrize("n,cap", [(1, 1), (19, 1), (20, 1), (21, 2), (30, 2), (120, 6), (2000, 100)])
+def test_budget_cap_formula_divisor_20(n, cap):
+    """Direct proof of the divisor-20 budget formula, including the hard requirement
+    that 2000 input records yield a maximum router budget of exactly 100 (not 250,
+    which would be ceil(2000/8) under the old divisor). N=30 -> ceil(30/20)=2, which
+    exceeds floor(30/20)=1 -- permitted because ceil(N/divisor) is the repository's
+    existing, thoroughly-documented small-input minimum-selection behavior (AUDIT
+    71/72/74/87/89/92-95): it guarantees at least 1 selected record whenever N>=1,
+    without a separate max(1, ...) rule bolted on top. See AUDIT 96 for the full
+    floor-vs-ceil rationale."""
+    recs = [_inp(f"q{i}", i, margin=0.0) for i in range(n)]
+    _, s = run_shadow_router(recs, _cfg(provisional_margin_threshold=10.0, budget_divisor=20))
+    assert s.budget_cap == cap
+    assert s.selected_count <= s.budget_cap        # selected count never exceeds the budget
+    assert s.selected_count <= s.candidate_count    # candidate count remains an upper bound too
+
+
+def test_budget_cap_uses_default_divisor_when_unspecified():
+    """The default ShadowRouterConfig() (no explicit budget_divisor) must use 20, not
+    a hidden production default of 8, proving no authoritative location silently
+    reverts to the old value."""
+    recs = [_inp(f"q{i}", i, margin=0.0) for i in range(2000)]
+    _, s = run_shadow_router(recs, ShadowRouterConfig(enabled=True, provisional_margin_threshold=10.0))
+    assert s.budget_cap == 100
+
+
+def test_2000_records_yield_exactly_100_not_250():
+    """The task's explicit hard requirement, isolated as its own test: 2000 input
+    records must yield a maximum router budget of exactly 100. 250 would be
+    ceil(2000/8), proving the old divisor is not silently still in effect anywhere."""
+    recs = [_inp(f"q{i}", i, margin=0.0) for i in range(2000)]
+    _, s = run_shadow_router(recs, _cfg(provisional_margin_threshold=10.0, budget_divisor=20))
+    assert s.budget_cap == 100
+    assert s.budget_cap != 250
 
 
 @pytest.mark.parametrize("bad", [

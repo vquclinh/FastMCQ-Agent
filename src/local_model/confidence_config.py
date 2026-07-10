@@ -70,7 +70,7 @@ def _validate_shadow(block: dict):
     if isinstance(margin, bool) or not isinstance(margin, (int, float)):
         raise ValueError("shadow_router.provisional_margin_threshold must be a number")
     entropy = _num_or_none(b.get("entropy_threshold", None))
-    divisor = b.get("budget_divisor", 8)
+    divisor = b.get("budget_divisor", 20)
     if isinstance(divisor, bool) or not isinstance(divisor, int) or divisor < 1:
         raise ValueError("shadow_router.budget_divisor must be an integer >= 1")
     override = b.get("max_targets_override", None)

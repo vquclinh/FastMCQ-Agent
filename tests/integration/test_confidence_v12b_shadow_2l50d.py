@@ -51,7 +51,7 @@ class _FakeBackend:
 
 
 class _FakePredictor:
-    """q1 (2+2) gets a LOW score margin -> the single selected record (cap=ceil(2/8)=1).
+    """q1 (2+2) gets a LOW score margin -> the single selected record (cap=ceil(2/20)=1).
     Generated answer differs from scored top1 so we can prove Base is never overridden."""
     def __init__(self, backend, mode="ok"):
         self._backend = backend

@@ -38,7 +38,7 @@ class ShadowRouterConfig:
     enabled: bool = False
     provisional_margin_threshold: float = 10.0     # SHADOW-ONLY; not a final threshold
     entropy_threshold: float | None = None         # None -> entropy does not affect selection
-    budget_divisor: int = 8
+    budget_divisor: int = 20
     max_targets_override: int | None = None
     include_scoring_invalid: bool = True
     include_parser_failure: bool = True
@@ -150,7 +150,7 @@ def _budget_cap(n: int, config: ShadowRouterConfig) -> int:
         return max(0, int(config.max_targets_override))
     if n <= 0:
         return 0
-    divisor = config.budget_divisor if config.budget_divisor and config.budget_divisor > 0 else 8
+    divisor = config.budget_divisor if config.budget_divisor and config.budget_divisor > 0 else 20
     return max(0, math.ceil(n / divisor))
 
 
