@@ -1,0 +1,1202 @@
+[
+  {
+    "choices": [
+      "15",
+      "20",
+      "10"
+    ],
+    "qid": "cp_prog_002",
+    "question": "15% cua 100 la bao nhieu?"
+  },
+  {
+    "choices": [
+      "round harbor",
+      "warm signal",
+      "salt mirror",
+      "sleeping wire",
+      "cloud needle"
+    ],
+    "qid": "cp_content_039",
+    "question": "Use only these invented definitions: rokan = warm signal; elun = salt mirror; maro = round harbor; sovel = sleeping wire; kiren = cloud needle; tavo = gentle magnet. What is the meaning of maro?"
+  },
+  {
+    "choices": [
+      "Quill vuot qua cong",
+      "Pearl vuot qua cong",
+      "Reed vuot qua cong",
+      "Sage vuot qua cong",
+      "Pearl khong vuot qua cong"
+    ],
+    "qid": "cp_logic_table_004",
+    "question": "Mot the vuot qua cong chi khi no min va vuong. Bang su kien cuc bo: Pearl: smooth and square; Quill: rough and square; Reed: smooth and round; Sage: rough and round. Phat bieu nao dung?"
+  },
+  {
+    "choices": [
+      "40 items",
+      "32 items",
+      "36 items",
+      "44 items",
+      "28 items"
+    ],
+    "qid": "cp_prog_039",
+    "question": "A mixture has red:blue = 4:5. If blue is 45, how many red items?"
+  },
+  {
+    "choices": [
+      "narrow window",
+      "honest lever",
+      "soft beacon",
+      "tidy circuit"
+    ],
+    "qid": "cp_content_013",
+    "question": "Use only these invented definitions: melu = narrow window; zano = honest lever; rilan = soft beacon; tevon = tidy circuit; balen = red capsule; orven = level prism. What is the meaning of melu?"
+  },
+  {
+    "choices": [
+      "Yarn vuot qua cong",
+      "Zinc vuot qua cong"
+    ],
+    "qid": "cp_logic_table_016",
+    "question": "Mot the vuot qua cong chi khi no min va vuong. Bang su kien cuc bo: Yarn: smooth and square; Zinc: rough and square; Clay: smooth and round; Ink: rough and round. Phat bieu nao dung?"
+  },
+  {
+    "choices": [
+      "18 items",
+      "16 items",
+      "14 items",
+      "20 items"
+    ],
+    "qid": "cp_prog_033",
+    "question": "A mixture has red:blue = 2:3. If blue is 24, how many red items?"
+  },
+  {
+    "choices": [
+      "sorin",
+      "rilan",
+      "tiren"
+    ],
+    "qid": "cp_content_012",
+    "question": "Chi dung bang dinh nghia tu tao nay: sorin = thin anchor; tiren = fresh wheel; avon = purple switch; melu = narrow window; zano = honest lever; rilan = soft beacon. Thuat ngu nao co nghia la soft beacon?"
+  },
+  {
+    "choices": [
+      "sang Mint, trua Opal, chieu Nova",
+      "sang Nova, trua Mint, chieu Opal",
+      "sang Mint, trua Nova, chieu Opal",
+      "sang Nova, trua Opal, chieu Mint"
+    ],
+    "qid": "cp_logic_schedule_018",
+    "question": "Lich xuong thuc hanh can thoa ca hai dieu kien: Mint truoc Nova, va Nova truoc Opal. Phat bieu nao dung?"
+  },
+  {
+    "choices": [
+      "44",
+      "42",
+      "45",
+      "43"
+    ],
+    "qid": "cp_prog_013",
+    "question": "Compute 23 + 5 x 4."
+  },
+  {
+    "choices": [
+      "sevan",
+      "mira"
+    ],
+    "qid": "cp_content_016",
+    "question": "Chi dung bang dinh nghia tu tao nay: sevan = square blossom; liron = clear feather; piren = golden bracket; mira = blue lantern; solen = silver reed; naro = quiet drum. Thuat ngu nao co nghia la blue lantern?"
+  },
+  {
+    "choices": [
+      "Yarn vuot qua cong",
+      "Zinc vuot qua cong",
+      "Clay vuot qua cong",
+      "Ink vuot qua cong"
+    ],
+    "qid": "cp_logic_table_008",
+    "question": "Mot the vuot qua cong chi khi no min va vuong. Bang su kien cuc bo: Yarn: smooth and square; Zinc: rough and square; Clay: smooth and round; Ink: rough and round. Phat bieu nao dung?"
+  },
+  {
+    "choices": [
+      "240 phut",
+      "120 phut",
+      "300 phut",
+      "180 phut",
+      "60 phut"
+    ],
+    "qid": "cp_prog_034",
+    "question": "Doi 3 gio sang phut."
+  },
+  {
+    "choices": [
+      "ravel",
+      "niven",
+      "lireo",
+      "sumen",
+      "devon",
+      "polen"
+    ],
+    "qid": "cp_content_010",
+    "question": "Chi dung bang dinh nghia tu tao nay: niven = silent marker; lireo = yellow hinge; sumen = open feather; ravel = steady candle; devon = glass pebble; polen = north button. Thuat ngu nao co nghia la steady candle?"
+  },
+  {
+    "choices": [
+      "Kilo has the ivory badge",
+      "Kilo has the coral badge",
+      "Luma has the ivory badge",
+      "Luma has the coral badge"
+    ],
+    "qid": "cp_logic_assign_023",
+    "question": "Each person gets one badge and each badge is used once. Rules: Kilo has coral, Miro has ivory, and Luma does not have ivory. Which of the following statements is true?"
+  },
+  {
+    "choices": [
+      "23",
+      "24"
+    ],
+    "qid": "cp_prog_001",
+    "question": "Compute 11 + 3 x 4."
+  },
+  {
+    "choices": [
+      "sovel",
+      "belin",
+      "kiren",
+      "tavo",
+      "orim",
+      "cavo"
+    ],
+    "qid": "cp_content_040",
+    "question": "Chi dung bang dinh nghia tu tao nay: sovel = sleeping wire; kiren = cloud needle; tavo = gentle magnet; belin = white orchard; orim = folded spark; cavo = plain crystal. Thuat ngu nao co nghia la white orchard?"
+  },
+  {
+    "choices": [
+      "Iris -> Kilo -> Jade",
+      "Jade -> Iris -> Kilo",
+      "Iris -> Jade -> Kilo"
+    ],
+    "qid": "cp_logic_order_017",
+    "question": "Which of the following orders is consistent? Iris is before Jade, and Jade is before Kilo."
+  },
+  {
+    "choices": [
+      "600 phut",
+      "540 phut"
+    ],
+    "qid": "cp_prog_016",
+    "question": "Doi 9 gio sang phut."
+  },
+  {
+    "choices": [
+      "white orchard",
+      "folded spark",
+      "silent marker",
+      "yellow hinge",
+      "plain crystal"
+    ],
+    "qid": "cp_content_009",
+    "question": "Use only these invented definitions: belin = white orchard; orim = folded spark; cavo = plain crystal; niven = silent marker; lireo = yellow hinge; sumen = open feather. What is the meaning of cavo?"
+  },
+  {
+    "choices": [
+      "Yarn vuot qua cong",
+      "Zinc vuot qua cong",
+      "Clay vuot qua cong"
+    ],
+    "qid": "cp_logic_table_032",
+    "question": "Mot the vuot qua cong chi khi no min va vuong. Bang su kien cuc bo: Yarn: smooth and square; Zinc: rough and square; Clay: smooth and round; Ink: rough and round. Phat bieu nao dung?"
+  },
+  {
+    "choices": [
+      "21",
+      "11",
+      "16",
+      "26"
+    ],
+    "qid": "cp_prog_008",
+    "question": "20% cua 80 la bao nhieu?"
+  },
+  {
+    "choices": [
+      "fresh wheel",
+      "steady candle"
+    ],
+    "qid": "cp_content_011",
+    "question": "Use only these invented definitions: ravel = steady candle; devon = glass pebble; polen = north button; sorin = thin anchor; tiren = fresh wheel; avon = purple switch. What is the meaning of tiren?"
+  },
+  {
+    "choices": [
+      "Zinc vuot qua cong",
+      "Clay vuot qua cong",
+      "Yarn vuot qua cong",
+      "Ink vuot qua cong",
+      "Yarn khong vuot qua cong",
+      "Clay khong vuot qua cong"
+    ],
+    "qid": "cp_logic_table_040",
+    "question": "Mot the vuot qua cong chi khi no min va vuong. Bang su kien cuc bo: Yarn: smooth and square; Zinc: rough and square; Clay: smooth and round; Ink: rough and round. Phat bieu nao dung?"
+  },
+  {
+    "choices": [
+      "36 items",
+      "28 items",
+      "40 items",
+      "32 items"
+    ],
+    "qid": "cp_prog_003",
+    "question": "A mixture has red:blue = 4:5. If blue is 40, how many red items?"
+  },
+  {
+    "choices": [
+      "lato",
+      "talin",
+      "boru",
+      "ciran",
+      "virel"
+    ],
+    "qid": "cp_content_004",
+    "question": "Chi dung bang dinh nghia tu tao nay: talin = stone ribbon; boru = amber leaf; ciran = hidden gate; lato = calm engine; virel = woven map; moren = small thunder. Thuat ngu nao co nghia la calm engine?"
+  },
+  {
+    "choices": [
+      "Quin -> Rhea -> Sato",
+      "Quin -> Sato -> Rhea",
+      "Rhea -> Quin -> Sato",
+      "Rhea -> Sato -> Quin"
+    ],
+    "qid": "cp_logic_order_013",
+    "question": "Which of the following orders is consistent? Quin is before Rhea, and Rhea is before Sato."
+  },
+  {
+    "choices": [
+      "60",
+      "59"
+    ],
+    "qid": "cp_prog_031",
+    "question": "Compute 41 + 3 x 6."
+  },
+  {
+    "choices": [
+      "calm engine",
+      "woven map",
+      "small thunder",
+      "paper moon",
+      "violet key",
+      "clear ladder"
+    ],
+    "qid": "cp_content_005",
+    "question": "Use only these invented definitions: lato = calm engine; virel = woven map; moren = small thunder; sika = violet key; dorel = paper moon; anvi = clear ladder. What is the meaning of dorel?"
+  },
+  {
+    "choices": [
+      "Orin has the ivory badge",
+      "Pax has the ivory badge",
+      "Pax has the coral badge",
+      "Quin has the amber badge",
+      "Orin has the coral badge",
+      "Quin has the coral badge"
+    ],
+    "qid": "cp_logic_assign_035",
+    "question": "Each person gets one badge and each badge is used once. Rules: Orin has coral, Quin has ivory, and Pax does not have ivory. Which of the following statements is true?"
+  },
+  {
+    "choices": [
+      "29",
+      "24",
+      "19",
+      "34"
+    ],
+    "qid": "cp_prog_038",
+    "question": "20% cua 120 la bao nhieu?"
+  },
+  {
+    "choices": [
+      "woven map",
+      "calm engine",
+      "small thunder"
+    ],
+    "qid": "cp_content_037",
+    "question": "Use only these invented definitions: lato = calm engine; virel = woven map; moren = small thunder; sika = violet key; dorel = paper moon; anvi = clear ladder. What is the meaning of lato?"
+  },
+  {
+    "choices": [
+      "Iris -> Jade -> Kilo",
+      "Iris -> Kilo -> Jade"
+    ],
+    "qid": "cp_logic_order_001",
+    "question": "Which of the following orders is consistent? Iris is before Jade, and Jade is before Kilo."
+  },
+  {
+    "choices": [
+      "5",
+      "4",
+      "3",
+      "6",
+      "2"
+    ],
+    "qid": "cp_prog_029",
+    "question": "Solve for x: 5x + 8 = 28."
+  },
+  {
+    "choices": [
+      "calm engine",
+      "small thunder"
+    ],
+    "qid": "cp_content_021",
+    "question": "Use only these invented definitions: lato = calm engine; virel = woven map; moren = small thunder; sika = violet key; dorel = paper moon; anvi = clear ladder. What is the meaning of moren?"
+  },
+  {
+    "choices": [
+      "Quill vuot qua cong",
+      "Reed vuot qua cong",
+      "Pearl vuot qua cong",
+      "Sage vuot qua cong"
+    ],
+    "qid": "cp_logic_table_028",
+    "question": "Mot the vuot qua cong chi khi no min va vuong. Bang su kien cuc bo: Pearl: smooth and square; Quill: rough and square; Reed: smooth and round; Sage: rough and round. Phat bieu nao dung?"
+  },
+  {
+    "choices": [
+      "38",
+      "45"
+    ],
+    "qid": "cp_prog_006",
+    "question": "Day so moi buoc cong 7: 10, 17, 24, 31. So tiep theo la gi?"
+  },
+  {
+    "choices": [
+      "narrow window",
+      "honest lever",
+      "red capsule",
+      "soft beacon",
+      "tidy circuit"
+    ],
+    "qid": "cp_content_029",
+    "question": "Use only these invented definitions: melu = narrow window; zano = honest lever; rilan = soft beacon; tevon = tidy circuit; balen = red capsule; orven = level prism. What is the meaning of balen?"
+  },
+  {
+    "choices": [
+      "sang Zinc, trua Ink, chieu Clay",
+      "sang Zinc, trua Clay, chieu Ink"
+    ],
+    "qid": "cp_logic_schedule_006",
+    "question": "Lich xuong thuc hanh can thoa ca hai dieu kien: Zinc truoc Clay, va Clay truoc Ink. Phat bieu nao dung?"
+  },
+  {
+    "choices": [
+      "600 phut",
+      "480 phut",
+      "660 phut",
+      "420 phut",
+      "1080 phut",
+      "540 phut"
+    ],
+    "qid": "cp_prog_040",
+    "question": "Doi 9 gio sang phut."
+  },
+  {
+    "choices": [
+      "moren",
+      "talin"
+    ],
+    "qid": "cp_content_036",
+    "question": "Chi dung bang dinh nghia tu tao nay: talin = stone ribbon; boru = amber leaf; ciran = hidden gate; lato = calm engine; virel = woven map; moren = small thunder. Thuat ngu nao co nghia la small thunder?"
+  },
+  {
+    "choices": [
+      "Quin -> Sato -> Rhea",
+      "Rhea -> Quin -> Sato",
+      "Quin -> Rhea -> Sato"
+    ],
+    "qid": "cp_logic_order_037",
+    "question": "Which of the following orders is consistent? Quin is before Rhea, and Rhea is before Sato."
+  },
+  {
+    "choices": [
+      "47",
+      "33",
+      "54",
+      "40",
+      "26"
+    ],
+    "qid": "cp_prog_024",
+    "question": "Day so moi buoc cong 7: 12, 19, 26, 33. So tiep theo la gi?"
+  },
+  {
+    "choices": [
+      "niven",
+      "lireo"
+    ],
+    "qid": "cp_content_026",
+    "question": "Chi dung bang dinh nghia tu tao nay: niven = silent marker; lireo = yellow hinge; sumen = open feather; ravel = steady candle; devon = glass pebble; polen = north button. Thuat ngu nao co nghia la yellow hinge?"
+  },
+  {
+    "choices": [
+      "Pearl vuot qua cong",
+      "Quill vuot qua cong",
+      "Reed vuot qua cong"
+    ],
+    "qid": "cp_logic_table_012",
+    "question": "Mot the vuot qua cong chi khi no min va vuong. Bang su kien cuc bo: Pearl: smooth and square; Quill: rough and square; Reed: smooth and round; Sage: rough and round. Phat bieu nao dung?"
+  },
+  {
+    "choices": [
+      "16",
+      "21"
+    ],
+    "qid": "cp_prog_026",
+    "question": "10% cua 160 la bao nhieu?"
+  },
+  {
+    "choices": [
+      "sika",
+      "anvi",
+      "rokan",
+      "dorel"
+    ],
+    "qid": "cp_content_038",
+    "question": "Chi dung bang dinh nghia tu tao nay: sika = violet key; dorel = paper moon; anvi = clear ladder; rokan = warm signal; elun = salt mirror; maro = round harbor. Thuat ngu nao co nghia la paper moon?"
+  },
+  {
+    "choices": [
+      "Pearl vuot qua cong",
+      "Quill vuot qua cong",
+      "Reed vuot qua cong",
+      "Sage vuot qua cong",
+      "Pearl khong vuot qua cong",
+      "Reed khong vuot qua cong"
+    ],
+    "qid": "cp_logic_table_020",
+    "question": "Mot the vuot qua cong chi khi no min va vuong. Bang su kien cuc bo: Pearl: smooth and square; Quill: rough and square; Reed: smooth and round; Sage: rough and round. Phat bieu nao dung?"
+  },
+  {
+    "choices": [
+      "42",
+      "41",
+      "40"
+    ],
+    "qid": "cp_prog_007",
+    "question": "Compute 17 + 4 x 6."
+  },
+  {
+    "choices": [
+      "melu",
+      "sorin",
+      "tiren",
+      "avon"
+    ],
+    "qid": "cp_content_028",
+    "question": "Chi dung bang dinh nghia tu tao nay: sorin = thin anchor; tiren = fresh wheel; avon = purple switch; melu = narrow window; zano = honest lever; rilan = soft beacon. Thuat ngu nao co nghia la narrow window?"
+  },
+  {
+    "choices": [
+      "sang Mint, trua Opal, chieu Nova",
+      "sang Nova, trua Mint, chieu Opal",
+      "sang Mint, trua Nova, chieu Opal"
+    ],
+    "qid": "cp_logic_schedule_002",
+    "question": "Lich xuong thuc hanh can thoa ca hai dieu kien: Mint truoc Nova, va Nova truoc Opal. Phat bieu nao dung?"
+  },
+  {
+    "choices": [
+      "28 items",
+      "32 items",
+      "24 items"
+    ],
+    "qid": "cp_prog_027",
+    "question": "A mixture has red:blue = 4:5. If blue is 35, how many red items?"
+  },
+  {
+    "choices": [
+      "warm signal",
+      "cloud needle",
+      "salt mirror",
+      "round harbor"
+    ],
+    "qid": "cp_content_023",
+    "question": "Use only these invented definitions: rokan = warm signal; elun = salt mirror; maro = round harbor; sovel = sleeping wire; kiren = cloud needle; tavo = gentle magnet. What is the meaning of kiren?"
+  },
+  {
+    "choices": [
+      "Wilo has the silver badge",
+      "Wilo has the jade badge",
+      "Yani has the silver badge"
+    ],
+    "qid": "cp_logic_assign_027",
+    "question": "Each person gets one badge and each badge is used once. Rules: Wilo has jade, Iris has silver, and Yani does not have silver. Which of the following statements is true?"
+  },
+  {
+    "choices": [
+      "43",
+      "29",
+      "36"
+    ],
+    "qid": "cp_prog_012",
+    "question": "Day so moi buoc cong 7: 8, 15, 22, 29. So tiep theo la gi?"
+  },
+  {
+    "choices": [
+      "blue lantern",
+      "silver reed",
+      "quiet drum",
+      "river glass"
+    ],
+    "qid": "cp_content_033",
+    "question": "Use only these invented definitions: mira = blue lantern; solen = silver reed; naro = quiet drum; velin = river glass; pavo = soft metal; lumen = winter shell. What is the meaning of naro?"
+  },
+  {
+    "choices": [
+      "sang Mint, trua Opal, chieu Nova",
+      "sang Nova, trua Mint, chieu Opal",
+      "sang Nova, trua Opal, chieu Mint",
+      "sang Opal, trua Mint, chieu Nova",
+      "sang Mint, trua Nova, chieu Opal"
+    ],
+    "qid": "cp_logic_schedule_034",
+    "question": "Lich xuong thuc hanh can thoa ca hai dieu kien: Mint truoc Nova, va Nova truoc Opal. Phat bieu nao dung?"
+  },
+  {
+    "choices": [
+      "43",
+      "36"
+    ],
+    "qid": "cp_prog_036",
+    "question": "Day so moi buoc cong 7: 8, 15, 22, 29. So tiep theo la gi?"
+  },
+  {
+    "choices": [
+      "tevon",
+      "dorin",
+      "balen",
+      "orven",
+      "cirel",
+      "navo"
+    ],
+    "qid": "cp_content_030",
+    "question": "Chi dung bang dinh nghia tu tao nay: tevon = tidy circuit; balen = red capsule; orven = level prism; cirel = silver basket; navo = early whistle; dorin = curved stamp. Thuat ngu nao co nghia la curved stamp?"
+  },
+  {
+    "choices": [
+      "Iris -> Kilo -> Jade",
+      "Jade -> Iris -> Kilo",
+      "Iris -> Jade -> Kilo",
+      "Jade -> Kilo -> Iris",
+      "Kilo -> Iris -> Jade",
+      "Kilo -> Jade -> Iris"
+    ],
+    "qid": "cp_logic_order_025",
+    "question": "Which of the following orders is consistent? Iris is before Jade, and Jade is before Kilo."
+  },
+  {
+    "choices": [
+      "44 items",
+      "36 items",
+      "48 items",
+      "40 items",
+      "32 items",
+      "80 items"
+    ],
+    "qid": "cp_prog_015",
+    "question": "A mixture has red:blue = 4:5. If blue is 50, how many red items?"
+  },
+  {
+    "choices": [
+      "folded spark",
+      "plain crystal",
+      "silent marker",
+      "yellow hinge",
+      "white orchard",
+      "open feather"
+    ],
+    "qid": "cp_content_025",
+    "question": "Use only these invented definitions: belin = white orchard; orim = folded spark; cavo = plain crystal; niven = silent marker; lireo = yellow hinge; sumen = open feather. What is the meaning of belin?"
+  },
+  {
+    "choices": [
+      "sang Quill, trua Sage, chieu Reed",
+      "sang Reed, trua Quill, chieu Sage",
+      "sang Reed, trua Sage, chieu Quill",
+      "sang Sage, trua Quill, chieu Reed",
+      "sang Sage, trua Reed, chieu Quill",
+      "sang Quill, trua Reed, chieu Sage"
+    ],
+    "qid": "cp_logic_schedule_030",
+    "question": "Lich xuong thuc hanh can thoa ca hai dieu kien: Quill truoc Reed, va Reed truoc Sage. Phat bieu nao dung?"
+  },
+  {
+    "choices": [
+      "38",
+      "45",
+      "31",
+      "52",
+      "24",
+      "76"
+    ],
+    "qid": "cp_prog_030",
+    "question": "Day so moi buoc cong 7: 10, 17, 24, 31. So tiep theo la gi?"
+  },
+  {
+    "choices": [
+      "green compass",
+      "hollow bell",
+      "bright bridge",
+      "stone ribbon",
+      "amber leaf"
+    ],
+    "qid": "cp_content_019",
+    "question": "Use only these invented definitions: karo = green compass; davin = hollow bell; seru = bright bridge; talin = stone ribbon; boru = amber leaf; ciran = hidden gate. What is the meaning of karo?"
+  },
+  {
+    "choices": [
+      "Orin has the silver badge",
+      "Pax has the silver badge",
+      "Pax has the jade badge",
+      "Orin has the jade badge"
+    ],
+    "qid": "cp_logic_assign_003",
+    "question": "Each person gets one badge and each badge is used once. Rules: Orin has jade, Quin has silver, and Pax does not have silver. Which of the following statements is true?"
+  },
+  {
+    "choices": [
+      "300 phut",
+      "360 phut",
+      "240 phut",
+      "420 phut"
+    ],
+    "qid": "cp_prog_028",
+    "question": "Doi 5 gio sang phut."
+  },
+  {
+    "choices": [
+      "silver basket",
+      "curved stamp",
+      "early whistle",
+      "square blossom",
+      "clear feather",
+      "golden bracket"
+    ],
+    "qid": "cp_content_015",
+    "question": "Use only these invented definitions: cirel = silver basket; navo = early whistle; dorin = curved stamp; sevan = square blossom; liron = clear feather; piren = golden bracket. What is the meaning of dorin?"
+  },
+  {
+    "choices": [
+      "Kilo has the silver badge",
+      "Kilo has the jade badge",
+      "Luma has the silver badge",
+      "Luma has the jade badge",
+      "Miro has the ivory badge"
+    ],
+    "qid": "cp_logic_assign_039",
+    "question": "Each person gets one badge and each badge is used once. Rules: Kilo has jade, Miro has silver, and Luma does not have silver. Which of the following statements is true?"
+  },
+  {
+    "choices": [
+      "66",
+      "64",
+      "65",
+      "67",
+      "63"
+    ],
+    "qid": "cp_prog_019",
+    "question": "Compute 29 + 6 x 6."
+  },
+  {
+    "choices": [
+      "blue lantern",
+      "silver reed"
+    ],
+    "qid": "cp_content_001",
+    "question": "Use only these invented definitions: mira = blue lantern; solen = silver reed; naro = quiet drum; velin = river glass; pavo = soft metal; lumen = winter shell. What is the meaning of mira?"
+  },
+  {
+    "choices": [
+      "Wilo has the ivory badge",
+      "Wilo has the coral badge"
+    ],
+    "qid": "cp_logic_assign_011",
+    "question": "Each person gets one badge and each badge is used once. Rules: Wilo has coral, Iris has ivory, and Yani does not have ivory. Which of the following statements is true?"
+  },
+  {
+    "choices": [
+      "41",
+      "34",
+      "27",
+      "48"
+    ],
+    "qid": "cp_prog_018",
+    "question": "Day so moi buoc cong 7: 6, 13, 20, 27. So tiep theo la gi?"
+  },
+  {
+    "choices": [
+      "rokan",
+      "sika",
+      "dorel"
+    ],
+    "qid": "cp_content_022",
+    "question": "Chi dung bang dinh nghia tu tao nay: sika = violet key; dorel = paper moon; anvi = clear ladder; rokan = warm signal; elun = salt mirror; maro = round harbor. Thuat ngu nao co nghia la warm signal?"
+  },
+  {
+    "choices": [
+      "Kilo has the amber badge",
+      "Kilo has the cobalt badge",
+      "Luma has the amber badge"
+    ],
+    "qid": "cp_logic_assign_007",
+    "question": "Each person gets one badge and each badge is used once. Rules: Kilo has cobalt, Miro has amber, and Luma does not have amber. Which of the following statements is true?"
+  },
+  {
+    "choices": [
+      "12 items",
+      "14 items"
+    ],
+    "qid": "cp_prog_021",
+    "question": "A mixture has red:blue = 2:3. If blue is 18, how many red items?"
+  },
+  {
+    "choices": [
+      "velin",
+      "pavo",
+      "lumen",
+      "karo",
+      "davin"
+    ],
+    "qid": "cp_content_034",
+    "question": "Chi dung bang dinh nghia tu tao nay: velin = river glass; pavo = soft metal; lumen = winter shell; karo = green compass; davin = hollow bell; seru = bright bridge. Thuat ngu nao co nghia la green compass?"
+  },
+  {
+    "choices": [
+      "sang Umber, trua Wave, chieu Vale",
+      "sang Umber, trua Vale, chieu Wave"
+    ],
+    "qid": "cp_logic_schedule_026",
+    "question": "Lich xuong thuc hanh can thoa ca hai dieu kien: Umber truoc Vale, va Vale truoc Wave. Phat bieu nao dung?"
+  },
+  {
+    "choices": [
+      "26",
+      "16",
+      "21"
+    ],
+    "qid": "cp_prog_032",
+    "question": "15% cua 140 la bao nhieu?"
+  },
+  {
+    "choices": [
+      "liron",
+      "sevan",
+      "piren"
+    ],
+    "qid": "cp_content_032",
+    "question": "Chi dung bang dinh nghia tu tao nay: sevan = square blossom; liron = clear feather; piren = golden bracket; mira = blue lantern; solen = silver reed; naro = quiet drum. Thuat ngu nao co nghia la clear feather?"
+  },
+  {
+    "choices": [
+      "Pearl vuot qua cong",
+      "Quill vuot qua cong"
+    ],
+    "qid": "cp_logic_table_036",
+    "question": "Mot the vuot qua cong chi khi no min va vuong. Bang su kien cuc bo: Pearl: smooth and square; Quill: rough and square; Reed: smooth and round; Sage: rough and round. Phat bieu nao dung?"
+  },
+  {
+    "choices": [
+      "480 phut",
+      "420 phut",
+      "360 phut"
+    ],
+    "qid": "cp_prog_022",
+    "question": "Doi 7 gio sang phut."
+  },
+  {
+    "choices": [
+      "sovel",
+      "tavo",
+      "kiren",
+      "belin"
+    ],
+    "qid": "cp_content_008",
+    "question": "Chi dung bang dinh nghia tu tao nay: sovel = sleeping wire; kiren = cloud needle; tavo = gentle magnet; belin = white orchard; orim = folded spark; cavo = plain crystal. Thuat ngu nao co nghia la cloud needle?"
+  },
+  {
+    "choices": [
+      "Quin -> Sato -> Rhea",
+      "Quin -> Rhea -> Sato"
+    ],
+    "qid": "cp_logic_order_021",
+    "question": "Which of the following orders is consistent? Quin is before Rhea, and Rhea is before Sato."
+  },
+  {
+    "choices": [
+      "4",
+      "5"
+    ],
+    "qid": "cp_prog_011",
+    "question": "Solve for x: 2x + 8 = 16."
+  },
+  {
+    "choices": [
+      "sovel",
+      "kiren",
+      "tavo",
+      "belin",
+      "cavo"
+    ],
+    "qid": "cp_content_024",
+    "question": "Chi dung bang dinh nghia tu tao nay: sovel = sleeping wire; kiren = cloud needle; tavo = gentle magnet; belin = white orchard; orim = folded spark; cavo = plain crystal. Thuat ngu nao co nghia la plain crystal?"
+  },
+  {
+    "choices": [
+      "sang Quill, trua Reed, chieu Sage",
+      "sang Quill, trua Sage, chieu Reed",
+      "sang Reed, trua Quill, chieu Sage",
+      "sang Reed, trua Sage, chieu Quill",
+      "sang Sage, trua Quill, chieu Reed"
+    ],
+    "qid": "cp_logic_schedule_014",
+    "question": "Lich xuong thuc hanh can thoa ca hai dieu kien: Quill truoc Reed, va Reed truoc Sage. Phat bieu nao dung?"
+  },
+  {
+    "choices": [
+      "360 phut",
+      "300 phut",
+      "240 phut",
+      "420 phut",
+      "180 phut"
+    ],
+    "qid": "cp_prog_004",
+    "question": "Doi 5 gio sang phut."
+  },
+  {
+    "choices": [
+      "green compass",
+      "hollow bell",
+      "amber leaf",
+      "bright bridge",
+      "stone ribbon",
+      "hidden gate"
+    ],
+    "qid": "cp_content_035",
+    "question": "Use only these invented definitions: karo = green compass; davin = hollow bell; seru = bright bridge; talin = stone ribbon; boru = amber leaf; ciran = hidden gate. What is the meaning of boru?"
+  },
+  {
+    "choices": [
+      "Zinc vuot qua cong",
+      "Clay vuot qua cong",
+      "Yarn vuot qua cong",
+      "Ink vuot qua cong",
+      "Yarn khong vuot qua cong"
+    ],
+    "qid": "cp_logic_table_024",
+    "question": "Mot the vuot qua cong chi khi no min va vuong. Bang su kien cuc bo: Yarn: smooth and square; Zinc: rough and square; Clay: smooth and round; Ink: rough and round. Phat bieu nao dung?"
+  },
+  {
+    "choices": [
+      "11",
+      "9",
+      "10"
+    ],
+    "qid": "cp_prog_017",
+    "question": "Solve for x: 3x + 8 = 38."
+  },
+  {
+    "choices": [
+      "green compass",
+      "hollow bell",
+      "stone ribbon",
+      "bright bridge"
+    ],
+    "qid": "cp_content_003",
+    "question": "Use only these invented definitions: karo = green compass; davin = hollow bell; seru = bright bridge; talin = stone ribbon; boru = amber leaf; ciran = hidden gate. What is the meaning of seru?"
+  },
+  {
+    "choices": [
+      "Quin -> Sato -> Rhea",
+      "Rhea -> Quin -> Sato",
+      "Rhea -> Sato -> Quin",
+      "Quin -> Rhea -> Sato",
+      "Sato -> Quin -> Rhea",
+      "Sato -> Rhea -> Quin"
+    ],
+    "qid": "cp_logic_order_005",
+    "question": "Which of the following orders is consistent? Quin is before Rhea, and Rhea is before Sato."
+  },
+  {
+    "choices": [
+      "63",
+      "64",
+      "62"
+    ],
+    "qid": "cp_prog_037",
+    "question": "Compute 47 + 4 x 4."
+  },
+  {
+    "choices": [
+      "seru",
+      "velin",
+      "pavo",
+      "lumen"
+    ],
+    "qid": "cp_content_018",
+    "question": "Chi dung bang dinh nghia tu tao nay: velin = river glass; pavo = soft metal; lumen = winter shell; karo = green compass; davin = hollow bell; seru = bright bridge. Thuat ngu nao co nghia la bright bridge?"
+  },
+  {
+    "choices": [
+      "sang Zinc, trua Ink, chieu Clay",
+      "sang Zinc, trua Clay, chieu Ink",
+      "sang Clay, trua Zinc, chieu Ink",
+      "sang Clay, trua Ink, chieu Zinc"
+    ],
+    "qid": "cp_logic_schedule_038",
+    "question": "Lich xuong thuc hanh can thoa ca hai dieu kien: Zinc truoc Clay, va Clay truoc Ink. Phat bieu nao dung?"
+  },
+  {
+    "choices": [
+      "8",
+      "6",
+      "7",
+      "9"
+    ],
+    "qid": "cp_prog_023",
+    "question": "Solve for x: 4x + 8 = 36."
+  },
+  {
+    "choices": [
+      "salt mirror",
+      "warm signal",
+      "round harbor"
+    ],
+    "qid": "cp_content_007",
+    "question": "Use only these invented definitions: rokan = warm signal; elun = salt mirror; maro = round harbor; sovel = sleeping wire; kiren = cloud needle; tavo = gentle magnet. What is the meaning of rokan?"
+  },
+  {
+    "choices": [
+      "Sato has the silver badge",
+      "Tavi has the silver badge",
+      "Tavi has the jade badge",
+      "Uma has the ivory badge",
+      "Sato has the jade badge",
+      "Uma has the jade badge"
+    ],
+    "qid": "cp_logic_assign_015",
+    "question": "Each person gets one badge and each badge is used once. Rules: Sato has jade, Uma has silver, and Tavi does not have silver. Which of the following statements is true?"
+  },
+  {
+    "choices": [
+      "8",
+      "6",
+      "9",
+      "5",
+      "14",
+      "7"
+    ],
+    "qid": "cp_prog_005",
+    "question": "Solve for x: 6x + 8 = 50."
+  },
+  {
+    "choices": [
+      "early whistle",
+      "silver basket"
+    ],
+    "qid": "cp_content_031",
+    "question": "Use only these invented definitions: cirel = silver basket; navo = early whistle; dorin = curved stamp; sevan = square blossom; liron = clear feather; piren = golden bracket. What is the meaning of cirel?"
+  },
+  {
+    "choices": [
+      "sang Umber, trua Vale, chieu Wave",
+      "sang Umber, trua Wave, chieu Vale",
+      "sang Vale, trua Umber, chieu Wave",
+      "sang Vale, trua Wave, chieu Umber",
+      "sang Wave, trua Umber, chieu Vale",
+      "sang Wave, trua Vale, chieu Umber"
+    ],
+    "qid": "cp_logic_schedule_010",
+    "question": "Lich xuong thuc hanh can thoa ca hai dieu kien: Umber truoc Vale, va Vale truoc Wave. Phat bieu nao dung?"
+  },
+  {
+    "choices": [
+      "20 items",
+      "16 items",
+      "22 items",
+      "18 items",
+      "14 items"
+    ],
+    "qid": "cp_prog_009",
+    "question": "A mixture has red:blue = 2:3. If blue is 27, how many red items?"
+  },
+  {
+    "choices": [
+      "velin",
+      "lumen",
+      "pavo"
+    ],
+    "qid": "cp_content_002",
+    "question": "Chi dung bang dinh nghia tu tao nay: velin = river glass; pavo = soft metal; lumen = winter shell; karo = green compass; davin = hollow bell; seru = bright bridge. Thuat ngu nao co nghia la soft metal?"
+  },
+  {
+    "choices": [
+      "sang Zinc, trua Clay, chieu Ink",
+      "sang Zinc, trua Ink, chieu Clay",
+      "sang Clay, trua Zinc, chieu Ink"
+    ],
+    "qid": "cp_logic_schedule_022",
+    "question": "Lich xuong thuc hanh can thoa ca hai dieu kien: Zinc truoc Clay, va Clay truoc Ink. Phat bieu nao dung?"
+  },
+  {
+    "choices": [
+      "55",
+      "45",
+      "60",
+      "40",
+      "50"
+    ],
+    "qid": "cp_prog_014",
+    "question": "25% cua 200 la bao nhieu?"
+  },
+  {
+    "choices": [
+      "balen",
+      "tevon",
+      "orven",
+      "cirel",
+      "navo"
+    ],
+    "qid": "cp_content_014",
+    "question": "Chi dung bang dinh nghia tu tao nay: tevon = tidy circuit; balen = red capsule; orven = level prism; cirel = silver basket; navo = early whistle; dorin = curved stamp. Thuat ngu nao co nghia la red capsule?"
+  },
+  {
+    "choices": [
+      "Iris -> Kilo -> Jade",
+      "Jade -> Iris -> Kilo",
+      "Jade -> Kilo -> Iris",
+      "Iris -> Jade -> Kilo"
+    ],
+    "qid": "cp_logic_order_033",
+    "question": "Which of the following orders is consistent? Iris is before Jade, and Jade is before Kilo."
+  },
+  {
+    "choices": [
+      "64",
+      "63",
+      "62",
+      "65",
+      "61",
+      "126"
+    ],
+    "qid": "cp_prog_025",
+    "question": "Compute 35 + 7 x 4."
+  },
+  {
+    "choices": [
+      "maro",
+      "sika"
+    ],
+    "qid": "cp_content_006",
+    "question": "Chi dung bang dinh nghia tu tao nay: sika = violet key; dorel = paper moon; anvi = clear ladder; rokan = warm signal; elun = salt mirror; maro = round harbor. Thuat ngu nao co nghia la round harbor?"
+  },
+  {
+    "choices": [
+      "Iris -> Kilo -> Jade",
+      "Iris -> Jade -> Kilo",
+      "Jade -> Iris -> Kilo",
+      "Jade -> Kilo -> Iris",
+      "Kilo -> Iris -> Jade"
+    ],
+    "qid": "cp_logic_order_009",
+    "question": "Which of the following orders is consistent? Iris is before Jade, and Jade is before Kilo."
+  },
+  {
+    "choices": [
+      "59",
+      "49",
+      "54",
+      "64",
+      "44",
+      "108"
+    ],
+    "qid": "cp_prog_020",
+    "question": "30% cua 180 la bao nhieu?"
+  },
+  {
+    "choices": [
+      "talin",
+      "ciran",
+      "lato",
+      "boru",
+      "virel",
+      "moren"
+    ],
+    "qid": "cp_content_020",
+    "question": "Chi dung bang dinh nghia tu tao nay: talin = stone ribbon; boru = amber leaf; ciran = hidden gate; lato = calm engine; virel = woven map; moren = small thunder. Thuat ngu nao co nghia la amber leaf?"
+  },
+  {
+    "choices": [
+      "Orin has the amber badge",
+      "Pax has the amber badge",
+      "Orin has the cobalt badge",
+      "Pax has the cobalt badge",
+      "Quin has the silver badge"
+    ],
+    "qid": "cp_logic_assign_019",
+    "question": "Each person gets one badge and each badge is used once. Rules: Orin has cobalt, Quin has amber, and Pax does not have amber. Which of the following statements is true?"
+  },
+  {
+    "choices": [
+      "11",
+      "9",
+      "12",
+      "8",
+      "10",
+      "20"
+    ],
+    "qid": "cp_prog_035",
+    "question": "Solve for x: 6x + 8 = 68."
+  },
+  {
+    "choices": [
+      "blue lantern",
+      "soft metal",
+      "silver reed"
+    ],
+    "qid": "cp_content_017",
+    "question": "Use only these invented definitions: mira = blue lantern; solen = silver reed; naro = quiet drum; velin = river glass; pavo = soft metal; lumen = winter shell. What is the meaning of pavo?"
+  },
+  {
+    "choices": [
+      "Sato has the amber badge",
+      "Sato has the cobalt badge"
+    ],
+    "qid": "cp_logic_assign_031",
+    "question": "Each person gets one badge and each badge is used once. Rules: Sato has cobalt, Uma has amber, and Tavi does not have amber. Which of the following statements is true?"
+  },
+  {
+    "choices": [
+      "240 phut",
+      "120 phut",
+      "300 phut",
+      "60 phut",
+      "360 phut",
+      "180 phut"
+    ],
+    "qid": "cp_prog_010",
+    "question": "Doi 3 gio sang phut."
+  },
+  {
+    "choices": [
+      "steady candle",
+      "glass pebble",
+      "north button"
+    ],
+    "qid": "cp_content_027",
+    "question": "Use only these invented definitions: ravel = steady candle; devon = glass pebble; polen = north button; sorin = thin anchor; tiren = fresh wheel; avon = purple switch. What is the meaning of polen?"
+  },
+  {
+    "choices": [
+      "Quin -> Sato -> Rhea",
+      "Rhea -> Quin -> Sato",
+      "Rhea -> Sato -> Quin",
+      "Quin -> Rhea -> Sato",
+      "Sato -> Quin -> Rhea"
+    ],
+    "qid": "cp_logic_order_029",
+    "question": "Which of the following orders is consistent? Quin is before Rhea, and Rhea is before Sato."
+  }
+]

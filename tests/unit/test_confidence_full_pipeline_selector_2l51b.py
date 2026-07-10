@@ -166,9 +166,11 @@ def test_v12b_all_invalid_routes_to_v13_success():
     r = records[0]
     assert r.v12b_status == "all_invalid"
     assert r.v13_attempted is True
+    assert r.v13_layer == "content_first"
     assert r.final_source == FINAL_SOURCE_V13
     assert r.final_answer == "B"                   # "y" is choices[1] -> label B
     assert summary.total_v13_accepted == 1
+    assert summary.v13_layer_counts == {"content_first": 1}
 
 
 def test_v12b_insufficient_valid_permutations_routes_to_v13():
@@ -259,9 +261,11 @@ def test_v12b_literal_tie_routes_to_v13():
     r = records[0]
     assert r.v12b_status == "tie"                  # the literal V12BAggregateStatus.TIE
     assert r.v13_attempted is True
+    assert r.v13_layer == "content_first"
     assert r.final_source == FINAL_SOURCE_V13
     assert r.final_answer == "C"                    # "p" is choices[2] -> label C
     assert summary.v12b_aggregate_status_counts.get("tie") == 1
+    assert summary.v13_layer_counts == {"content_first": 1}
 
 
 def test_v12b_literal_tie_with_failing_v13_falls_back_to_base():

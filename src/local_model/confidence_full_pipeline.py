@@ -56,6 +56,7 @@ class FullPipelineRecord:
     v12b_status: str | None
     v12b_hypothetical_answer: str | None
     v13_attempted: bool
+    v13_layer: str | None
     v13_status: str | None
     v13_answer: str | None
     final_answer: str
@@ -71,6 +72,7 @@ class FullPipelineRecord:
             "v12b_status": self.v12b_status,
             "v12b_hypothetical_answer": self.v12b_hypothetical_answer,
             "v13_attempted": self.v13_attempted,
+            "v13_layer": self.v13_layer,
             "v13_status": self.v13_status,
             "v13_answer": self.v13_answer,
             "final_answer": self.final_answer,
@@ -91,6 +93,7 @@ class FullPipelineSummary:
     total_base: int
     final_source_counts: Mapping[str, int]
     v12b_aggregate_status_counts: Mapping[str, int]
+    v13_layer_counts: Mapping[str, int]
     v13_error_code_counts: Mapping[str, int]
 
     def as_dict(self) -> dict[str, Any]:
@@ -106,6 +109,7 @@ class FullPipelineSummary:
             "total_base": self.total_base,
             "final_source_counts": dict(self.final_source_counts),
             "v12b_aggregate_status_counts": dict(self.v12b_aggregate_status_counts),
+            "v13_layer_counts": dict(self.v13_layer_counts),
             "v13_error_code_counts": dict(self.v13_error_code_counts),
             "note": ("full pipeline: official answer changes ONLY for router-selected, "
                      "V12B-input-valid records; ties/failures/malformed output always fall "
@@ -205,6 +209,7 @@ def run_full_pipeline(
         base_answer = decision.generated_answer
         router_selected = bool(getattr(decision, "selected", False))
         v12b_status = v12b_hypothetical = v13_status = v13_answer = None
+        v13_layer = None
         v13_attempted = False
         final_answer, final_source = base_answer, FINAL_SOURCE_BASE
 
@@ -218,6 +223,7 @@ def run_full_pipeline(
             elif ordinal in v13_by_ordinal:
                 v13_attempted = True
                 v13_result = v13_by_ordinal[ordinal]
+                v13_layer = v13_result.layer
                 v13_status = v13_result.error_code.value
                 if v13_result.valid and v13_result.mapped_label:
                     v13_answer = v13_result.mapped_label
@@ -241,7 +247,8 @@ def run_full_pipeline(
             source_record_ordinal=ordinal, qid=str(decision.qid), input_index=int(decision.input_index),
             base_answer=base_answer, router_selected=router_selected,
             v12b_status=v12b_status, v12b_hypothetical_answer=v12b_hypothetical,
-            v13_attempted=v13_attempted, v13_status=v13_status, v13_answer=v13_answer,
+            v13_attempted=v13_attempted, v13_layer=v13_layer,
+            v13_status=v13_status, v13_answer=v13_answer,
             final_answer=final_answer, final_source=final_source,
         ))
 
@@ -257,6 +264,7 @@ def run_full_pipeline(
         total_base=final_source_counts.get(FINAL_SOURCE_BASE, 0),
         final_source_counts=final_source_counts,
         v12b_aggregate_status_counts=v12b_status_counts,
+        v13_layer_counts=dict(v13_summary.layer_counts),
         v13_error_code_counts=dict(v13_summary.error_code_counts),
     )
     return records, summary

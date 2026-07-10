@@ -1,0 +1,302 @@
+[
+  {
+    "choices": [
+      "23",
+      "24"
+    ],
+    "qid": "cp_prog_001",
+    "question": "Compute 11 + 3 x 4."
+  },
+  {
+    "choices": [
+      "blue lantern",
+      "silver reed"
+    ],
+    "qid": "cp_content_001",
+    "question": "Use only these invented definitions: mira = blue lantern; solen = silver reed; naro = quiet drum; velin = river glass; pavo = soft metal; lumen = winter shell. What is the meaning of mira?"
+  },
+  {
+    "choices": [
+      "Wilo has the ivory badge",
+      "Wilo has the coral badge"
+    ],
+    "qid": "cp_logic_assign_011",
+    "question": "Each person gets one badge and each badge is used once. Rules: Wilo has coral, Iris has ivory, and Yani does not have ivory. Which of the following statements is true?"
+  },
+  {
+    "choices": [
+      "600 phut",
+      "540 phut"
+    ],
+    "qid": "cp_prog_016",
+    "question": "Doi 9 gio sang phut."
+  },
+  {
+    "choices": [
+      "sevan",
+      "mira"
+    ],
+    "qid": "cp_content_016",
+    "question": "Chi dung bang dinh nghia tu tao nay: sevan = square blossom; liron = clear feather; piren = golden bracket; mira = blue lantern; solen = silver reed; naro = quiet drum. Thuat ngu nao co nghia la blue lantern?"
+  },
+  {
+    "choices": [
+      "Yarn vuot qua cong",
+      "Zinc vuot qua cong"
+    ],
+    "qid": "cp_logic_table_016",
+    "question": "Mot the vuot qua cong chi khi no min va vuong. Bang su kien cuc bo: Yarn: smooth and square; Zinc: rough and square; Clay: smooth and round; Ink: rough and round. Phat bieu nao dung?"
+  },
+  {
+    "choices": [
+      "42",
+      "41",
+      "40"
+    ],
+    "qid": "cp_prog_007",
+    "question": "Compute 17 + 4 x 6."
+  },
+  {
+    "choices": [
+      "steady candle",
+      "glass pebble",
+      "north button"
+    ],
+    "qid": "cp_content_027",
+    "question": "Use only these invented definitions: ravel = steady candle; devon = glass pebble; polen = north button; sorin = thin anchor; tiren = fresh wheel; avon = purple switch. What is the meaning of polen?"
+  },
+  {
+    "choices": [
+      "Kilo has the amber badge",
+      "Kilo has the cobalt badge",
+      "Luma has the amber badge"
+    ],
+    "qid": "cp_logic_assign_007",
+    "question": "Each person gets one badge and each badge is used once. Rules: Kilo has cobalt, Miro has amber, and Luma does not have amber. Which of the following statements is true?"
+  },
+  {
+    "choices": [
+      "15",
+      "20",
+      "10"
+    ],
+    "qid": "cp_prog_002",
+    "question": "15% cua 100 la bao nhieu?"
+  },
+  {
+    "choices": [
+      "rokan",
+      "sika",
+      "dorel"
+    ],
+    "qid": "cp_content_022",
+    "question": "Chi dung bang dinh nghia tu tao nay: sika = violet key; dorel = paper moon; anvi = clear ladder; rokan = warm signal; elun = salt mirror; maro = round harbor. Thuat ngu nao co nghia la warm signal?"
+  },
+  {
+    "choices": [
+      "sang Mint, trua Opal, chieu Nova",
+      "sang Nova, trua Mint, chieu Opal",
+      "sang Mint, trua Nova, chieu Opal"
+    ],
+    "qid": "cp_logic_schedule_002",
+    "question": "Lich xuong thuc hanh can thoa ca hai dieu kien: Mint truoc Nova, va Nova truoc Opal. Phat bieu nao dung?"
+  },
+  {
+    "choices": [
+      "18 items",
+      "16 items",
+      "14 items",
+      "20 items"
+    ],
+    "qid": "cp_prog_033",
+    "question": "A mixture has red:blue = 2:3. If blue is 24, how many red items?"
+  },
+  {
+    "choices": [
+      "green compass",
+      "hollow bell",
+      "stone ribbon",
+      "bright bridge"
+    ],
+    "qid": "cp_content_003",
+    "question": "Use only these invented definitions: karo = green compass; davin = hollow bell; seru = bright bridge; talin = stone ribbon; boru = amber leaf; ciran = hidden gate. What is the meaning of seru?"
+  },
+  {
+    "choices": [
+      "Kilo has the ivory badge",
+      "Kilo has the coral badge",
+      "Luma has the ivory badge",
+      "Luma has the coral badge"
+    ],
+    "qid": "cp_logic_assign_023",
+    "question": "Each person gets one badge and each badge is used once. Rules: Kilo has coral, Miro has ivory, and Luma does not have ivory. Which of the following statements is true?"
+  },
+  {
+    "choices": [
+      "300 phut",
+      "360 phut",
+      "240 phut",
+      "420 phut"
+    ],
+    "qid": "cp_prog_028",
+    "question": "Doi 5 gio sang phut."
+  },
+  {
+    "choices": [
+      "sovel",
+      "tavo",
+      "kiren",
+      "belin"
+    ],
+    "qid": "cp_content_008",
+    "question": "Chi dung bang dinh nghia tu tao nay: sovel = sleeping wire; kiren = cloud needle; tavo = gentle magnet; belin = white orchard; orim = folded spark; cavo = plain crystal. Thuat ngu nao co nghia la cloud needle?"
+  },
+  {
+    "choices": [
+      "Yarn vuot qua cong",
+      "Zinc vuot qua cong",
+      "Clay vuot qua cong",
+      "Ink vuot qua cong"
+    ],
+    "qid": "cp_logic_table_008",
+    "question": "Mot the vuot qua cong chi khi no min va vuong. Bang su kien cuc bo: Yarn: smooth and square; Zinc: rough and square; Clay: smooth and round; Ink: rough and round. Phat bieu nao dung?"
+  },
+  {
+    "choices": [
+      "66",
+      "64",
+      "65",
+      "67",
+      "63"
+    ],
+    "qid": "cp_prog_019",
+    "question": "Compute 29 + 6 x 6."
+  },
+  {
+    "choices": [
+      "green compass",
+      "hollow bell",
+      "bright bridge",
+      "stone ribbon",
+      "amber leaf"
+    ],
+    "qid": "cp_content_019",
+    "question": "Use only these invented definitions: karo = green compass; davin = hollow bell; seru = bright bridge; talin = stone ribbon; boru = amber leaf; ciran = hidden gate. What is the meaning of karo?"
+  },
+  {
+    "choices": [
+      "Kilo has the silver badge",
+      "Kilo has the jade badge",
+      "Luma has the silver badge",
+      "Luma has the jade badge",
+      "Miro has the ivory badge"
+    ],
+    "qid": "cp_logic_assign_039",
+    "question": "Each person gets one badge and each badge is used once. Rules: Kilo has jade, Miro has silver, and Luma does not have silver. Which of the following statements is true?"
+  },
+  {
+    "choices": [
+      "360 phut",
+      "300 phut",
+      "240 phut",
+      "420 phut",
+      "180 phut"
+    ],
+    "qid": "cp_prog_004",
+    "question": "Doi 5 gio sang phut."
+  },
+  {
+    "choices": [
+      "velin",
+      "pavo",
+      "lumen",
+      "karo",
+      "davin"
+    ],
+    "qid": "cp_content_034",
+    "question": "Chi dung bang dinh nghia tu tao nay: velin = river glass; pavo = soft metal; lumen = winter shell; karo = green compass; davin = hollow bell; seru = bright bridge. Thuat ngu nao co nghia la green compass?"
+  },
+  {
+    "choices": [
+      "sang Mint, trua Opal, chieu Nova",
+      "sang Nova, trua Mint, chieu Opal",
+      "sang Nova, trua Opal, chieu Mint",
+      "sang Opal, trua Mint, chieu Nova",
+      "sang Mint, trua Nova, chieu Opal"
+    ],
+    "qid": "cp_logic_schedule_034",
+    "question": "Lich xuong thuc hanh can thoa ca hai dieu kien: Mint truoc Nova, va Nova truoc Opal. Phat bieu nao dung?"
+  },
+  {
+    "choices": [
+      "64",
+      "63",
+      "62",
+      "65",
+      "61",
+      "126"
+    ],
+    "qid": "cp_prog_025",
+    "question": "Compute 35 + 7 x 4."
+  },
+  {
+    "choices": [
+      "green compass",
+      "hollow bell",
+      "amber leaf",
+      "bright bridge",
+      "stone ribbon",
+      "hidden gate"
+    ],
+    "qid": "cp_content_035",
+    "question": "Use only these invented definitions: karo = green compass; davin = hollow bell; seru = bright bridge; talin = stone ribbon; boru = amber leaf; ciran = hidden gate. What is the meaning of boru?"
+  },
+  {
+    "choices": [
+      "Sato has the silver badge",
+      "Tavi has the silver badge",
+      "Tavi has the jade badge",
+      "Uma has the ivory badge",
+      "Sato has the jade badge",
+      "Uma has the jade badge"
+    ],
+    "qid": "cp_logic_assign_015",
+    "question": "Each person gets one badge and each badge is used once. Rules: Sato has jade, Uma has silver, and Tavi does not have silver. Which of the following statements is true?"
+  },
+  {
+    "choices": [
+      "38",
+      "45",
+      "31",
+      "52",
+      "24",
+      "76"
+    ],
+    "qid": "cp_prog_030",
+    "question": "Day so moi buoc cong 7: 10, 17, 24, 31. So tiep theo la gi?"
+  },
+  {
+    "choices": [
+      "talin",
+      "ciran",
+      "lato",
+      "boru",
+      "virel",
+      "moren"
+    ],
+    "qid": "cp_content_020",
+    "question": "Chi dung bang dinh nghia tu tao nay: talin = stone ribbon; boru = amber leaf; ciran = hidden gate; lato = calm engine; virel = woven map; moren = small thunder. Thuat ngu nao co nghia la amber leaf?"
+  },
+  {
+    "choices": [
+      "sang Quill, trua Sage, chieu Reed",
+      "sang Reed, trua Quill, chieu Sage",
+      "sang Reed, trua Sage, chieu Quill",
+      "sang Sage, trua Quill, chieu Reed",
+      "sang Sage, trua Reed, chieu Quill",
+      "sang Quill, trua Reed, chieu Sage"
+    ],
+    "qid": "cp_logic_schedule_030",
+    "question": "Lich xuong thuc hanh can thoa ca hai dieu kien: Quill truoc Reed, va Reed truoc Sage. Phat bieu nao dung?"
+  }
+]

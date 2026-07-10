@@ -1,0 +1,4851 @@
+{
+  "metadata": {
+    "categories": {
+      "content_first": 40,
+      "least_to_most": 40,
+      "programmatic_arithmetic": 40
+    },
+    "choice_counts": {
+      "2": 24,
+      "3": 24,
+      "4": 24,
+      "5": 24,
+      "6": 24
+    },
+    "gold_label_policy": "Gold answers are produced only by deterministic local arithmetic, explicit self-authored fact tables, or exhaustive local constraint solvers.",
+    "intended_v13_layers": {
+      "content_first": 40,
+      "least_to_most": 40,
+      "programmatic_solver": 40
+    },
+    "languages": {
+      "en": 60,
+      "vi": 60
+    },
+    "name": "confidence_promotion_benchmark",
+    "record_count": 120,
+    "seed": 20260710
+  },
+  "records": [
+    {
+      "category": "programmatic_arithmetic",
+      "choice_count": 3,
+      "choices": [
+        "15",
+        "20",
+        "10"
+      ],
+      "deterministic_gold": {
+        "gold_source": "computed_by_python_arithmetic",
+        "kind": "programmatic",
+        "operation": "percentage",
+        "params": {
+          "percent": 15,
+          "whole": 100
+        },
+        "unit": null
+      },
+      "expected_answer": "A",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "programmatic_solver",
+      "language": "vi",
+      "qid": "cp_prog_002",
+      "question": "15% cua 100 la bao nhieu?",
+      "template_id": "programmatic:percentage:vi"
+    },
+    {
+      "category": "content_first",
+      "choice_count": 5,
+      "choices": [
+        "round harbor",
+        "warm signal",
+        "salt mirror",
+        "sleeping wire",
+        "cloud needle"
+      ],
+      "deterministic_gold": {
+        "ask": "meaning_for_term",
+        "facts": [
+          [
+            "rokan",
+            "warm signal"
+          ],
+          [
+            "elun",
+            "salt mirror"
+          ],
+          [
+            "maro",
+            "round harbor"
+          ],
+          [
+            "sovel",
+            "sleeping wire"
+          ],
+          [
+            "kiren",
+            "cloud needle"
+          ],
+          [
+            "tavo",
+            "gentle magnet"
+          ]
+        ],
+        "gold_source": "explicit_local_fact_table",
+        "kind": "content_fact",
+        "meaning": "round harbor",
+        "term": "maro"
+      },
+      "expected_answer": "A",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "content_first",
+      "language": "en",
+      "qid": "cp_content_039",
+      "question": "Use only these invented definitions: rokan = warm signal; elun = salt mirror; maro = round harbor; sovel = sleeping wire; kiren = cloud needle; tavo = gentle magnet. What is the meaning of maro?",
+      "template_id": "content:meaning_for_term:en"
+    },
+    {
+      "category": "least_to_most",
+      "choice_count": 5,
+      "choices": [
+        "Quill vuot qua cong",
+        "Pearl vuot qua cong",
+        "Reed vuot qua cong",
+        "Sage vuot qua cong",
+        "Pearl khong vuot qua cong"
+      ],
+      "deterministic_gold": {
+        "gold_source": "deterministic_logic_table_solver",
+        "kind": "table_conjunction",
+        "language": "vi",
+        "rule": {
+          "shape": "square",
+          "texture": "smooth"
+        },
+        "table": {
+          "Pearl": {
+            "shape": "square",
+            "texture": "smooth"
+          },
+          "Quill": {
+            "shape": "square",
+            "texture": "rough"
+          },
+          "Reed": {
+            "shape": "round",
+            "texture": "smooth"
+          },
+          "Sage": {
+            "shape": "round",
+            "texture": "rough"
+          }
+        },
+        "target_item": "Pearl"
+      },
+      "expected_answer": "B",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "least_to_most",
+      "language": "vi",
+      "qid": "cp_logic_table_004",
+      "question": "Mot the vuot qua cong chi khi no min va vuong. Bang su kien cuc bo: Pearl: smooth and square; Quill: rough and square; Reed: smooth and round; Sage: rough and round. Phat bieu nao dung?",
+      "template_id": "logic:table_conjunction:vi"
+    },
+    {
+      "category": "programmatic_arithmetic",
+      "choice_count": 5,
+      "choices": [
+        "40 items",
+        "32 items",
+        "36 items",
+        "44 items",
+        "28 items"
+      ],
+      "deterministic_gold": {
+        "gold_source": "computed_by_python_arithmetic",
+        "kind": "programmatic",
+        "operation": "ratio",
+        "params": {
+          "known_ratio": 5,
+          "known_total": 45,
+          "target_ratio": 4
+        },
+        "unit": "items"
+      },
+      "expected_answer": "C",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "programmatic_solver",
+      "language": "en",
+      "qid": "cp_prog_039",
+      "question": "A mixture has red:blue = 4:5. If blue is 45, how many red items?",
+      "template_id": "programmatic:ratio:en"
+    },
+    {
+      "category": "content_first",
+      "choice_count": 4,
+      "choices": [
+        "narrow window",
+        "honest lever",
+        "soft beacon",
+        "tidy circuit"
+      ],
+      "deterministic_gold": {
+        "ask": "meaning_for_term",
+        "facts": [
+          [
+            "melu",
+            "narrow window"
+          ],
+          [
+            "zano",
+            "honest lever"
+          ],
+          [
+            "rilan",
+            "soft beacon"
+          ],
+          [
+            "tevon",
+            "tidy circuit"
+          ],
+          [
+            "balen",
+            "red capsule"
+          ],
+          [
+            "orven",
+            "level prism"
+          ]
+        ],
+        "gold_source": "explicit_local_fact_table",
+        "kind": "content_fact",
+        "meaning": "narrow window",
+        "term": "melu"
+      },
+      "expected_answer": "A",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "content_first",
+      "language": "en",
+      "qid": "cp_content_013",
+      "question": "Use only these invented definitions: melu = narrow window; zano = honest lever; rilan = soft beacon; tevon = tidy circuit; balen = red capsule; orven = level prism. What is the meaning of melu?",
+      "template_id": "content:meaning_for_term:en"
+    },
+    {
+      "category": "least_to_most",
+      "choice_count": 2,
+      "choices": [
+        "Yarn vuot qua cong",
+        "Zinc vuot qua cong"
+      ],
+      "deterministic_gold": {
+        "gold_source": "deterministic_logic_table_solver",
+        "kind": "table_conjunction",
+        "language": "vi",
+        "rule": {
+          "shape": "square",
+          "texture": "smooth"
+        },
+        "table": {
+          "Clay": {
+            "shape": "round",
+            "texture": "smooth"
+          },
+          "Ink": {
+            "shape": "round",
+            "texture": "rough"
+          },
+          "Yarn": {
+            "shape": "square",
+            "texture": "smooth"
+          },
+          "Zinc": {
+            "shape": "square",
+            "texture": "rough"
+          }
+        },
+        "target_item": "Yarn"
+      },
+      "expected_answer": "A",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "least_to_most",
+      "language": "vi",
+      "qid": "cp_logic_table_016",
+      "question": "Mot the vuot qua cong chi khi no min va vuong. Bang su kien cuc bo: Yarn: smooth and square; Zinc: rough and square; Clay: smooth and round; Ink: rough and round. Phat bieu nao dung?",
+      "template_id": "logic:table_conjunction:vi"
+    },
+    {
+      "category": "programmatic_arithmetic",
+      "choice_count": 4,
+      "choices": [
+        "18 items",
+        "16 items",
+        "14 items",
+        "20 items"
+      ],
+      "deterministic_gold": {
+        "gold_source": "computed_by_python_arithmetic",
+        "kind": "programmatic",
+        "operation": "ratio",
+        "params": {
+          "known_ratio": 3,
+          "known_total": 24,
+          "target_ratio": 2
+        },
+        "unit": "items"
+      },
+      "expected_answer": "B",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "programmatic_solver",
+      "language": "en",
+      "qid": "cp_prog_033",
+      "question": "A mixture has red:blue = 2:3. If blue is 24, how many red items?",
+      "template_id": "programmatic:ratio:en"
+    },
+    {
+      "category": "content_first",
+      "choice_count": 3,
+      "choices": [
+        "sorin",
+        "rilan",
+        "tiren"
+      ],
+      "deterministic_gold": {
+        "ask": "term_for_meaning",
+        "facts": [
+          [
+            "sorin",
+            "thin anchor"
+          ],
+          [
+            "tiren",
+            "fresh wheel"
+          ],
+          [
+            "avon",
+            "purple switch"
+          ],
+          [
+            "melu",
+            "narrow window"
+          ],
+          [
+            "zano",
+            "honest lever"
+          ],
+          [
+            "rilan",
+            "soft beacon"
+          ]
+        ],
+        "gold_source": "explicit_local_fact_table",
+        "kind": "content_fact",
+        "meaning": "soft beacon",
+        "term": "rilan"
+      },
+      "expected_answer": "B",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "content_first",
+      "language": "vi",
+      "qid": "cp_content_012",
+      "question": "Chi dung bang dinh nghia tu tao nay: sorin = thin anchor; tiren = fresh wheel; avon = purple switch; melu = narrow window; zano = honest lever; rilan = soft beacon. Thuat ngu nao co nghia la soft beacon?",
+      "template_id": "content:term_for_meaning:vi"
+    },
+    {
+      "category": "least_to_most",
+      "choice_count": 4,
+      "choices": [
+        "sang Mint, trua Opal, chieu Nova",
+        "sang Nova, trua Mint, chieu Opal",
+        "sang Mint, trua Nova, chieu Opal",
+        "sang Nova, trua Opal, chieu Mint"
+      ],
+      "deterministic_gold": {
+        "before_pairs": [
+          [
+            "Mint",
+            "Nova"
+          ],
+          [
+            "Nova",
+            "Opal"
+          ]
+        ],
+        "gold_source": "exhaustive_permutation_solver",
+        "kind": "schedule",
+        "language": "vi",
+        "tasks": [
+          "Mint",
+          "Nova",
+          "Opal"
+        ]
+      },
+      "expected_answer": "C",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "least_to_most",
+      "language": "vi",
+      "qid": "cp_logic_schedule_018",
+      "question": "Lich xuong thuc hanh can thoa ca hai dieu kien: Mint truoc Nova, va Nova truoc Opal. Phat bieu nao dung?",
+      "template_id": "logic:schedule:vi"
+    },
+    {
+      "category": "programmatic_arithmetic",
+      "choice_count": 4,
+      "choices": [
+        "44",
+        "42",
+        "45",
+        "43"
+      ],
+      "deterministic_gold": {
+        "gold_source": "computed_by_python_arithmetic",
+        "kind": "programmatic",
+        "operation": "arithmetic",
+        "params": {
+          "a": 23,
+          "b": 5,
+          "c": 4
+        },
+        "unit": null
+      },
+      "expected_answer": "D",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "programmatic_solver",
+      "language": "en",
+      "qid": "cp_prog_013",
+      "question": "Compute 23 + 5 x 4.",
+      "template_id": "programmatic:arithmetic:en"
+    },
+    {
+      "category": "content_first",
+      "choice_count": 2,
+      "choices": [
+        "sevan",
+        "mira"
+      ],
+      "deterministic_gold": {
+        "ask": "term_for_meaning",
+        "facts": [
+          [
+            "sevan",
+            "square blossom"
+          ],
+          [
+            "liron",
+            "clear feather"
+          ],
+          [
+            "piren",
+            "golden bracket"
+          ],
+          [
+            "mira",
+            "blue lantern"
+          ],
+          [
+            "solen",
+            "silver reed"
+          ],
+          [
+            "naro",
+            "quiet drum"
+          ]
+        ],
+        "gold_source": "explicit_local_fact_table",
+        "kind": "content_fact",
+        "meaning": "blue lantern",
+        "term": "mira"
+      },
+      "expected_answer": "B",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "content_first",
+      "language": "vi",
+      "qid": "cp_content_016",
+      "question": "Chi dung bang dinh nghia tu tao nay: sevan = square blossom; liron = clear feather; piren = golden bracket; mira = blue lantern; solen = silver reed; naro = quiet drum. Thuat ngu nao co nghia la blue lantern?",
+      "template_id": "content:term_for_meaning:vi"
+    },
+    {
+      "category": "least_to_most",
+      "choice_count": 4,
+      "choices": [
+        "Yarn vuot qua cong",
+        "Zinc vuot qua cong",
+        "Clay vuot qua cong",
+        "Ink vuot qua cong"
+      ],
+      "deterministic_gold": {
+        "gold_source": "deterministic_logic_table_solver",
+        "kind": "table_conjunction",
+        "language": "vi",
+        "rule": {
+          "shape": "square",
+          "texture": "smooth"
+        },
+        "table": {
+          "Clay": {
+            "shape": "round",
+            "texture": "smooth"
+          },
+          "Ink": {
+            "shape": "round",
+            "texture": "rough"
+          },
+          "Yarn": {
+            "shape": "square",
+            "texture": "smooth"
+          },
+          "Zinc": {
+            "shape": "square",
+            "texture": "rough"
+          }
+        },
+        "target_item": "Yarn"
+      },
+      "expected_answer": "A",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "least_to_most",
+      "language": "vi",
+      "qid": "cp_logic_table_008",
+      "question": "Mot the vuot qua cong chi khi no min va vuong. Bang su kien cuc bo: Yarn: smooth and square; Zinc: rough and square; Clay: smooth and round; Ink: rough and round. Phat bieu nao dung?",
+      "template_id": "logic:table_conjunction:vi"
+    },
+    {
+      "category": "programmatic_arithmetic",
+      "choice_count": 5,
+      "choices": [
+        "240 phut",
+        "120 phut",
+        "300 phut",
+        "180 phut",
+        "60 phut"
+      ],
+      "deterministic_gold": {
+        "gold_source": "computed_by_python_arithmetic",
+        "kind": "programmatic",
+        "operation": "unit_conversion",
+        "params": {
+          "amount": 3,
+          "factor": 60,
+          "from_unit": "hours",
+          "to_unit": "minutes"
+        },
+        "unit": "phut"
+      },
+      "expected_answer": "D",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "programmatic_solver",
+      "language": "vi",
+      "qid": "cp_prog_034",
+      "question": "Doi 3 gio sang phut.",
+      "template_id": "programmatic:unit_conversion:vi"
+    },
+    {
+      "category": "content_first",
+      "choice_count": 6,
+      "choices": [
+        "ravel",
+        "niven",
+        "lireo",
+        "sumen",
+        "devon",
+        "polen"
+      ],
+      "deterministic_gold": {
+        "ask": "term_for_meaning",
+        "facts": [
+          [
+            "niven",
+            "silent marker"
+          ],
+          [
+            "lireo",
+            "yellow hinge"
+          ],
+          [
+            "sumen",
+            "open feather"
+          ],
+          [
+            "ravel",
+            "steady candle"
+          ],
+          [
+            "devon",
+            "glass pebble"
+          ],
+          [
+            "polen",
+            "north button"
+          ]
+        ],
+        "gold_source": "explicit_local_fact_table",
+        "kind": "content_fact",
+        "meaning": "steady candle",
+        "term": "ravel"
+      },
+      "expected_answer": "A",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "content_first",
+      "language": "vi",
+      "qid": "cp_content_010",
+      "question": "Chi dung bang dinh nghia tu tao nay: niven = silent marker; lireo = yellow hinge; sumen = open feather; ravel = steady candle; devon = glass pebble; polen = north button. Thuat ngu nao co nghia la steady candle?",
+      "template_id": "content:term_for_meaning:vi"
+    },
+    {
+      "category": "least_to_most",
+      "choice_count": 4,
+      "choices": [
+        "Kilo has the ivory badge",
+        "Kilo has the coral badge",
+        "Luma has the ivory badge",
+        "Luma has the coral badge"
+      ],
+      "deterministic_gold": {
+        "fixed": [
+          [
+            "Kilo",
+            "coral"
+          ],
+          [
+            "Miro",
+            "ivory"
+          ]
+        ],
+        "forbidden": [
+          [
+            "Luma",
+            "ivory"
+          ]
+        ],
+        "gold_source": "exhaustive_assignment_solver",
+        "items": [
+          "ivory",
+          "coral",
+          "amber"
+        ],
+        "kind": "assignment",
+        "language": "en",
+        "people": [
+          "Kilo",
+          "Luma",
+          "Miro"
+        ],
+        "target_statement": [
+          "Kilo",
+          "coral"
+        ]
+      },
+      "expected_answer": "B",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "least_to_most",
+      "language": "en",
+      "qid": "cp_logic_assign_023",
+      "question": "Each person gets one badge and each badge is used once. Rules: Kilo has coral, Miro has ivory, and Luma does not have ivory. Which of the following statements is true?",
+      "template_id": "logic:assignment:en"
+    },
+    {
+      "category": "programmatic_arithmetic",
+      "choice_count": 2,
+      "choices": [
+        "23",
+        "24"
+      ],
+      "deterministic_gold": {
+        "gold_source": "computed_by_python_arithmetic",
+        "kind": "programmatic",
+        "operation": "arithmetic",
+        "params": {
+          "a": 11,
+          "b": 3,
+          "c": 4
+        },
+        "unit": null
+      },
+      "expected_answer": "A",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "programmatic_solver",
+      "language": "en",
+      "qid": "cp_prog_001",
+      "question": "Compute 11 + 3 x 4.",
+      "template_id": "programmatic:arithmetic:en"
+    },
+    {
+      "category": "content_first",
+      "choice_count": 6,
+      "choices": [
+        "sovel",
+        "belin",
+        "kiren",
+        "tavo",
+        "orim",
+        "cavo"
+      ],
+      "deterministic_gold": {
+        "ask": "term_for_meaning",
+        "facts": [
+          [
+            "sovel",
+            "sleeping wire"
+          ],
+          [
+            "kiren",
+            "cloud needle"
+          ],
+          [
+            "tavo",
+            "gentle magnet"
+          ],
+          [
+            "belin",
+            "white orchard"
+          ],
+          [
+            "orim",
+            "folded spark"
+          ],
+          [
+            "cavo",
+            "plain crystal"
+          ]
+        ],
+        "gold_source": "explicit_local_fact_table",
+        "kind": "content_fact",
+        "meaning": "white orchard",
+        "term": "belin"
+      },
+      "expected_answer": "B",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "content_first",
+      "language": "vi",
+      "qid": "cp_content_040",
+      "question": "Chi dung bang dinh nghia tu tao nay: sovel = sleeping wire; kiren = cloud needle; tavo = gentle magnet; belin = white orchard; orim = folded spark; cavo = plain crystal. Thuat ngu nao co nghia la white orchard?",
+      "template_id": "content:term_for_meaning:vi"
+    },
+    {
+      "category": "least_to_most",
+      "choice_count": 3,
+      "choices": [
+        "Iris -> Kilo -> Jade",
+        "Jade -> Iris -> Kilo",
+        "Iris -> Jade -> Kilo"
+      ],
+      "deterministic_gold": {
+        "before_pairs": [
+          [
+            "Iris",
+            "Jade"
+          ],
+          [
+            "Jade",
+            "Kilo"
+          ]
+        ],
+        "gold_source": "exhaustive_permutation_solver",
+        "kind": "ordering",
+        "names": [
+          "Iris",
+          "Jade",
+          "Kilo"
+        ]
+      },
+      "expected_answer": "C",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "least_to_most",
+      "language": "en",
+      "qid": "cp_logic_order_017",
+      "question": "Which of the following orders is consistent? Iris is before Jade, and Jade is before Kilo.",
+      "template_id": "logic:ordering:en"
+    },
+    {
+      "category": "programmatic_arithmetic",
+      "choice_count": 2,
+      "choices": [
+        "600 phut",
+        "540 phut"
+      ],
+      "deterministic_gold": {
+        "gold_source": "computed_by_python_arithmetic",
+        "kind": "programmatic",
+        "operation": "unit_conversion",
+        "params": {
+          "amount": 9,
+          "factor": 60,
+          "from_unit": "hours",
+          "to_unit": "minutes"
+        },
+        "unit": "phut"
+      },
+      "expected_answer": "B",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "programmatic_solver",
+      "language": "vi",
+      "qid": "cp_prog_016",
+      "question": "Doi 9 gio sang phut.",
+      "template_id": "programmatic:unit_conversion:vi"
+    },
+    {
+      "category": "content_first",
+      "choice_count": 5,
+      "choices": [
+        "white orchard",
+        "folded spark",
+        "silent marker",
+        "yellow hinge",
+        "plain crystal"
+      ],
+      "deterministic_gold": {
+        "ask": "meaning_for_term",
+        "facts": [
+          [
+            "belin",
+            "white orchard"
+          ],
+          [
+            "orim",
+            "folded spark"
+          ],
+          [
+            "cavo",
+            "plain crystal"
+          ],
+          [
+            "niven",
+            "silent marker"
+          ],
+          [
+            "lireo",
+            "yellow hinge"
+          ],
+          [
+            "sumen",
+            "open feather"
+          ]
+        ],
+        "gold_source": "explicit_local_fact_table",
+        "kind": "content_fact",
+        "meaning": "plain crystal",
+        "term": "cavo"
+      },
+      "expected_answer": "E",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "content_first",
+      "language": "en",
+      "qid": "cp_content_009",
+      "question": "Use only these invented definitions: belin = white orchard; orim = folded spark; cavo = plain crystal; niven = silent marker; lireo = yellow hinge; sumen = open feather. What is the meaning of cavo?",
+      "template_id": "content:meaning_for_term:en"
+    },
+    {
+      "category": "least_to_most",
+      "choice_count": 3,
+      "choices": [
+        "Yarn vuot qua cong",
+        "Zinc vuot qua cong",
+        "Clay vuot qua cong"
+      ],
+      "deterministic_gold": {
+        "gold_source": "deterministic_logic_table_solver",
+        "kind": "table_conjunction",
+        "language": "vi",
+        "rule": {
+          "shape": "square",
+          "texture": "smooth"
+        },
+        "table": {
+          "Clay": {
+            "shape": "round",
+            "texture": "smooth"
+          },
+          "Ink": {
+            "shape": "round",
+            "texture": "rough"
+          },
+          "Yarn": {
+            "shape": "square",
+            "texture": "smooth"
+          },
+          "Zinc": {
+            "shape": "square",
+            "texture": "rough"
+          }
+        },
+        "target_item": "Yarn"
+      },
+      "expected_answer": "A",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "least_to_most",
+      "language": "vi",
+      "qid": "cp_logic_table_032",
+      "question": "Mot the vuot qua cong chi khi no min va vuong. Bang su kien cuc bo: Yarn: smooth and square; Zinc: rough and square; Clay: smooth and round; Ink: rough and round. Phat bieu nao dung?",
+      "template_id": "logic:table_conjunction:vi"
+    },
+    {
+      "category": "programmatic_arithmetic",
+      "choice_count": 4,
+      "choices": [
+        "21",
+        "11",
+        "16",
+        "26"
+      ],
+      "deterministic_gold": {
+        "gold_source": "computed_by_python_arithmetic",
+        "kind": "programmatic",
+        "operation": "percentage",
+        "params": {
+          "percent": 20,
+          "whole": 80
+        },
+        "unit": null
+      },
+      "expected_answer": "C",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "programmatic_solver",
+      "language": "vi",
+      "qid": "cp_prog_008",
+      "question": "20% cua 80 la bao nhieu?",
+      "template_id": "programmatic:percentage:vi"
+    },
+    {
+      "category": "content_first",
+      "choice_count": 2,
+      "choices": [
+        "fresh wheel",
+        "steady candle"
+      ],
+      "deterministic_gold": {
+        "ask": "meaning_for_term",
+        "facts": [
+          [
+            "ravel",
+            "steady candle"
+          ],
+          [
+            "devon",
+            "glass pebble"
+          ],
+          [
+            "polen",
+            "north button"
+          ],
+          [
+            "sorin",
+            "thin anchor"
+          ],
+          [
+            "tiren",
+            "fresh wheel"
+          ],
+          [
+            "avon",
+            "purple switch"
+          ]
+        ],
+        "gold_source": "explicit_local_fact_table",
+        "kind": "content_fact",
+        "meaning": "fresh wheel",
+        "term": "tiren"
+      },
+      "expected_answer": "A",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "content_first",
+      "language": "en",
+      "qid": "cp_content_011",
+      "question": "Use only these invented definitions: ravel = steady candle; devon = glass pebble; polen = north button; sorin = thin anchor; tiren = fresh wheel; avon = purple switch. What is the meaning of tiren?",
+      "template_id": "content:meaning_for_term:en"
+    },
+    {
+      "category": "least_to_most",
+      "choice_count": 6,
+      "choices": [
+        "Zinc vuot qua cong",
+        "Clay vuot qua cong",
+        "Yarn vuot qua cong",
+        "Ink vuot qua cong",
+        "Yarn khong vuot qua cong",
+        "Clay khong vuot qua cong"
+      ],
+      "deterministic_gold": {
+        "gold_source": "deterministic_logic_table_solver",
+        "kind": "table_conjunction",
+        "language": "vi",
+        "rule": {
+          "shape": "square",
+          "texture": "smooth"
+        },
+        "table": {
+          "Clay": {
+            "shape": "round",
+            "texture": "smooth"
+          },
+          "Ink": {
+            "shape": "round",
+            "texture": "rough"
+          },
+          "Yarn": {
+            "shape": "square",
+            "texture": "smooth"
+          },
+          "Zinc": {
+            "shape": "square",
+            "texture": "rough"
+          }
+        },
+        "target_item": "Yarn"
+      },
+      "expected_answer": "C",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "least_to_most",
+      "language": "vi",
+      "qid": "cp_logic_table_040",
+      "question": "Mot the vuot qua cong chi khi no min va vuong. Bang su kien cuc bo: Yarn: smooth and square; Zinc: rough and square; Clay: smooth and round; Ink: rough and round. Phat bieu nao dung?",
+      "template_id": "logic:table_conjunction:vi"
+    },
+    {
+      "category": "programmatic_arithmetic",
+      "choice_count": 4,
+      "choices": [
+        "36 items",
+        "28 items",
+        "40 items",
+        "32 items"
+      ],
+      "deterministic_gold": {
+        "gold_source": "computed_by_python_arithmetic",
+        "kind": "programmatic",
+        "operation": "ratio",
+        "params": {
+          "known_ratio": 5,
+          "known_total": 40,
+          "target_ratio": 4
+        },
+        "unit": "items"
+      },
+      "expected_answer": "D",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "programmatic_solver",
+      "language": "en",
+      "qid": "cp_prog_003",
+      "question": "A mixture has red:blue = 4:5. If blue is 40, how many red items?",
+      "template_id": "programmatic:ratio:en"
+    },
+    {
+      "category": "content_first",
+      "choice_count": 5,
+      "choices": [
+        "lato",
+        "talin",
+        "boru",
+        "ciran",
+        "virel"
+      ],
+      "deterministic_gold": {
+        "ask": "term_for_meaning",
+        "facts": [
+          [
+            "talin",
+            "stone ribbon"
+          ],
+          [
+            "boru",
+            "amber leaf"
+          ],
+          [
+            "ciran",
+            "hidden gate"
+          ],
+          [
+            "lato",
+            "calm engine"
+          ],
+          [
+            "virel",
+            "woven map"
+          ],
+          [
+            "moren",
+            "small thunder"
+          ]
+        ],
+        "gold_source": "explicit_local_fact_table",
+        "kind": "content_fact",
+        "meaning": "calm engine",
+        "term": "lato"
+      },
+      "expected_answer": "A",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "content_first",
+      "language": "vi",
+      "qid": "cp_content_004",
+      "question": "Chi dung bang dinh nghia tu tao nay: talin = stone ribbon; boru = amber leaf; ciran = hidden gate; lato = calm engine; virel = woven map; moren = small thunder. Thuat ngu nao co nghia la calm engine?",
+      "template_id": "content:term_for_meaning:vi"
+    },
+    {
+      "category": "least_to_most",
+      "choice_count": 4,
+      "choices": [
+        "Quin -> Rhea -> Sato",
+        "Quin -> Sato -> Rhea",
+        "Rhea -> Quin -> Sato",
+        "Rhea -> Sato -> Quin"
+      ],
+      "deterministic_gold": {
+        "before_pairs": [
+          [
+            "Quin",
+            "Rhea"
+          ],
+          [
+            "Rhea",
+            "Sato"
+          ]
+        ],
+        "gold_source": "exhaustive_permutation_solver",
+        "kind": "ordering",
+        "names": [
+          "Quin",
+          "Rhea",
+          "Sato"
+        ]
+      },
+      "expected_answer": "A",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "least_to_most",
+      "language": "en",
+      "qid": "cp_logic_order_013",
+      "question": "Which of the following orders is consistent? Quin is before Rhea, and Rhea is before Sato.",
+      "template_id": "logic:ordering:en"
+    },
+    {
+      "category": "programmatic_arithmetic",
+      "choice_count": 2,
+      "choices": [
+        "60",
+        "59"
+      ],
+      "deterministic_gold": {
+        "gold_source": "computed_by_python_arithmetic",
+        "kind": "programmatic",
+        "operation": "arithmetic",
+        "params": {
+          "a": 41,
+          "b": 3,
+          "c": 6
+        },
+        "unit": null
+      },
+      "expected_answer": "B",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "programmatic_solver",
+      "language": "en",
+      "qid": "cp_prog_031",
+      "question": "Compute 41 + 3 x 6.",
+      "template_id": "programmatic:arithmetic:en"
+    },
+    {
+      "category": "content_first",
+      "choice_count": 6,
+      "choices": [
+        "calm engine",
+        "woven map",
+        "small thunder",
+        "paper moon",
+        "violet key",
+        "clear ladder"
+      ],
+      "deterministic_gold": {
+        "ask": "meaning_for_term",
+        "facts": [
+          [
+            "lato",
+            "calm engine"
+          ],
+          [
+            "virel",
+            "woven map"
+          ],
+          [
+            "moren",
+            "small thunder"
+          ],
+          [
+            "sika",
+            "violet key"
+          ],
+          [
+            "dorel",
+            "paper moon"
+          ],
+          [
+            "anvi",
+            "clear ladder"
+          ]
+        ],
+        "gold_source": "explicit_local_fact_table",
+        "kind": "content_fact",
+        "meaning": "paper moon",
+        "term": "dorel"
+      },
+      "expected_answer": "D",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "content_first",
+      "language": "en",
+      "qid": "cp_content_005",
+      "question": "Use only these invented definitions: lato = calm engine; virel = woven map; moren = small thunder; sika = violet key; dorel = paper moon; anvi = clear ladder. What is the meaning of dorel?",
+      "template_id": "content:meaning_for_term:en"
+    },
+    {
+      "category": "least_to_most",
+      "choice_count": 6,
+      "choices": [
+        "Orin has the ivory badge",
+        "Pax has the ivory badge",
+        "Pax has the coral badge",
+        "Quin has the amber badge",
+        "Orin has the coral badge",
+        "Quin has the coral badge"
+      ],
+      "deterministic_gold": {
+        "fixed": [
+          [
+            "Orin",
+            "coral"
+          ],
+          [
+            "Quin",
+            "ivory"
+          ]
+        ],
+        "forbidden": [
+          [
+            "Pax",
+            "ivory"
+          ]
+        ],
+        "gold_source": "exhaustive_assignment_solver",
+        "items": [
+          "ivory",
+          "coral",
+          "amber"
+        ],
+        "kind": "assignment",
+        "language": "en",
+        "people": [
+          "Orin",
+          "Pax",
+          "Quin"
+        ],
+        "target_statement": [
+          "Orin",
+          "coral"
+        ]
+      },
+      "expected_answer": "E",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "least_to_most",
+      "language": "en",
+      "qid": "cp_logic_assign_035",
+      "question": "Each person gets one badge and each badge is used once. Rules: Orin has coral, Quin has ivory, and Pax does not have ivory. Which of the following statements is true?",
+      "template_id": "logic:assignment:en"
+    },
+    {
+      "category": "programmatic_arithmetic",
+      "choice_count": 4,
+      "choices": [
+        "29",
+        "24",
+        "19",
+        "34"
+      ],
+      "deterministic_gold": {
+        "gold_source": "computed_by_python_arithmetic",
+        "kind": "programmatic",
+        "operation": "percentage",
+        "params": {
+          "percent": 20,
+          "whole": 120
+        },
+        "unit": null
+      },
+      "expected_answer": "B",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "programmatic_solver",
+      "language": "vi",
+      "qid": "cp_prog_038",
+      "question": "20% cua 120 la bao nhieu?",
+      "template_id": "programmatic:percentage:vi"
+    },
+    {
+      "category": "content_first",
+      "choice_count": 3,
+      "choices": [
+        "woven map",
+        "calm engine",
+        "small thunder"
+      ],
+      "deterministic_gold": {
+        "ask": "meaning_for_term",
+        "facts": [
+          [
+            "lato",
+            "calm engine"
+          ],
+          [
+            "virel",
+            "woven map"
+          ],
+          [
+            "moren",
+            "small thunder"
+          ],
+          [
+            "sika",
+            "violet key"
+          ],
+          [
+            "dorel",
+            "paper moon"
+          ],
+          [
+            "anvi",
+            "clear ladder"
+          ]
+        ],
+        "gold_source": "explicit_local_fact_table",
+        "kind": "content_fact",
+        "meaning": "calm engine",
+        "term": "lato"
+      },
+      "expected_answer": "B",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "content_first",
+      "language": "en",
+      "qid": "cp_content_037",
+      "question": "Use only these invented definitions: lato = calm engine; virel = woven map; moren = small thunder; sika = violet key; dorel = paper moon; anvi = clear ladder. What is the meaning of lato?",
+      "template_id": "content:meaning_for_term:en"
+    },
+    {
+      "category": "least_to_most",
+      "choice_count": 2,
+      "choices": [
+        "Iris -> Jade -> Kilo",
+        "Iris -> Kilo -> Jade"
+      ],
+      "deterministic_gold": {
+        "before_pairs": [
+          [
+            "Iris",
+            "Jade"
+          ],
+          [
+            "Jade",
+            "Kilo"
+          ]
+        ],
+        "gold_source": "exhaustive_permutation_solver",
+        "kind": "ordering",
+        "names": [
+          "Iris",
+          "Jade",
+          "Kilo"
+        ]
+      },
+      "expected_answer": "A",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "least_to_most",
+      "language": "en",
+      "qid": "cp_logic_order_001",
+      "question": "Which of the following orders is consistent? Iris is before Jade, and Jade is before Kilo.",
+      "template_id": "logic:ordering:en"
+    },
+    {
+      "category": "programmatic_arithmetic",
+      "choice_count": 5,
+      "choices": [
+        "5",
+        "4",
+        "3",
+        "6",
+        "2"
+      ],
+      "deterministic_gold": {
+        "gold_source": "computed_by_python_arithmetic",
+        "kind": "programmatic",
+        "operation": "algebra",
+        "params": {
+          "coefficient": 5,
+          "offset": 8,
+          "rhs": 28
+        },
+        "unit": null
+      },
+      "expected_answer": "B",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "programmatic_solver",
+      "language": "en",
+      "qid": "cp_prog_029",
+      "question": "Solve for x: 5x + 8 = 28.",
+      "template_id": "programmatic:algebra:en"
+    },
+    {
+      "category": "content_first",
+      "choice_count": 2,
+      "choices": [
+        "calm engine",
+        "small thunder"
+      ],
+      "deterministic_gold": {
+        "ask": "meaning_for_term",
+        "facts": [
+          [
+            "lato",
+            "calm engine"
+          ],
+          [
+            "virel",
+            "woven map"
+          ],
+          [
+            "moren",
+            "small thunder"
+          ],
+          [
+            "sika",
+            "violet key"
+          ],
+          [
+            "dorel",
+            "paper moon"
+          ],
+          [
+            "anvi",
+            "clear ladder"
+          ]
+        ],
+        "gold_source": "explicit_local_fact_table",
+        "kind": "content_fact",
+        "meaning": "small thunder",
+        "term": "moren"
+      },
+      "expected_answer": "B",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "content_first",
+      "language": "en",
+      "qid": "cp_content_021",
+      "question": "Use only these invented definitions: lato = calm engine; virel = woven map; moren = small thunder; sika = violet key; dorel = paper moon; anvi = clear ladder. What is the meaning of moren?",
+      "template_id": "content:meaning_for_term:en"
+    },
+    {
+      "category": "least_to_most",
+      "choice_count": 4,
+      "choices": [
+        "Quill vuot qua cong",
+        "Reed vuot qua cong",
+        "Pearl vuot qua cong",
+        "Sage vuot qua cong"
+      ],
+      "deterministic_gold": {
+        "gold_source": "deterministic_logic_table_solver",
+        "kind": "table_conjunction",
+        "language": "vi",
+        "rule": {
+          "shape": "square",
+          "texture": "smooth"
+        },
+        "table": {
+          "Pearl": {
+            "shape": "square",
+            "texture": "smooth"
+          },
+          "Quill": {
+            "shape": "square",
+            "texture": "rough"
+          },
+          "Reed": {
+            "shape": "round",
+            "texture": "smooth"
+          },
+          "Sage": {
+            "shape": "round",
+            "texture": "rough"
+          }
+        },
+        "target_item": "Pearl"
+      },
+      "expected_answer": "C",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "least_to_most",
+      "language": "vi",
+      "qid": "cp_logic_table_028",
+      "question": "Mot the vuot qua cong chi khi no min va vuong. Bang su kien cuc bo: Pearl: smooth and square; Quill: rough and square; Reed: smooth and round; Sage: rough and round. Phat bieu nao dung?",
+      "template_id": "logic:table_conjunction:vi"
+    },
+    {
+      "category": "programmatic_arithmetic",
+      "choice_count": 2,
+      "choices": [
+        "38",
+        "45"
+      ],
+      "deterministic_gold": {
+        "gold_source": "computed_by_python_arithmetic",
+        "kind": "programmatic",
+        "operation": "sequence",
+        "params": {
+          "next_index": 4,
+          "start": 10,
+          "step": 7
+        },
+        "unit": null
+      },
+      "expected_answer": "A",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "programmatic_solver",
+      "language": "vi",
+      "qid": "cp_prog_006",
+      "question": "Day so moi buoc cong 7: 10, 17, 24, 31. So tiep theo la gi?",
+      "template_id": "programmatic:sequence:vi"
+    },
+    {
+      "category": "content_first",
+      "choice_count": 5,
+      "choices": [
+        "narrow window",
+        "honest lever",
+        "red capsule",
+        "soft beacon",
+        "tidy circuit"
+      ],
+      "deterministic_gold": {
+        "ask": "meaning_for_term",
+        "facts": [
+          [
+            "melu",
+            "narrow window"
+          ],
+          [
+            "zano",
+            "honest lever"
+          ],
+          [
+            "rilan",
+            "soft beacon"
+          ],
+          [
+            "tevon",
+            "tidy circuit"
+          ],
+          [
+            "balen",
+            "red capsule"
+          ],
+          [
+            "orven",
+            "level prism"
+          ]
+        ],
+        "gold_source": "explicit_local_fact_table",
+        "kind": "content_fact",
+        "meaning": "red capsule",
+        "term": "balen"
+      },
+      "expected_answer": "C",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "content_first",
+      "language": "en",
+      "qid": "cp_content_029",
+      "question": "Use only these invented definitions: melu = narrow window; zano = honest lever; rilan = soft beacon; tevon = tidy circuit; balen = red capsule; orven = level prism. What is the meaning of balen?",
+      "template_id": "content:meaning_for_term:en"
+    },
+    {
+      "category": "least_to_most",
+      "choice_count": 2,
+      "choices": [
+        "sang Zinc, trua Ink, chieu Clay",
+        "sang Zinc, trua Clay, chieu Ink"
+      ],
+      "deterministic_gold": {
+        "before_pairs": [
+          [
+            "Zinc",
+            "Clay"
+          ],
+          [
+            "Clay",
+            "Ink"
+          ]
+        ],
+        "gold_source": "exhaustive_permutation_solver",
+        "kind": "schedule",
+        "language": "vi",
+        "tasks": [
+          "Zinc",
+          "Clay",
+          "Ink"
+        ]
+      },
+      "expected_answer": "B",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "least_to_most",
+      "language": "vi",
+      "qid": "cp_logic_schedule_006",
+      "question": "Lich xuong thuc hanh can thoa ca hai dieu kien: Zinc truoc Clay, va Clay truoc Ink. Phat bieu nao dung?",
+      "template_id": "logic:schedule:vi"
+    },
+    {
+      "category": "programmatic_arithmetic",
+      "choice_count": 6,
+      "choices": [
+        "600 phut",
+        "480 phut",
+        "660 phut",
+        "420 phut",
+        "1080 phut",
+        "540 phut"
+      ],
+      "deterministic_gold": {
+        "gold_source": "computed_by_python_arithmetic",
+        "kind": "programmatic",
+        "operation": "unit_conversion",
+        "params": {
+          "amount": 9,
+          "factor": 60,
+          "from_unit": "hours",
+          "to_unit": "minutes"
+        },
+        "unit": "phut"
+      },
+      "expected_answer": "F",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "programmatic_solver",
+      "language": "vi",
+      "qid": "cp_prog_040",
+      "question": "Doi 9 gio sang phut.",
+      "template_id": "programmatic:unit_conversion:vi"
+    },
+    {
+      "category": "content_first",
+      "choice_count": 2,
+      "choices": [
+        "moren",
+        "talin"
+      ],
+      "deterministic_gold": {
+        "ask": "term_for_meaning",
+        "facts": [
+          [
+            "talin",
+            "stone ribbon"
+          ],
+          [
+            "boru",
+            "amber leaf"
+          ],
+          [
+            "ciran",
+            "hidden gate"
+          ],
+          [
+            "lato",
+            "calm engine"
+          ],
+          [
+            "virel",
+            "woven map"
+          ],
+          [
+            "moren",
+            "small thunder"
+          ]
+        ],
+        "gold_source": "explicit_local_fact_table",
+        "kind": "content_fact",
+        "meaning": "small thunder",
+        "term": "moren"
+      },
+      "expected_answer": "A",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "content_first",
+      "language": "vi",
+      "qid": "cp_content_036",
+      "question": "Chi dung bang dinh nghia tu tao nay: talin = stone ribbon; boru = amber leaf; ciran = hidden gate; lato = calm engine; virel = woven map; moren = small thunder. Thuat ngu nao co nghia la small thunder?",
+      "template_id": "content:term_for_meaning:vi"
+    },
+    {
+      "category": "least_to_most",
+      "choice_count": 3,
+      "choices": [
+        "Quin -> Sato -> Rhea",
+        "Rhea -> Quin -> Sato",
+        "Quin -> Rhea -> Sato"
+      ],
+      "deterministic_gold": {
+        "before_pairs": [
+          [
+            "Quin",
+            "Rhea"
+          ],
+          [
+            "Rhea",
+            "Sato"
+          ]
+        ],
+        "gold_source": "exhaustive_permutation_solver",
+        "kind": "ordering",
+        "names": [
+          "Quin",
+          "Rhea",
+          "Sato"
+        ]
+      },
+      "expected_answer": "C",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "least_to_most",
+      "language": "en",
+      "qid": "cp_logic_order_037",
+      "question": "Which of the following orders is consistent? Quin is before Rhea, and Rhea is before Sato.",
+      "template_id": "logic:ordering:en"
+    },
+    {
+      "category": "programmatic_arithmetic",
+      "choice_count": 5,
+      "choices": [
+        "47",
+        "33",
+        "54",
+        "40",
+        "26"
+      ],
+      "deterministic_gold": {
+        "gold_source": "computed_by_python_arithmetic",
+        "kind": "programmatic",
+        "operation": "sequence",
+        "params": {
+          "next_index": 4,
+          "start": 12,
+          "step": 7
+        },
+        "unit": null
+      },
+      "expected_answer": "D",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "programmatic_solver",
+      "language": "vi",
+      "qid": "cp_prog_024",
+      "question": "Day so moi buoc cong 7: 12, 19, 26, 33. So tiep theo la gi?",
+      "template_id": "programmatic:sequence:vi"
+    },
+    {
+      "category": "content_first",
+      "choice_count": 2,
+      "choices": [
+        "niven",
+        "lireo"
+      ],
+      "deterministic_gold": {
+        "ask": "term_for_meaning",
+        "facts": [
+          [
+            "niven",
+            "silent marker"
+          ],
+          [
+            "lireo",
+            "yellow hinge"
+          ],
+          [
+            "sumen",
+            "open feather"
+          ],
+          [
+            "ravel",
+            "steady candle"
+          ],
+          [
+            "devon",
+            "glass pebble"
+          ],
+          [
+            "polen",
+            "north button"
+          ]
+        ],
+        "gold_source": "explicit_local_fact_table",
+        "kind": "content_fact",
+        "meaning": "yellow hinge",
+        "term": "lireo"
+      },
+      "expected_answer": "B",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "content_first",
+      "language": "vi",
+      "qid": "cp_content_026",
+      "question": "Chi dung bang dinh nghia tu tao nay: niven = silent marker; lireo = yellow hinge; sumen = open feather; ravel = steady candle; devon = glass pebble; polen = north button. Thuat ngu nao co nghia la yellow hinge?",
+      "template_id": "content:term_for_meaning:vi"
+    },
+    {
+      "category": "least_to_most",
+      "choice_count": 3,
+      "choices": [
+        "Pearl vuot qua cong",
+        "Quill vuot qua cong",
+        "Reed vuot qua cong"
+      ],
+      "deterministic_gold": {
+        "gold_source": "deterministic_logic_table_solver",
+        "kind": "table_conjunction",
+        "language": "vi",
+        "rule": {
+          "shape": "square",
+          "texture": "smooth"
+        },
+        "table": {
+          "Pearl": {
+            "shape": "square",
+            "texture": "smooth"
+          },
+          "Quill": {
+            "shape": "square",
+            "texture": "rough"
+          },
+          "Reed": {
+            "shape": "round",
+            "texture": "smooth"
+          },
+          "Sage": {
+            "shape": "round",
+            "texture": "rough"
+          }
+        },
+        "target_item": "Pearl"
+      },
+      "expected_answer": "A",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "least_to_most",
+      "language": "vi",
+      "qid": "cp_logic_table_012",
+      "question": "Mot the vuot qua cong chi khi no min va vuong. Bang su kien cuc bo: Pearl: smooth and square; Quill: rough and square; Reed: smooth and round; Sage: rough and round. Phat bieu nao dung?",
+      "template_id": "logic:table_conjunction:vi"
+    },
+    {
+      "category": "programmatic_arithmetic",
+      "choice_count": 2,
+      "choices": [
+        "16",
+        "21"
+      ],
+      "deterministic_gold": {
+        "gold_source": "computed_by_python_arithmetic",
+        "kind": "programmatic",
+        "operation": "percentage",
+        "params": {
+          "percent": 10,
+          "whole": 160
+        },
+        "unit": null
+      },
+      "expected_answer": "A",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "programmatic_solver",
+      "language": "vi",
+      "qid": "cp_prog_026",
+      "question": "10% cua 160 la bao nhieu?",
+      "template_id": "programmatic:percentage:vi"
+    },
+    {
+      "category": "content_first",
+      "choice_count": 4,
+      "choices": [
+        "sika",
+        "anvi",
+        "rokan",
+        "dorel"
+      ],
+      "deterministic_gold": {
+        "ask": "term_for_meaning",
+        "facts": [
+          [
+            "sika",
+            "violet key"
+          ],
+          [
+            "dorel",
+            "paper moon"
+          ],
+          [
+            "anvi",
+            "clear ladder"
+          ],
+          [
+            "rokan",
+            "warm signal"
+          ],
+          [
+            "elun",
+            "salt mirror"
+          ],
+          [
+            "maro",
+            "round harbor"
+          ]
+        ],
+        "gold_source": "explicit_local_fact_table",
+        "kind": "content_fact",
+        "meaning": "paper moon",
+        "term": "dorel"
+      },
+      "expected_answer": "D",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "content_first",
+      "language": "vi",
+      "qid": "cp_content_038",
+      "question": "Chi dung bang dinh nghia tu tao nay: sika = violet key; dorel = paper moon; anvi = clear ladder; rokan = warm signal; elun = salt mirror; maro = round harbor. Thuat ngu nao co nghia la paper moon?",
+      "template_id": "content:term_for_meaning:vi"
+    },
+    {
+      "category": "least_to_most",
+      "choice_count": 6,
+      "choices": [
+        "Pearl vuot qua cong",
+        "Quill vuot qua cong",
+        "Reed vuot qua cong",
+        "Sage vuot qua cong",
+        "Pearl khong vuot qua cong",
+        "Reed khong vuot qua cong"
+      ],
+      "deterministic_gold": {
+        "gold_source": "deterministic_logic_table_solver",
+        "kind": "table_conjunction",
+        "language": "vi",
+        "rule": {
+          "shape": "square",
+          "texture": "smooth"
+        },
+        "table": {
+          "Pearl": {
+            "shape": "square",
+            "texture": "smooth"
+          },
+          "Quill": {
+            "shape": "square",
+            "texture": "rough"
+          },
+          "Reed": {
+            "shape": "round",
+            "texture": "smooth"
+          },
+          "Sage": {
+            "shape": "round",
+            "texture": "rough"
+          }
+        },
+        "target_item": "Pearl"
+      },
+      "expected_answer": "A",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "least_to_most",
+      "language": "vi",
+      "qid": "cp_logic_table_020",
+      "question": "Mot the vuot qua cong chi khi no min va vuong. Bang su kien cuc bo: Pearl: smooth and square; Quill: rough and square; Reed: smooth and round; Sage: rough and round. Phat bieu nao dung?",
+      "template_id": "logic:table_conjunction:vi"
+    },
+    {
+      "category": "programmatic_arithmetic",
+      "choice_count": 3,
+      "choices": [
+        "42",
+        "41",
+        "40"
+      ],
+      "deterministic_gold": {
+        "gold_source": "computed_by_python_arithmetic",
+        "kind": "programmatic",
+        "operation": "arithmetic",
+        "params": {
+          "a": 17,
+          "b": 4,
+          "c": 6
+        },
+        "unit": null
+      },
+      "expected_answer": "B",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "programmatic_solver",
+      "language": "en",
+      "qid": "cp_prog_007",
+      "question": "Compute 17 + 4 x 6.",
+      "template_id": "programmatic:arithmetic:en"
+    },
+    {
+      "category": "content_first",
+      "choice_count": 4,
+      "choices": [
+        "melu",
+        "sorin",
+        "tiren",
+        "avon"
+      ],
+      "deterministic_gold": {
+        "ask": "term_for_meaning",
+        "facts": [
+          [
+            "sorin",
+            "thin anchor"
+          ],
+          [
+            "tiren",
+            "fresh wheel"
+          ],
+          [
+            "avon",
+            "purple switch"
+          ],
+          [
+            "melu",
+            "narrow window"
+          ],
+          [
+            "zano",
+            "honest lever"
+          ],
+          [
+            "rilan",
+            "soft beacon"
+          ]
+        ],
+        "gold_source": "explicit_local_fact_table",
+        "kind": "content_fact",
+        "meaning": "narrow window",
+        "term": "melu"
+      },
+      "expected_answer": "A",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "content_first",
+      "language": "vi",
+      "qid": "cp_content_028",
+      "question": "Chi dung bang dinh nghia tu tao nay: sorin = thin anchor; tiren = fresh wheel; avon = purple switch; melu = narrow window; zano = honest lever; rilan = soft beacon. Thuat ngu nao co nghia la narrow window?",
+      "template_id": "content:term_for_meaning:vi"
+    },
+    {
+      "category": "least_to_most",
+      "choice_count": 3,
+      "choices": [
+        "sang Mint, trua Opal, chieu Nova",
+        "sang Nova, trua Mint, chieu Opal",
+        "sang Mint, trua Nova, chieu Opal"
+      ],
+      "deterministic_gold": {
+        "before_pairs": [
+          [
+            "Mint",
+            "Nova"
+          ],
+          [
+            "Nova",
+            "Opal"
+          ]
+        ],
+        "gold_source": "exhaustive_permutation_solver",
+        "kind": "schedule",
+        "language": "vi",
+        "tasks": [
+          "Mint",
+          "Nova",
+          "Opal"
+        ]
+      },
+      "expected_answer": "C",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "least_to_most",
+      "language": "vi",
+      "qid": "cp_logic_schedule_002",
+      "question": "Lich xuong thuc hanh can thoa ca hai dieu kien: Mint truoc Nova, va Nova truoc Opal. Phat bieu nao dung?",
+      "template_id": "logic:schedule:vi"
+    },
+    {
+      "category": "programmatic_arithmetic",
+      "choice_count": 3,
+      "choices": [
+        "28 items",
+        "32 items",
+        "24 items"
+      ],
+      "deterministic_gold": {
+        "gold_source": "computed_by_python_arithmetic",
+        "kind": "programmatic",
+        "operation": "ratio",
+        "params": {
+          "known_ratio": 5,
+          "known_total": 35,
+          "target_ratio": 4
+        },
+        "unit": "items"
+      },
+      "expected_answer": "A",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "programmatic_solver",
+      "language": "en",
+      "qid": "cp_prog_027",
+      "question": "A mixture has red:blue = 4:5. If blue is 35, how many red items?",
+      "template_id": "programmatic:ratio:en"
+    },
+    {
+      "category": "content_first",
+      "choice_count": 4,
+      "choices": [
+        "warm signal",
+        "cloud needle",
+        "salt mirror",
+        "round harbor"
+      ],
+      "deterministic_gold": {
+        "ask": "meaning_for_term",
+        "facts": [
+          [
+            "rokan",
+            "warm signal"
+          ],
+          [
+            "elun",
+            "salt mirror"
+          ],
+          [
+            "maro",
+            "round harbor"
+          ],
+          [
+            "sovel",
+            "sleeping wire"
+          ],
+          [
+            "kiren",
+            "cloud needle"
+          ],
+          [
+            "tavo",
+            "gentle magnet"
+          ]
+        ],
+        "gold_source": "explicit_local_fact_table",
+        "kind": "content_fact",
+        "meaning": "cloud needle",
+        "term": "kiren"
+      },
+      "expected_answer": "B",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "content_first",
+      "language": "en",
+      "qid": "cp_content_023",
+      "question": "Use only these invented definitions: rokan = warm signal; elun = salt mirror; maro = round harbor; sovel = sleeping wire; kiren = cloud needle; tavo = gentle magnet. What is the meaning of kiren?",
+      "template_id": "content:meaning_for_term:en"
+    },
+    {
+      "category": "least_to_most",
+      "choice_count": 3,
+      "choices": [
+        "Wilo has the silver badge",
+        "Wilo has the jade badge",
+        "Yani has the silver badge"
+      ],
+      "deterministic_gold": {
+        "fixed": [
+          [
+            "Wilo",
+            "jade"
+          ],
+          [
+            "Iris",
+            "silver"
+          ]
+        ],
+        "forbidden": [
+          [
+            "Yani",
+            "silver"
+          ]
+        ],
+        "gold_source": "exhaustive_assignment_solver",
+        "items": [
+          "silver",
+          "jade",
+          "ivory"
+        ],
+        "kind": "assignment",
+        "language": "en",
+        "people": [
+          "Wilo",
+          "Yani",
+          "Iris"
+        ],
+        "target_statement": [
+          "Wilo",
+          "jade"
+        ]
+      },
+      "expected_answer": "B",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "least_to_most",
+      "language": "en",
+      "qid": "cp_logic_assign_027",
+      "question": "Each person gets one badge and each badge is used once. Rules: Wilo has jade, Iris has silver, and Yani does not have silver. Which of the following statements is true?",
+      "template_id": "logic:assignment:en"
+    },
+    {
+      "category": "programmatic_arithmetic",
+      "choice_count": 3,
+      "choices": [
+        "43",
+        "29",
+        "36"
+      ],
+      "deterministic_gold": {
+        "gold_source": "computed_by_python_arithmetic",
+        "kind": "programmatic",
+        "operation": "sequence",
+        "params": {
+          "next_index": 4,
+          "start": 8,
+          "step": 7
+        },
+        "unit": null
+      },
+      "expected_answer": "C",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "programmatic_solver",
+      "language": "vi",
+      "qid": "cp_prog_012",
+      "question": "Day so moi buoc cong 7: 8, 15, 22, 29. So tiep theo la gi?",
+      "template_id": "programmatic:sequence:vi"
+    },
+    {
+      "category": "content_first",
+      "choice_count": 4,
+      "choices": [
+        "blue lantern",
+        "silver reed",
+        "quiet drum",
+        "river glass"
+      ],
+      "deterministic_gold": {
+        "ask": "meaning_for_term",
+        "facts": [
+          [
+            "mira",
+            "blue lantern"
+          ],
+          [
+            "solen",
+            "silver reed"
+          ],
+          [
+            "naro",
+            "quiet drum"
+          ],
+          [
+            "velin",
+            "river glass"
+          ],
+          [
+            "pavo",
+            "soft metal"
+          ],
+          [
+            "lumen",
+            "winter shell"
+          ]
+        ],
+        "gold_source": "explicit_local_fact_table",
+        "kind": "content_fact",
+        "meaning": "quiet drum",
+        "term": "naro"
+      },
+      "expected_answer": "C",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "content_first",
+      "language": "en",
+      "qid": "cp_content_033",
+      "question": "Use only these invented definitions: mira = blue lantern; solen = silver reed; naro = quiet drum; velin = river glass; pavo = soft metal; lumen = winter shell. What is the meaning of naro?",
+      "template_id": "content:meaning_for_term:en"
+    },
+    {
+      "category": "least_to_most",
+      "choice_count": 5,
+      "choices": [
+        "sang Mint, trua Opal, chieu Nova",
+        "sang Nova, trua Mint, chieu Opal",
+        "sang Nova, trua Opal, chieu Mint",
+        "sang Opal, trua Mint, chieu Nova",
+        "sang Mint, trua Nova, chieu Opal"
+      ],
+      "deterministic_gold": {
+        "before_pairs": [
+          [
+            "Mint",
+            "Nova"
+          ],
+          [
+            "Nova",
+            "Opal"
+          ]
+        ],
+        "gold_source": "exhaustive_permutation_solver",
+        "kind": "schedule",
+        "language": "vi",
+        "tasks": [
+          "Mint",
+          "Nova",
+          "Opal"
+        ]
+      },
+      "expected_answer": "E",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "least_to_most",
+      "language": "vi",
+      "qid": "cp_logic_schedule_034",
+      "question": "Lich xuong thuc hanh can thoa ca hai dieu kien: Mint truoc Nova, va Nova truoc Opal. Phat bieu nao dung?",
+      "template_id": "logic:schedule:vi"
+    },
+    {
+      "category": "programmatic_arithmetic",
+      "choice_count": 2,
+      "choices": [
+        "43",
+        "36"
+      ],
+      "deterministic_gold": {
+        "gold_source": "computed_by_python_arithmetic",
+        "kind": "programmatic",
+        "operation": "sequence",
+        "params": {
+          "next_index": 4,
+          "start": 8,
+          "step": 7
+        },
+        "unit": null
+      },
+      "expected_answer": "B",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "programmatic_solver",
+      "language": "vi",
+      "qid": "cp_prog_036",
+      "question": "Day so moi buoc cong 7: 8, 15, 22, 29. So tiep theo la gi?",
+      "template_id": "programmatic:sequence:vi"
+    },
+    {
+      "category": "content_first",
+      "choice_count": 6,
+      "choices": [
+        "tevon",
+        "dorin",
+        "balen",
+        "orven",
+        "cirel",
+        "navo"
+      ],
+      "deterministic_gold": {
+        "ask": "term_for_meaning",
+        "facts": [
+          [
+            "tevon",
+            "tidy circuit"
+          ],
+          [
+            "balen",
+            "red capsule"
+          ],
+          [
+            "orven",
+            "level prism"
+          ],
+          [
+            "cirel",
+            "silver basket"
+          ],
+          [
+            "navo",
+            "early whistle"
+          ],
+          [
+            "dorin",
+            "curved stamp"
+          ]
+        ],
+        "gold_source": "explicit_local_fact_table",
+        "kind": "content_fact",
+        "meaning": "curved stamp",
+        "term": "dorin"
+      },
+      "expected_answer": "B",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "content_first",
+      "language": "vi",
+      "qid": "cp_content_030",
+      "question": "Chi dung bang dinh nghia tu tao nay: tevon = tidy circuit; balen = red capsule; orven = level prism; cirel = silver basket; navo = early whistle; dorin = curved stamp. Thuat ngu nao co nghia la curved stamp?",
+      "template_id": "content:term_for_meaning:vi"
+    },
+    {
+      "category": "least_to_most",
+      "choice_count": 6,
+      "choices": [
+        "Iris -> Kilo -> Jade",
+        "Jade -> Iris -> Kilo",
+        "Iris -> Jade -> Kilo",
+        "Jade -> Kilo -> Iris",
+        "Kilo -> Iris -> Jade",
+        "Kilo -> Jade -> Iris"
+      ],
+      "deterministic_gold": {
+        "before_pairs": [
+          [
+            "Iris",
+            "Jade"
+          ],
+          [
+            "Jade",
+            "Kilo"
+          ]
+        ],
+        "gold_source": "exhaustive_permutation_solver",
+        "kind": "ordering",
+        "names": [
+          "Iris",
+          "Jade",
+          "Kilo"
+        ]
+      },
+      "expected_answer": "C",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "least_to_most",
+      "language": "en",
+      "qid": "cp_logic_order_025",
+      "question": "Which of the following orders is consistent? Iris is before Jade, and Jade is before Kilo.",
+      "template_id": "logic:ordering:en"
+    },
+    {
+      "category": "programmatic_arithmetic",
+      "choice_count": 6,
+      "choices": [
+        "44 items",
+        "36 items",
+        "48 items",
+        "40 items",
+        "32 items",
+        "80 items"
+      ],
+      "deterministic_gold": {
+        "gold_source": "computed_by_python_arithmetic",
+        "kind": "programmatic",
+        "operation": "ratio",
+        "params": {
+          "known_ratio": 5,
+          "known_total": 50,
+          "target_ratio": 4
+        },
+        "unit": "items"
+      },
+      "expected_answer": "D",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "programmatic_solver",
+      "language": "en",
+      "qid": "cp_prog_015",
+      "question": "A mixture has red:blue = 4:5. If blue is 50, how many red items?",
+      "template_id": "programmatic:ratio:en"
+    },
+    {
+      "category": "content_first",
+      "choice_count": 6,
+      "choices": [
+        "folded spark",
+        "plain crystal",
+        "silent marker",
+        "yellow hinge",
+        "white orchard",
+        "open feather"
+      ],
+      "deterministic_gold": {
+        "ask": "meaning_for_term",
+        "facts": [
+          [
+            "belin",
+            "white orchard"
+          ],
+          [
+            "orim",
+            "folded spark"
+          ],
+          [
+            "cavo",
+            "plain crystal"
+          ],
+          [
+            "niven",
+            "silent marker"
+          ],
+          [
+            "lireo",
+            "yellow hinge"
+          ],
+          [
+            "sumen",
+            "open feather"
+          ]
+        ],
+        "gold_source": "explicit_local_fact_table",
+        "kind": "content_fact",
+        "meaning": "white orchard",
+        "term": "belin"
+      },
+      "expected_answer": "E",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "content_first",
+      "language": "en",
+      "qid": "cp_content_025",
+      "question": "Use only these invented definitions: belin = white orchard; orim = folded spark; cavo = plain crystal; niven = silent marker; lireo = yellow hinge; sumen = open feather. What is the meaning of belin?",
+      "template_id": "content:meaning_for_term:en"
+    },
+    {
+      "category": "least_to_most",
+      "choice_count": 6,
+      "choices": [
+        "sang Quill, trua Sage, chieu Reed",
+        "sang Reed, trua Quill, chieu Sage",
+        "sang Reed, trua Sage, chieu Quill",
+        "sang Sage, trua Quill, chieu Reed",
+        "sang Sage, trua Reed, chieu Quill",
+        "sang Quill, trua Reed, chieu Sage"
+      ],
+      "deterministic_gold": {
+        "before_pairs": [
+          [
+            "Quill",
+            "Reed"
+          ],
+          [
+            "Reed",
+            "Sage"
+          ]
+        ],
+        "gold_source": "exhaustive_permutation_solver",
+        "kind": "schedule",
+        "language": "vi",
+        "tasks": [
+          "Quill",
+          "Reed",
+          "Sage"
+        ]
+      },
+      "expected_answer": "F",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "least_to_most",
+      "language": "vi",
+      "qid": "cp_logic_schedule_030",
+      "question": "Lich xuong thuc hanh can thoa ca hai dieu kien: Quill truoc Reed, va Reed truoc Sage. Phat bieu nao dung?",
+      "template_id": "logic:schedule:vi"
+    },
+    {
+      "category": "programmatic_arithmetic",
+      "choice_count": 6,
+      "choices": [
+        "38",
+        "45",
+        "31",
+        "52",
+        "24",
+        "76"
+      ],
+      "deterministic_gold": {
+        "gold_source": "computed_by_python_arithmetic",
+        "kind": "programmatic",
+        "operation": "sequence",
+        "params": {
+          "next_index": 4,
+          "start": 10,
+          "step": 7
+        },
+        "unit": null
+      },
+      "expected_answer": "A",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "programmatic_solver",
+      "language": "vi",
+      "qid": "cp_prog_030",
+      "question": "Day so moi buoc cong 7: 10, 17, 24, 31. So tiep theo la gi?",
+      "template_id": "programmatic:sequence:vi"
+    },
+    {
+      "category": "content_first",
+      "choice_count": 5,
+      "choices": [
+        "green compass",
+        "hollow bell",
+        "bright bridge",
+        "stone ribbon",
+        "amber leaf"
+      ],
+      "deterministic_gold": {
+        "ask": "meaning_for_term",
+        "facts": [
+          [
+            "karo",
+            "green compass"
+          ],
+          [
+            "davin",
+            "hollow bell"
+          ],
+          [
+            "seru",
+            "bright bridge"
+          ],
+          [
+            "talin",
+            "stone ribbon"
+          ],
+          [
+            "boru",
+            "amber leaf"
+          ],
+          [
+            "ciran",
+            "hidden gate"
+          ]
+        ],
+        "gold_source": "explicit_local_fact_table",
+        "kind": "content_fact",
+        "meaning": "green compass",
+        "term": "karo"
+      },
+      "expected_answer": "A",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "content_first",
+      "language": "en",
+      "qid": "cp_content_019",
+      "question": "Use only these invented definitions: karo = green compass; davin = hollow bell; seru = bright bridge; talin = stone ribbon; boru = amber leaf; ciran = hidden gate. What is the meaning of karo?",
+      "template_id": "content:meaning_for_term:en"
+    },
+    {
+      "category": "least_to_most",
+      "choice_count": 4,
+      "choices": [
+        "Orin has the silver badge",
+        "Pax has the silver badge",
+        "Pax has the jade badge",
+        "Orin has the jade badge"
+      ],
+      "deterministic_gold": {
+        "fixed": [
+          [
+            "Orin",
+            "jade"
+          ],
+          [
+            "Quin",
+            "silver"
+          ]
+        ],
+        "forbidden": [
+          [
+            "Pax",
+            "silver"
+          ]
+        ],
+        "gold_source": "exhaustive_assignment_solver",
+        "items": [
+          "silver",
+          "jade",
+          "ivory"
+        ],
+        "kind": "assignment",
+        "language": "en",
+        "people": [
+          "Orin",
+          "Pax",
+          "Quin"
+        ],
+        "target_statement": [
+          "Orin",
+          "jade"
+        ]
+      },
+      "expected_answer": "D",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "least_to_most",
+      "language": "en",
+      "qid": "cp_logic_assign_003",
+      "question": "Each person gets one badge and each badge is used once. Rules: Orin has jade, Quin has silver, and Pax does not have silver. Which of the following statements is true?",
+      "template_id": "logic:assignment:en"
+    },
+    {
+      "category": "programmatic_arithmetic",
+      "choice_count": 4,
+      "choices": [
+        "300 phut",
+        "360 phut",
+        "240 phut",
+        "420 phut"
+      ],
+      "deterministic_gold": {
+        "gold_source": "computed_by_python_arithmetic",
+        "kind": "programmatic",
+        "operation": "unit_conversion",
+        "params": {
+          "amount": 5,
+          "factor": 60,
+          "from_unit": "hours",
+          "to_unit": "minutes"
+        },
+        "unit": "phut"
+      },
+      "expected_answer": "A",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "programmatic_solver",
+      "language": "vi",
+      "qid": "cp_prog_028",
+      "question": "Doi 5 gio sang phut.",
+      "template_id": "programmatic:unit_conversion:vi"
+    },
+    {
+      "category": "content_first",
+      "choice_count": 6,
+      "choices": [
+        "silver basket",
+        "curved stamp",
+        "early whistle",
+        "square blossom",
+        "clear feather",
+        "golden bracket"
+      ],
+      "deterministic_gold": {
+        "ask": "meaning_for_term",
+        "facts": [
+          [
+            "cirel",
+            "silver basket"
+          ],
+          [
+            "navo",
+            "early whistle"
+          ],
+          [
+            "dorin",
+            "curved stamp"
+          ],
+          [
+            "sevan",
+            "square blossom"
+          ],
+          [
+            "liron",
+            "clear feather"
+          ],
+          [
+            "piren",
+            "golden bracket"
+          ]
+        ],
+        "gold_source": "explicit_local_fact_table",
+        "kind": "content_fact",
+        "meaning": "curved stamp",
+        "term": "dorin"
+      },
+      "expected_answer": "B",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "content_first",
+      "language": "en",
+      "qid": "cp_content_015",
+      "question": "Use only these invented definitions: cirel = silver basket; navo = early whistle; dorin = curved stamp; sevan = square blossom; liron = clear feather; piren = golden bracket. What is the meaning of dorin?",
+      "template_id": "content:meaning_for_term:en"
+    },
+    {
+      "category": "least_to_most",
+      "choice_count": 5,
+      "choices": [
+        "Kilo has the silver badge",
+        "Kilo has the jade badge",
+        "Luma has the silver badge",
+        "Luma has the jade badge",
+        "Miro has the ivory badge"
+      ],
+      "deterministic_gold": {
+        "fixed": [
+          [
+            "Kilo",
+            "jade"
+          ],
+          [
+            "Miro",
+            "silver"
+          ]
+        ],
+        "forbidden": [
+          [
+            "Luma",
+            "silver"
+          ]
+        ],
+        "gold_source": "exhaustive_assignment_solver",
+        "items": [
+          "silver",
+          "jade",
+          "ivory"
+        ],
+        "kind": "assignment",
+        "language": "en",
+        "people": [
+          "Kilo",
+          "Luma",
+          "Miro"
+        ],
+        "target_statement": [
+          "Kilo",
+          "jade"
+        ]
+      },
+      "expected_answer": "B",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "least_to_most",
+      "language": "en",
+      "qid": "cp_logic_assign_039",
+      "question": "Each person gets one badge and each badge is used once. Rules: Kilo has jade, Miro has silver, and Luma does not have silver. Which of the following statements is true?",
+      "template_id": "logic:assignment:en"
+    },
+    {
+      "category": "programmatic_arithmetic",
+      "choice_count": 5,
+      "choices": [
+        "66",
+        "64",
+        "65",
+        "67",
+        "63"
+      ],
+      "deterministic_gold": {
+        "gold_source": "computed_by_python_arithmetic",
+        "kind": "programmatic",
+        "operation": "arithmetic",
+        "params": {
+          "a": 29,
+          "b": 6,
+          "c": 6
+        },
+        "unit": null
+      },
+      "expected_answer": "C",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "programmatic_solver",
+      "language": "en",
+      "qid": "cp_prog_019",
+      "question": "Compute 29 + 6 x 6.",
+      "template_id": "programmatic:arithmetic:en"
+    },
+    {
+      "category": "content_first",
+      "choice_count": 2,
+      "choices": [
+        "blue lantern",
+        "silver reed"
+      ],
+      "deterministic_gold": {
+        "ask": "meaning_for_term",
+        "facts": [
+          [
+            "mira",
+            "blue lantern"
+          ],
+          [
+            "solen",
+            "silver reed"
+          ],
+          [
+            "naro",
+            "quiet drum"
+          ],
+          [
+            "velin",
+            "river glass"
+          ],
+          [
+            "pavo",
+            "soft metal"
+          ],
+          [
+            "lumen",
+            "winter shell"
+          ]
+        ],
+        "gold_source": "explicit_local_fact_table",
+        "kind": "content_fact",
+        "meaning": "blue lantern",
+        "term": "mira"
+      },
+      "expected_answer": "A",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "content_first",
+      "language": "en",
+      "qid": "cp_content_001",
+      "question": "Use only these invented definitions: mira = blue lantern; solen = silver reed; naro = quiet drum; velin = river glass; pavo = soft metal; lumen = winter shell. What is the meaning of mira?",
+      "template_id": "content:meaning_for_term:en"
+    },
+    {
+      "category": "least_to_most",
+      "choice_count": 2,
+      "choices": [
+        "Wilo has the ivory badge",
+        "Wilo has the coral badge"
+      ],
+      "deterministic_gold": {
+        "fixed": [
+          [
+            "Wilo",
+            "coral"
+          ],
+          [
+            "Iris",
+            "ivory"
+          ]
+        ],
+        "forbidden": [
+          [
+            "Yani",
+            "ivory"
+          ]
+        ],
+        "gold_source": "exhaustive_assignment_solver",
+        "items": [
+          "ivory",
+          "coral",
+          "amber"
+        ],
+        "kind": "assignment",
+        "language": "en",
+        "people": [
+          "Wilo",
+          "Yani",
+          "Iris"
+        ],
+        "target_statement": [
+          "Wilo",
+          "coral"
+        ]
+      },
+      "expected_answer": "B",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "least_to_most",
+      "language": "en",
+      "qid": "cp_logic_assign_011",
+      "question": "Each person gets one badge and each badge is used once. Rules: Wilo has coral, Iris has ivory, and Yani does not have ivory. Which of the following statements is true?",
+      "template_id": "logic:assignment:en"
+    },
+    {
+      "category": "programmatic_arithmetic",
+      "choice_count": 4,
+      "choices": [
+        "41",
+        "34",
+        "27",
+        "48"
+      ],
+      "deterministic_gold": {
+        "gold_source": "computed_by_python_arithmetic",
+        "kind": "programmatic",
+        "operation": "sequence",
+        "params": {
+          "next_index": 4,
+          "start": 6,
+          "step": 7
+        },
+        "unit": null
+      },
+      "expected_answer": "B",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "programmatic_solver",
+      "language": "vi",
+      "qid": "cp_prog_018",
+      "question": "Day so moi buoc cong 7: 6, 13, 20, 27. So tiep theo la gi?",
+      "template_id": "programmatic:sequence:vi"
+    },
+    {
+      "category": "content_first",
+      "choice_count": 3,
+      "choices": [
+        "rokan",
+        "sika",
+        "dorel"
+      ],
+      "deterministic_gold": {
+        "ask": "term_for_meaning",
+        "facts": [
+          [
+            "sika",
+            "violet key"
+          ],
+          [
+            "dorel",
+            "paper moon"
+          ],
+          [
+            "anvi",
+            "clear ladder"
+          ],
+          [
+            "rokan",
+            "warm signal"
+          ],
+          [
+            "elun",
+            "salt mirror"
+          ],
+          [
+            "maro",
+            "round harbor"
+          ]
+        ],
+        "gold_source": "explicit_local_fact_table",
+        "kind": "content_fact",
+        "meaning": "warm signal",
+        "term": "rokan"
+      },
+      "expected_answer": "A",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "content_first",
+      "language": "vi",
+      "qid": "cp_content_022",
+      "question": "Chi dung bang dinh nghia tu tao nay: sika = violet key; dorel = paper moon; anvi = clear ladder; rokan = warm signal; elun = salt mirror; maro = round harbor. Thuat ngu nao co nghia la warm signal?",
+      "template_id": "content:term_for_meaning:vi"
+    },
+    {
+      "category": "least_to_most",
+      "choice_count": 3,
+      "choices": [
+        "Kilo has the amber badge",
+        "Kilo has the cobalt badge",
+        "Luma has the amber badge"
+      ],
+      "deterministic_gold": {
+        "fixed": [
+          [
+            "Kilo",
+            "cobalt"
+          ],
+          [
+            "Miro",
+            "amber"
+          ]
+        ],
+        "forbidden": [
+          [
+            "Luma",
+            "amber"
+          ]
+        ],
+        "gold_source": "exhaustive_assignment_solver",
+        "items": [
+          "amber",
+          "cobalt",
+          "silver"
+        ],
+        "kind": "assignment",
+        "language": "en",
+        "people": [
+          "Kilo",
+          "Luma",
+          "Miro"
+        ],
+        "target_statement": [
+          "Kilo",
+          "cobalt"
+        ]
+      },
+      "expected_answer": "B",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "least_to_most",
+      "language": "en",
+      "qid": "cp_logic_assign_007",
+      "question": "Each person gets one badge and each badge is used once. Rules: Kilo has cobalt, Miro has amber, and Luma does not have amber. Which of the following statements is true?",
+      "template_id": "logic:assignment:en"
+    },
+    {
+      "category": "programmatic_arithmetic",
+      "choice_count": 2,
+      "choices": [
+        "12 items",
+        "14 items"
+      ],
+      "deterministic_gold": {
+        "gold_source": "computed_by_python_arithmetic",
+        "kind": "programmatic",
+        "operation": "ratio",
+        "params": {
+          "known_ratio": 3,
+          "known_total": 18,
+          "target_ratio": 2
+        },
+        "unit": "items"
+      },
+      "expected_answer": "A",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "programmatic_solver",
+      "language": "en",
+      "qid": "cp_prog_021",
+      "question": "A mixture has red:blue = 2:3. If blue is 18, how many red items?",
+      "template_id": "programmatic:ratio:en"
+    },
+    {
+      "category": "content_first",
+      "choice_count": 5,
+      "choices": [
+        "velin",
+        "pavo",
+        "lumen",
+        "karo",
+        "davin"
+      ],
+      "deterministic_gold": {
+        "ask": "term_for_meaning",
+        "facts": [
+          [
+            "velin",
+            "river glass"
+          ],
+          [
+            "pavo",
+            "soft metal"
+          ],
+          [
+            "lumen",
+            "winter shell"
+          ],
+          [
+            "karo",
+            "green compass"
+          ],
+          [
+            "davin",
+            "hollow bell"
+          ],
+          [
+            "seru",
+            "bright bridge"
+          ]
+        ],
+        "gold_source": "explicit_local_fact_table",
+        "kind": "content_fact",
+        "meaning": "green compass",
+        "term": "karo"
+      },
+      "expected_answer": "D",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "content_first",
+      "language": "vi",
+      "qid": "cp_content_034",
+      "question": "Chi dung bang dinh nghia tu tao nay: velin = river glass; pavo = soft metal; lumen = winter shell; karo = green compass; davin = hollow bell; seru = bright bridge. Thuat ngu nao co nghia la green compass?",
+      "template_id": "content:term_for_meaning:vi"
+    },
+    {
+      "category": "least_to_most",
+      "choice_count": 2,
+      "choices": [
+        "sang Umber, trua Wave, chieu Vale",
+        "sang Umber, trua Vale, chieu Wave"
+      ],
+      "deterministic_gold": {
+        "before_pairs": [
+          [
+            "Umber",
+            "Vale"
+          ],
+          [
+            "Vale",
+            "Wave"
+          ]
+        ],
+        "gold_source": "exhaustive_permutation_solver",
+        "kind": "schedule",
+        "language": "vi",
+        "tasks": [
+          "Umber",
+          "Vale",
+          "Wave"
+        ]
+      },
+      "expected_answer": "B",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "least_to_most",
+      "language": "vi",
+      "qid": "cp_logic_schedule_026",
+      "question": "Lich xuong thuc hanh can thoa ca hai dieu kien: Umber truoc Vale, va Vale truoc Wave. Phat bieu nao dung?",
+      "template_id": "logic:schedule:vi"
+    },
+    {
+      "category": "programmatic_arithmetic",
+      "choice_count": 3,
+      "choices": [
+        "26",
+        "16",
+        "21"
+      ],
+      "deterministic_gold": {
+        "gold_source": "computed_by_python_arithmetic",
+        "kind": "programmatic",
+        "operation": "percentage",
+        "params": {
+          "percent": 15,
+          "whole": 140
+        },
+        "unit": null
+      },
+      "expected_answer": "C",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "programmatic_solver",
+      "language": "vi",
+      "qid": "cp_prog_032",
+      "question": "15% cua 140 la bao nhieu?",
+      "template_id": "programmatic:percentage:vi"
+    },
+    {
+      "category": "content_first",
+      "choice_count": 3,
+      "choices": [
+        "liron",
+        "sevan",
+        "piren"
+      ],
+      "deterministic_gold": {
+        "ask": "term_for_meaning",
+        "facts": [
+          [
+            "sevan",
+            "square blossom"
+          ],
+          [
+            "liron",
+            "clear feather"
+          ],
+          [
+            "piren",
+            "golden bracket"
+          ],
+          [
+            "mira",
+            "blue lantern"
+          ],
+          [
+            "solen",
+            "silver reed"
+          ],
+          [
+            "naro",
+            "quiet drum"
+          ]
+        ],
+        "gold_source": "explicit_local_fact_table",
+        "kind": "content_fact",
+        "meaning": "clear feather",
+        "term": "liron"
+      },
+      "expected_answer": "A",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "content_first",
+      "language": "vi",
+      "qid": "cp_content_032",
+      "question": "Chi dung bang dinh nghia tu tao nay: sevan = square blossom; liron = clear feather; piren = golden bracket; mira = blue lantern; solen = silver reed; naro = quiet drum. Thuat ngu nao co nghia la clear feather?",
+      "template_id": "content:term_for_meaning:vi"
+    },
+    {
+      "category": "least_to_most",
+      "choice_count": 2,
+      "choices": [
+        "Pearl vuot qua cong",
+        "Quill vuot qua cong"
+      ],
+      "deterministic_gold": {
+        "gold_source": "deterministic_logic_table_solver",
+        "kind": "table_conjunction",
+        "language": "vi",
+        "rule": {
+          "shape": "square",
+          "texture": "smooth"
+        },
+        "table": {
+          "Pearl": {
+            "shape": "square",
+            "texture": "smooth"
+          },
+          "Quill": {
+            "shape": "square",
+            "texture": "rough"
+          },
+          "Reed": {
+            "shape": "round",
+            "texture": "smooth"
+          },
+          "Sage": {
+            "shape": "round",
+            "texture": "rough"
+          }
+        },
+        "target_item": "Pearl"
+      },
+      "expected_answer": "A",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "least_to_most",
+      "language": "vi",
+      "qid": "cp_logic_table_036",
+      "question": "Mot the vuot qua cong chi khi no min va vuong. Bang su kien cuc bo: Pearl: smooth and square; Quill: rough and square; Reed: smooth and round; Sage: rough and round. Phat bieu nao dung?",
+      "template_id": "logic:table_conjunction:vi"
+    },
+    {
+      "category": "programmatic_arithmetic",
+      "choice_count": 3,
+      "choices": [
+        "480 phut",
+        "420 phut",
+        "360 phut"
+      ],
+      "deterministic_gold": {
+        "gold_source": "computed_by_python_arithmetic",
+        "kind": "programmatic",
+        "operation": "unit_conversion",
+        "params": {
+          "amount": 7,
+          "factor": 60,
+          "from_unit": "hours",
+          "to_unit": "minutes"
+        },
+        "unit": "phut"
+      },
+      "expected_answer": "B",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "programmatic_solver",
+      "language": "vi",
+      "qid": "cp_prog_022",
+      "question": "Doi 7 gio sang phut.",
+      "template_id": "programmatic:unit_conversion:vi"
+    },
+    {
+      "category": "content_first",
+      "choice_count": 4,
+      "choices": [
+        "sovel",
+        "tavo",
+        "kiren",
+        "belin"
+      ],
+      "deterministic_gold": {
+        "ask": "term_for_meaning",
+        "facts": [
+          [
+            "sovel",
+            "sleeping wire"
+          ],
+          [
+            "kiren",
+            "cloud needle"
+          ],
+          [
+            "tavo",
+            "gentle magnet"
+          ],
+          [
+            "belin",
+            "white orchard"
+          ],
+          [
+            "orim",
+            "folded spark"
+          ],
+          [
+            "cavo",
+            "plain crystal"
+          ]
+        ],
+        "gold_source": "explicit_local_fact_table",
+        "kind": "content_fact",
+        "meaning": "cloud needle",
+        "term": "kiren"
+      },
+      "expected_answer": "C",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "content_first",
+      "language": "vi",
+      "qid": "cp_content_008",
+      "question": "Chi dung bang dinh nghia tu tao nay: sovel = sleeping wire; kiren = cloud needle; tavo = gentle magnet; belin = white orchard; orim = folded spark; cavo = plain crystal. Thuat ngu nao co nghia la cloud needle?",
+      "template_id": "content:term_for_meaning:vi"
+    },
+    {
+      "category": "least_to_most",
+      "choice_count": 2,
+      "choices": [
+        "Quin -> Sato -> Rhea",
+        "Quin -> Rhea -> Sato"
+      ],
+      "deterministic_gold": {
+        "before_pairs": [
+          [
+            "Quin",
+            "Rhea"
+          ],
+          [
+            "Rhea",
+            "Sato"
+          ]
+        ],
+        "gold_source": "exhaustive_permutation_solver",
+        "kind": "ordering",
+        "names": [
+          "Quin",
+          "Rhea",
+          "Sato"
+        ]
+      },
+      "expected_answer": "B",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "least_to_most",
+      "language": "en",
+      "qid": "cp_logic_order_021",
+      "question": "Which of the following orders is consistent? Quin is before Rhea, and Rhea is before Sato.",
+      "template_id": "logic:ordering:en"
+    },
+    {
+      "category": "programmatic_arithmetic",
+      "choice_count": 2,
+      "choices": [
+        "4",
+        "5"
+      ],
+      "deterministic_gold": {
+        "gold_source": "computed_by_python_arithmetic",
+        "kind": "programmatic",
+        "operation": "algebra",
+        "params": {
+          "coefficient": 2,
+          "offset": 8,
+          "rhs": 16
+        },
+        "unit": null
+      },
+      "expected_answer": "A",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "programmatic_solver",
+      "language": "en",
+      "qid": "cp_prog_011",
+      "question": "Solve for x: 2x + 8 = 16.",
+      "template_id": "programmatic:algebra:en"
+    },
+    {
+      "category": "content_first",
+      "choice_count": 5,
+      "choices": [
+        "sovel",
+        "kiren",
+        "tavo",
+        "belin",
+        "cavo"
+      ],
+      "deterministic_gold": {
+        "ask": "term_for_meaning",
+        "facts": [
+          [
+            "sovel",
+            "sleeping wire"
+          ],
+          [
+            "kiren",
+            "cloud needle"
+          ],
+          [
+            "tavo",
+            "gentle magnet"
+          ],
+          [
+            "belin",
+            "white orchard"
+          ],
+          [
+            "orim",
+            "folded spark"
+          ],
+          [
+            "cavo",
+            "plain crystal"
+          ]
+        ],
+        "gold_source": "explicit_local_fact_table",
+        "kind": "content_fact",
+        "meaning": "plain crystal",
+        "term": "cavo"
+      },
+      "expected_answer": "E",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "content_first",
+      "language": "vi",
+      "qid": "cp_content_024",
+      "question": "Chi dung bang dinh nghia tu tao nay: sovel = sleeping wire; kiren = cloud needle; tavo = gentle magnet; belin = white orchard; orim = folded spark; cavo = plain crystal. Thuat ngu nao co nghia la plain crystal?",
+      "template_id": "content:term_for_meaning:vi"
+    },
+    {
+      "category": "least_to_most",
+      "choice_count": 5,
+      "choices": [
+        "sang Quill, trua Reed, chieu Sage",
+        "sang Quill, trua Sage, chieu Reed",
+        "sang Reed, trua Quill, chieu Sage",
+        "sang Reed, trua Sage, chieu Quill",
+        "sang Sage, trua Quill, chieu Reed"
+      ],
+      "deterministic_gold": {
+        "before_pairs": [
+          [
+            "Quill",
+            "Reed"
+          ],
+          [
+            "Reed",
+            "Sage"
+          ]
+        ],
+        "gold_source": "exhaustive_permutation_solver",
+        "kind": "schedule",
+        "language": "vi",
+        "tasks": [
+          "Quill",
+          "Reed",
+          "Sage"
+        ]
+      },
+      "expected_answer": "A",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "least_to_most",
+      "language": "vi",
+      "qid": "cp_logic_schedule_014",
+      "question": "Lich xuong thuc hanh can thoa ca hai dieu kien: Quill truoc Reed, va Reed truoc Sage. Phat bieu nao dung?",
+      "template_id": "logic:schedule:vi"
+    },
+    {
+      "category": "programmatic_arithmetic",
+      "choice_count": 5,
+      "choices": [
+        "360 phut",
+        "300 phut",
+        "240 phut",
+        "420 phut",
+        "180 phut"
+      ],
+      "deterministic_gold": {
+        "gold_source": "computed_by_python_arithmetic",
+        "kind": "programmatic",
+        "operation": "unit_conversion",
+        "params": {
+          "amount": 5,
+          "factor": 60,
+          "from_unit": "hours",
+          "to_unit": "minutes"
+        },
+        "unit": "phut"
+      },
+      "expected_answer": "B",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "programmatic_solver",
+      "language": "vi",
+      "qid": "cp_prog_004",
+      "question": "Doi 5 gio sang phut.",
+      "template_id": "programmatic:unit_conversion:vi"
+    },
+    {
+      "category": "content_first",
+      "choice_count": 6,
+      "choices": [
+        "green compass",
+        "hollow bell",
+        "amber leaf",
+        "bright bridge",
+        "stone ribbon",
+        "hidden gate"
+      ],
+      "deterministic_gold": {
+        "ask": "meaning_for_term",
+        "facts": [
+          [
+            "karo",
+            "green compass"
+          ],
+          [
+            "davin",
+            "hollow bell"
+          ],
+          [
+            "seru",
+            "bright bridge"
+          ],
+          [
+            "talin",
+            "stone ribbon"
+          ],
+          [
+            "boru",
+            "amber leaf"
+          ],
+          [
+            "ciran",
+            "hidden gate"
+          ]
+        ],
+        "gold_source": "explicit_local_fact_table",
+        "kind": "content_fact",
+        "meaning": "amber leaf",
+        "term": "boru"
+      },
+      "expected_answer": "C",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "content_first",
+      "language": "en",
+      "qid": "cp_content_035",
+      "question": "Use only these invented definitions: karo = green compass; davin = hollow bell; seru = bright bridge; talin = stone ribbon; boru = amber leaf; ciran = hidden gate. What is the meaning of boru?",
+      "template_id": "content:meaning_for_term:en"
+    },
+    {
+      "category": "least_to_most",
+      "choice_count": 5,
+      "choices": [
+        "Zinc vuot qua cong",
+        "Clay vuot qua cong",
+        "Yarn vuot qua cong",
+        "Ink vuot qua cong",
+        "Yarn khong vuot qua cong"
+      ],
+      "deterministic_gold": {
+        "gold_source": "deterministic_logic_table_solver",
+        "kind": "table_conjunction",
+        "language": "vi",
+        "rule": {
+          "shape": "square",
+          "texture": "smooth"
+        },
+        "table": {
+          "Clay": {
+            "shape": "round",
+            "texture": "smooth"
+          },
+          "Ink": {
+            "shape": "round",
+            "texture": "rough"
+          },
+          "Yarn": {
+            "shape": "square",
+            "texture": "smooth"
+          },
+          "Zinc": {
+            "shape": "square",
+            "texture": "rough"
+          }
+        },
+        "target_item": "Yarn"
+      },
+      "expected_answer": "C",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "least_to_most",
+      "language": "vi",
+      "qid": "cp_logic_table_024",
+      "question": "Mot the vuot qua cong chi khi no min va vuong. Bang su kien cuc bo: Yarn: smooth and square; Zinc: rough and square; Clay: smooth and round; Ink: rough and round. Phat bieu nao dung?",
+      "template_id": "logic:table_conjunction:vi"
+    },
+    {
+      "category": "programmatic_arithmetic",
+      "choice_count": 3,
+      "choices": [
+        "11",
+        "9",
+        "10"
+      ],
+      "deterministic_gold": {
+        "gold_source": "computed_by_python_arithmetic",
+        "kind": "programmatic",
+        "operation": "algebra",
+        "params": {
+          "coefficient": 3,
+          "offset": 8,
+          "rhs": 38
+        },
+        "unit": null
+      },
+      "expected_answer": "C",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "programmatic_solver",
+      "language": "en",
+      "qid": "cp_prog_017",
+      "question": "Solve for x: 3x + 8 = 38.",
+      "template_id": "programmatic:algebra:en"
+    },
+    {
+      "category": "content_first",
+      "choice_count": 4,
+      "choices": [
+        "green compass",
+        "hollow bell",
+        "stone ribbon",
+        "bright bridge"
+      ],
+      "deterministic_gold": {
+        "ask": "meaning_for_term",
+        "facts": [
+          [
+            "karo",
+            "green compass"
+          ],
+          [
+            "davin",
+            "hollow bell"
+          ],
+          [
+            "seru",
+            "bright bridge"
+          ],
+          [
+            "talin",
+            "stone ribbon"
+          ],
+          [
+            "boru",
+            "amber leaf"
+          ],
+          [
+            "ciran",
+            "hidden gate"
+          ]
+        ],
+        "gold_source": "explicit_local_fact_table",
+        "kind": "content_fact",
+        "meaning": "bright bridge",
+        "term": "seru"
+      },
+      "expected_answer": "D",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "content_first",
+      "language": "en",
+      "qid": "cp_content_003",
+      "question": "Use only these invented definitions: karo = green compass; davin = hollow bell; seru = bright bridge; talin = stone ribbon; boru = amber leaf; ciran = hidden gate. What is the meaning of seru?",
+      "template_id": "content:meaning_for_term:en"
+    },
+    {
+      "category": "least_to_most",
+      "choice_count": 6,
+      "choices": [
+        "Quin -> Sato -> Rhea",
+        "Rhea -> Quin -> Sato",
+        "Rhea -> Sato -> Quin",
+        "Quin -> Rhea -> Sato",
+        "Sato -> Quin -> Rhea",
+        "Sato -> Rhea -> Quin"
+      ],
+      "deterministic_gold": {
+        "before_pairs": [
+          [
+            "Quin",
+            "Rhea"
+          ],
+          [
+            "Rhea",
+            "Sato"
+          ]
+        ],
+        "gold_source": "exhaustive_permutation_solver",
+        "kind": "ordering",
+        "names": [
+          "Quin",
+          "Rhea",
+          "Sato"
+        ]
+      },
+      "expected_answer": "D",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "least_to_most",
+      "language": "en",
+      "qid": "cp_logic_order_005",
+      "question": "Which of the following orders is consistent? Quin is before Rhea, and Rhea is before Sato.",
+      "template_id": "logic:ordering:en"
+    },
+    {
+      "category": "programmatic_arithmetic",
+      "choice_count": 3,
+      "choices": [
+        "63",
+        "64",
+        "62"
+      ],
+      "deterministic_gold": {
+        "gold_source": "computed_by_python_arithmetic",
+        "kind": "programmatic",
+        "operation": "arithmetic",
+        "params": {
+          "a": 47,
+          "b": 4,
+          "c": 4
+        },
+        "unit": null
+      },
+      "expected_answer": "A",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "programmatic_solver",
+      "language": "en",
+      "qid": "cp_prog_037",
+      "question": "Compute 47 + 4 x 4.",
+      "template_id": "programmatic:arithmetic:en"
+    },
+    {
+      "category": "content_first",
+      "choice_count": 4,
+      "choices": [
+        "seru",
+        "velin",
+        "pavo",
+        "lumen"
+      ],
+      "deterministic_gold": {
+        "ask": "term_for_meaning",
+        "facts": [
+          [
+            "velin",
+            "river glass"
+          ],
+          [
+            "pavo",
+            "soft metal"
+          ],
+          [
+            "lumen",
+            "winter shell"
+          ],
+          [
+            "karo",
+            "green compass"
+          ],
+          [
+            "davin",
+            "hollow bell"
+          ],
+          [
+            "seru",
+            "bright bridge"
+          ]
+        ],
+        "gold_source": "explicit_local_fact_table",
+        "kind": "content_fact",
+        "meaning": "bright bridge",
+        "term": "seru"
+      },
+      "expected_answer": "A",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "content_first",
+      "language": "vi",
+      "qid": "cp_content_018",
+      "question": "Chi dung bang dinh nghia tu tao nay: velin = river glass; pavo = soft metal; lumen = winter shell; karo = green compass; davin = hollow bell; seru = bright bridge. Thuat ngu nao co nghia la bright bridge?",
+      "template_id": "content:term_for_meaning:vi"
+    },
+    {
+      "category": "least_to_most",
+      "choice_count": 4,
+      "choices": [
+        "sang Zinc, trua Ink, chieu Clay",
+        "sang Zinc, trua Clay, chieu Ink",
+        "sang Clay, trua Zinc, chieu Ink",
+        "sang Clay, trua Ink, chieu Zinc"
+      ],
+      "deterministic_gold": {
+        "before_pairs": [
+          [
+            "Zinc",
+            "Clay"
+          ],
+          [
+            "Clay",
+            "Ink"
+          ]
+        ],
+        "gold_source": "exhaustive_permutation_solver",
+        "kind": "schedule",
+        "language": "vi",
+        "tasks": [
+          "Zinc",
+          "Clay",
+          "Ink"
+        ]
+      },
+      "expected_answer": "B",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "least_to_most",
+      "language": "vi",
+      "qid": "cp_logic_schedule_038",
+      "question": "Lich xuong thuc hanh can thoa ca hai dieu kien: Zinc truoc Clay, va Clay truoc Ink. Phat bieu nao dung?",
+      "template_id": "logic:schedule:vi"
+    },
+    {
+      "category": "programmatic_arithmetic",
+      "choice_count": 4,
+      "choices": [
+        "8",
+        "6",
+        "7",
+        "9"
+      ],
+      "deterministic_gold": {
+        "gold_source": "computed_by_python_arithmetic",
+        "kind": "programmatic",
+        "operation": "algebra",
+        "params": {
+          "coefficient": 4,
+          "offset": 8,
+          "rhs": 36
+        },
+        "unit": null
+      },
+      "expected_answer": "C",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "programmatic_solver",
+      "language": "en",
+      "qid": "cp_prog_023",
+      "question": "Solve for x: 4x + 8 = 36.",
+      "template_id": "programmatic:algebra:en"
+    },
+    {
+      "category": "content_first",
+      "choice_count": 3,
+      "choices": [
+        "salt mirror",
+        "warm signal",
+        "round harbor"
+      ],
+      "deterministic_gold": {
+        "ask": "meaning_for_term",
+        "facts": [
+          [
+            "rokan",
+            "warm signal"
+          ],
+          [
+            "elun",
+            "salt mirror"
+          ],
+          [
+            "maro",
+            "round harbor"
+          ],
+          [
+            "sovel",
+            "sleeping wire"
+          ],
+          [
+            "kiren",
+            "cloud needle"
+          ],
+          [
+            "tavo",
+            "gentle magnet"
+          ]
+        ],
+        "gold_source": "explicit_local_fact_table",
+        "kind": "content_fact",
+        "meaning": "warm signal",
+        "term": "rokan"
+      },
+      "expected_answer": "B",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "content_first",
+      "language": "en",
+      "qid": "cp_content_007",
+      "question": "Use only these invented definitions: rokan = warm signal; elun = salt mirror; maro = round harbor; sovel = sleeping wire; kiren = cloud needle; tavo = gentle magnet. What is the meaning of rokan?",
+      "template_id": "content:meaning_for_term:en"
+    },
+    {
+      "category": "least_to_most",
+      "choice_count": 6,
+      "choices": [
+        "Sato has the silver badge",
+        "Tavi has the silver badge",
+        "Tavi has the jade badge",
+        "Uma has the ivory badge",
+        "Sato has the jade badge",
+        "Uma has the jade badge"
+      ],
+      "deterministic_gold": {
+        "fixed": [
+          [
+            "Sato",
+            "jade"
+          ],
+          [
+            "Uma",
+            "silver"
+          ]
+        ],
+        "forbidden": [
+          [
+            "Tavi",
+            "silver"
+          ]
+        ],
+        "gold_source": "exhaustive_assignment_solver",
+        "items": [
+          "silver",
+          "jade",
+          "ivory"
+        ],
+        "kind": "assignment",
+        "language": "en",
+        "people": [
+          "Sato",
+          "Tavi",
+          "Uma"
+        ],
+        "target_statement": [
+          "Sato",
+          "jade"
+        ]
+      },
+      "expected_answer": "E",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "least_to_most",
+      "language": "en",
+      "qid": "cp_logic_assign_015",
+      "question": "Each person gets one badge and each badge is used once. Rules: Sato has jade, Uma has silver, and Tavi does not have silver. Which of the following statements is true?",
+      "template_id": "logic:assignment:en"
+    },
+    {
+      "category": "programmatic_arithmetic",
+      "choice_count": 6,
+      "choices": [
+        "8",
+        "6",
+        "9",
+        "5",
+        "14",
+        "7"
+      ],
+      "deterministic_gold": {
+        "gold_source": "computed_by_python_arithmetic",
+        "kind": "programmatic",
+        "operation": "algebra",
+        "params": {
+          "coefficient": 6,
+          "offset": 8,
+          "rhs": 50
+        },
+        "unit": null
+      },
+      "expected_answer": "F",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "programmatic_solver",
+      "language": "en",
+      "qid": "cp_prog_005",
+      "question": "Solve for x: 6x + 8 = 50.",
+      "template_id": "programmatic:algebra:en"
+    },
+    {
+      "category": "content_first",
+      "choice_count": 2,
+      "choices": [
+        "early whistle",
+        "silver basket"
+      ],
+      "deterministic_gold": {
+        "ask": "meaning_for_term",
+        "facts": [
+          [
+            "cirel",
+            "silver basket"
+          ],
+          [
+            "navo",
+            "early whistle"
+          ],
+          [
+            "dorin",
+            "curved stamp"
+          ],
+          [
+            "sevan",
+            "square blossom"
+          ],
+          [
+            "liron",
+            "clear feather"
+          ],
+          [
+            "piren",
+            "golden bracket"
+          ]
+        ],
+        "gold_source": "explicit_local_fact_table",
+        "kind": "content_fact",
+        "meaning": "silver basket",
+        "term": "cirel"
+      },
+      "expected_answer": "B",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "content_first",
+      "language": "en",
+      "qid": "cp_content_031",
+      "question": "Use only these invented definitions: cirel = silver basket; navo = early whistle; dorin = curved stamp; sevan = square blossom; liron = clear feather; piren = golden bracket. What is the meaning of cirel?",
+      "template_id": "content:meaning_for_term:en"
+    },
+    {
+      "category": "least_to_most",
+      "choice_count": 6,
+      "choices": [
+        "sang Umber, trua Vale, chieu Wave",
+        "sang Umber, trua Wave, chieu Vale",
+        "sang Vale, trua Umber, chieu Wave",
+        "sang Vale, trua Wave, chieu Umber",
+        "sang Wave, trua Umber, chieu Vale",
+        "sang Wave, trua Vale, chieu Umber"
+      ],
+      "deterministic_gold": {
+        "before_pairs": [
+          [
+            "Umber",
+            "Vale"
+          ],
+          [
+            "Vale",
+            "Wave"
+          ]
+        ],
+        "gold_source": "exhaustive_permutation_solver",
+        "kind": "schedule",
+        "language": "vi",
+        "tasks": [
+          "Umber",
+          "Vale",
+          "Wave"
+        ]
+      },
+      "expected_answer": "A",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "least_to_most",
+      "language": "vi",
+      "qid": "cp_logic_schedule_010",
+      "question": "Lich xuong thuc hanh can thoa ca hai dieu kien: Umber truoc Vale, va Vale truoc Wave. Phat bieu nao dung?",
+      "template_id": "logic:schedule:vi"
+    },
+    {
+      "category": "programmatic_arithmetic",
+      "choice_count": 5,
+      "choices": [
+        "20 items",
+        "16 items",
+        "22 items",
+        "18 items",
+        "14 items"
+      ],
+      "deterministic_gold": {
+        "gold_source": "computed_by_python_arithmetic",
+        "kind": "programmatic",
+        "operation": "ratio",
+        "params": {
+          "known_ratio": 3,
+          "known_total": 27,
+          "target_ratio": 2
+        },
+        "unit": "items"
+      },
+      "expected_answer": "D",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "programmatic_solver",
+      "language": "en",
+      "qid": "cp_prog_009",
+      "question": "A mixture has red:blue = 2:3. If blue is 27, how many red items?",
+      "template_id": "programmatic:ratio:en"
+    },
+    {
+      "category": "content_first",
+      "choice_count": 3,
+      "choices": [
+        "velin",
+        "lumen",
+        "pavo"
+      ],
+      "deterministic_gold": {
+        "ask": "term_for_meaning",
+        "facts": [
+          [
+            "velin",
+            "river glass"
+          ],
+          [
+            "pavo",
+            "soft metal"
+          ],
+          [
+            "lumen",
+            "winter shell"
+          ],
+          [
+            "karo",
+            "green compass"
+          ],
+          [
+            "davin",
+            "hollow bell"
+          ],
+          [
+            "seru",
+            "bright bridge"
+          ]
+        ],
+        "gold_source": "explicit_local_fact_table",
+        "kind": "content_fact",
+        "meaning": "soft metal",
+        "term": "pavo"
+      },
+      "expected_answer": "C",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "content_first",
+      "language": "vi",
+      "qid": "cp_content_002",
+      "question": "Chi dung bang dinh nghia tu tao nay: velin = river glass; pavo = soft metal; lumen = winter shell; karo = green compass; davin = hollow bell; seru = bright bridge. Thuat ngu nao co nghia la soft metal?",
+      "template_id": "content:term_for_meaning:vi"
+    },
+    {
+      "category": "least_to_most",
+      "choice_count": 3,
+      "choices": [
+        "sang Zinc, trua Clay, chieu Ink",
+        "sang Zinc, trua Ink, chieu Clay",
+        "sang Clay, trua Zinc, chieu Ink"
+      ],
+      "deterministic_gold": {
+        "before_pairs": [
+          [
+            "Zinc",
+            "Clay"
+          ],
+          [
+            "Clay",
+            "Ink"
+          ]
+        ],
+        "gold_source": "exhaustive_permutation_solver",
+        "kind": "schedule",
+        "language": "vi",
+        "tasks": [
+          "Zinc",
+          "Clay",
+          "Ink"
+        ]
+      },
+      "expected_answer": "A",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "least_to_most",
+      "language": "vi",
+      "qid": "cp_logic_schedule_022",
+      "question": "Lich xuong thuc hanh can thoa ca hai dieu kien: Zinc truoc Clay, va Clay truoc Ink. Phat bieu nao dung?",
+      "template_id": "logic:schedule:vi"
+    },
+    {
+      "category": "programmatic_arithmetic",
+      "choice_count": 5,
+      "choices": [
+        "55",
+        "45",
+        "60",
+        "40",
+        "50"
+      ],
+      "deterministic_gold": {
+        "gold_source": "computed_by_python_arithmetic",
+        "kind": "programmatic",
+        "operation": "percentage",
+        "params": {
+          "percent": 25,
+          "whole": 200
+        },
+        "unit": null
+      },
+      "expected_answer": "E",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "programmatic_solver",
+      "language": "vi",
+      "qid": "cp_prog_014",
+      "question": "25% cua 200 la bao nhieu?",
+      "template_id": "programmatic:percentage:vi"
+    },
+    {
+      "category": "content_first",
+      "choice_count": 5,
+      "choices": [
+        "balen",
+        "tevon",
+        "orven",
+        "cirel",
+        "navo"
+      ],
+      "deterministic_gold": {
+        "ask": "term_for_meaning",
+        "facts": [
+          [
+            "tevon",
+            "tidy circuit"
+          ],
+          [
+            "balen",
+            "red capsule"
+          ],
+          [
+            "orven",
+            "level prism"
+          ],
+          [
+            "cirel",
+            "silver basket"
+          ],
+          [
+            "navo",
+            "early whistle"
+          ],
+          [
+            "dorin",
+            "curved stamp"
+          ]
+        ],
+        "gold_source": "explicit_local_fact_table",
+        "kind": "content_fact",
+        "meaning": "red capsule",
+        "term": "balen"
+      },
+      "expected_answer": "A",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "content_first",
+      "language": "vi",
+      "qid": "cp_content_014",
+      "question": "Chi dung bang dinh nghia tu tao nay: tevon = tidy circuit; balen = red capsule; orven = level prism; cirel = silver basket; navo = early whistle; dorin = curved stamp. Thuat ngu nao co nghia la red capsule?",
+      "template_id": "content:term_for_meaning:vi"
+    },
+    {
+      "category": "least_to_most",
+      "choice_count": 4,
+      "choices": [
+        "Iris -> Kilo -> Jade",
+        "Jade -> Iris -> Kilo",
+        "Jade -> Kilo -> Iris",
+        "Iris -> Jade -> Kilo"
+      ],
+      "deterministic_gold": {
+        "before_pairs": [
+          [
+            "Iris",
+            "Jade"
+          ],
+          [
+            "Jade",
+            "Kilo"
+          ]
+        ],
+        "gold_source": "exhaustive_permutation_solver",
+        "kind": "ordering",
+        "names": [
+          "Iris",
+          "Jade",
+          "Kilo"
+        ]
+      },
+      "expected_answer": "D",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "least_to_most",
+      "language": "en",
+      "qid": "cp_logic_order_033",
+      "question": "Which of the following orders is consistent? Iris is before Jade, and Jade is before Kilo.",
+      "template_id": "logic:ordering:en"
+    },
+    {
+      "category": "programmatic_arithmetic",
+      "choice_count": 6,
+      "choices": [
+        "64",
+        "63",
+        "62",
+        "65",
+        "61",
+        "126"
+      ],
+      "deterministic_gold": {
+        "gold_source": "computed_by_python_arithmetic",
+        "kind": "programmatic",
+        "operation": "arithmetic",
+        "params": {
+          "a": 35,
+          "b": 7,
+          "c": 4
+        },
+        "unit": null
+      },
+      "expected_answer": "B",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "programmatic_solver",
+      "language": "en",
+      "qid": "cp_prog_025",
+      "question": "Compute 35 + 7 x 4.",
+      "template_id": "programmatic:arithmetic:en"
+    },
+    {
+      "category": "content_first",
+      "choice_count": 2,
+      "choices": [
+        "maro",
+        "sika"
+      ],
+      "deterministic_gold": {
+        "ask": "term_for_meaning",
+        "facts": [
+          [
+            "sika",
+            "violet key"
+          ],
+          [
+            "dorel",
+            "paper moon"
+          ],
+          [
+            "anvi",
+            "clear ladder"
+          ],
+          [
+            "rokan",
+            "warm signal"
+          ],
+          [
+            "elun",
+            "salt mirror"
+          ],
+          [
+            "maro",
+            "round harbor"
+          ]
+        ],
+        "gold_source": "explicit_local_fact_table",
+        "kind": "content_fact",
+        "meaning": "round harbor",
+        "term": "maro"
+      },
+      "expected_answer": "A",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "content_first",
+      "language": "vi",
+      "qid": "cp_content_006",
+      "question": "Chi dung bang dinh nghia tu tao nay: sika = violet key; dorel = paper moon; anvi = clear ladder; rokan = warm signal; elun = salt mirror; maro = round harbor. Thuat ngu nao co nghia la round harbor?",
+      "template_id": "content:term_for_meaning:vi"
+    },
+    {
+      "category": "least_to_most",
+      "choice_count": 5,
+      "choices": [
+        "Iris -> Kilo -> Jade",
+        "Iris -> Jade -> Kilo",
+        "Jade -> Iris -> Kilo",
+        "Jade -> Kilo -> Iris",
+        "Kilo -> Iris -> Jade"
+      ],
+      "deterministic_gold": {
+        "before_pairs": [
+          [
+            "Iris",
+            "Jade"
+          ],
+          [
+            "Jade",
+            "Kilo"
+          ]
+        ],
+        "gold_source": "exhaustive_permutation_solver",
+        "kind": "ordering",
+        "names": [
+          "Iris",
+          "Jade",
+          "Kilo"
+        ]
+      },
+      "expected_answer": "B",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "least_to_most",
+      "language": "en",
+      "qid": "cp_logic_order_009",
+      "question": "Which of the following orders is consistent? Iris is before Jade, and Jade is before Kilo.",
+      "template_id": "logic:ordering:en"
+    },
+    {
+      "category": "programmatic_arithmetic",
+      "choice_count": 6,
+      "choices": [
+        "59",
+        "49",
+        "54",
+        "64",
+        "44",
+        "108"
+      ],
+      "deterministic_gold": {
+        "gold_source": "computed_by_python_arithmetic",
+        "kind": "programmatic",
+        "operation": "percentage",
+        "params": {
+          "percent": 30,
+          "whole": 180
+        },
+        "unit": null
+      },
+      "expected_answer": "C",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "programmatic_solver",
+      "language": "vi",
+      "qid": "cp_prog_020",
+      "question": "30% cua 180 la bao nhieu?",
+      "template_id": "programmatic:percentage:vi"
+    },
+    {
+      "category": "content_first",
+      "choice_count": 6,
+      "choices": [
+        "talin",
+        "ciran",
+        "lato",
+        "boru",
+        "virel",
+        "moren"
+      ],
+      "deterministic_gold": {
+        "ask": "term_for_meaning",
+        "facts": [
+          [
+            "talin",
+            "stone ribbon"
+          ],
+          [
+            "boru",
+            "amber leaf"
+          ],
+          [
+            "ciran",
+            "hidden gate"
+          ],
+          [
+            "lato",
+            "calm engine"
+          ],
+          [
+            "virel",
+            "woven map"
+          ],
+          [
+            "moren",
+            "small thunder"
+          ]
+        ],
+        "gold_source": "explicit_local_fact_table",
+        "kind": "content_fact",
+        "meaning": "amber leaf",
+        "term": "boru"
+      },
+      "expected_answer": "D",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "content_first",
+      "language": "vi",
+      "qid": "cp_content_020",
+      "question": "Chi dung bang dinh nghia tu tao nay: talin = stone ribbon; boru = amber leaf; ciran = hidden gate; lato = calm engine; virel = woven map; moren = small thunder. Thuat ngu nao co nghia la amber leaf?",
+      "template_id": "content:term_for_meaning:vi"
+    },
+    {
+      "category": "least_to_most",
+      "choice_count": 5,
+      "choices": [
+        "Orin has the amber badge",
+        "Pax has the amber badge",
+        "Orin has the cobalt badge",
+        "Pax has the cobalt badge",
+        "Quin has the silver badge"
+      ],
+      "deterministic_gold": {
+        "fixed": [
+          [
+            "Orin",
+            "cobalt"
+          ],
+          [
+            "Quin",
+            "amber"
+          ]
+        ],
+        "forbidden": [
+          [
+            "Pax",
+            "amber"
+          ]
+        ],
+        "gold_source": "exhaustive_assignment_solver",
+        "items": [
+          "amber",
+          "cobalt",
+          "silver"
+        ],
+        "kind": "assignment",
+        "language": "en",
+        "people": [
+          "Orin",
+          "Pax",
+          "Quin"
+        ],
+        "target_statement": [
+          "Orin",
+          "cobalt"
+        ]
+      },
+      "expected_answer": "C",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "least_to_most",
+      "language": "en",
+      "qid": "cp_logic_assign_019",
+      "question": "Each person gets one badge and each badge is used once. Rules: Orin has cobalt, Quin has amber, and Pax does not have amber. Which of the following statements is true?",
+      "template_id": "logic:assignment:en"
+    },
+    {
+      "category": "programmatic_arithmetic",
+      "choice_count": 6,
+      "choices": [
+        "11",
+        "9",
+        "12",
+        "8",
+        "10",
+        "20"
+      ],
+      "deterministic_gold": {
+        "gold_source": "computed_by_python_arithmetic",
+        "kind": "programmatic",
+        "operation": "algebra",
+        "params": {
+          "coefficient": 6,
+          "offset": 8,
+          "rhs": 68
+        },
+        "unit": null
+      },
+      "expected_answer": "E",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "programmatic_solver",
+      "language": "en",
+      "qid": "cp_prog_035",
+      "question": "Solve for x: 6x + 8 = 68.",
+      "template_id": "programmatic:algebra:en"
+    },
+    {
+      "category": "content_first",
+      "choice_count": 3,
+      "choices": [
+        "blue lantern",
+        "soft metal",
+        "silver reed"
+      ],
+      "deterministic_gold": {
+        "ask": "meaning_for_term",
+        "facts": [
+          [
+            "mira",
+            "blue lantern"
+          ],
+          [
+            "solen",
+            "silver reed"
+          ],
+          [
+            "naro",
+            "quiet drum"
+          ],
+          [
+            "velin",
+            "river glass"
+          ],
+          [
+            "pavo",
+            "soft metal"
+          ],
+          [
+            "lumen",
+            "winter shell"
+          ]
+        ],
+        "gold_source": "explicit_local_fact_table",
+        "kind": "content_fact",
+        "meaning": "soft metal",
+        "term": "pavo"
+      },
+      "expected_answer": "B",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "content_first",
+      "language": "en",
+      "qid": "cp_content_017",
+      "question": "Use only these invented definitions: mira = blue lantern; solen = silver reed; naro = quiet drum; velin = river glass; pavo = soft metal; lumen = winter shell. What is the meaning of pavo?",
+      "template_id": "content:meaning_for_term:en"
+    },
+    {
+      "category": "least_to_most",
+      "choice_count": 2,
+      "choices": [
+        "Sato has the amber badge",
+        "Sato has the cobalt badge"
+      ],
+      "deterministic_gold": {
+        "fixed": [
+          [
+            "Sato",
+            "cobalt"
+          ],
+          [
+            "Uma",
+            "amber"
+          ]
+        ],
+        "forbidden": [
+          [
+            "Tavi",
+            "amber"
+          ]
+        ],
+        "gold_source": "exhaustive_assignment_solver",
+        "items": [
+          "amber",
+          "cobalt",
+          "silver"
+        ],
+        "kind": "assignment",
+        "language": "en",
+        "people": [
+          "Sato",
+          "Tavi",
+          "Uma"
+        ],
+        "target_statement": [
+          "Sato",
+          "cobalt"
+        ]
+      },
+      "expected_answer": "B",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "least_to_most",
+      "language": "en",
+      "qid": "cp_logic_assign_031",
+      "question": "Each person gets one badge and each badge is used once. Rules: Sato has cobalt, Uma has amber, and Tavi does not have amber. Which of the following statements is true?",
+      "template_id": "logic:assignment:en"
+    },
+    {
+      "category": "programmatic_arithmetic",
+      "choice_count": 6,
+      "choices": [
+        "240 phut",
+        "120 phut",
+        "300 phut",
+        "60 phut",
+        "360 phut",
+        "180 phut"
+      ],
+      "deterministic_gold": {
+        "gold_source": "computed_by_python_arithmetic",
+        "kind": "programmatic",
+        "operation": "unit_conversion",
+        "params": {
+          "amount": 3,
+          "factor": 60,
+          "from_unit": "hours",
+          "to_unit": "minutes"
+        },
+        "unit": "phut"
+      },
+      "expected_answer": "F",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "programmatic_solver",
+      "language": "vi",
+      "qid": "cp_prog_010",
+      "question": "Doi 3 gio sang phut.",
+      "template_id": "programmatic:unit_conversion:vi"
+    },
+    {
+      "category": "content_first",
+      "choice_count": 3,
+      "choices": [
+        "steady candle",
+        "glass pebble",
+        "north button"
+      ],
+      "deterministic_gold": {
+        "ask": "meaning_for_term",
+        "facts": [
+          [
+            "ravel",
+            "steady candle"
+          ],
+          [
+            "devon",
+            "glass pebble"
+          ],
+          [
+            "polen",
+            "north button"
+          ],
+          [
+            "sorin",
+            "thin anchor"
+          ],
+          [
+            "tiren",
+            "fresh wheel"
+          ],
+          [
+            "avon",
+            "purple switch"
+          ]
+        ],
+        "gold_source": "explicit_local_fact_table",
+        "kind": "content_fact",
+        "meaning": "north button",
+        "term": "polen"
+      },
+      "expected_answer": "C",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "content_first",
+      "language": "en",
+      "qid": "cp_content_027",
+      "question": "Use only these invented definitions: ravel = steady candle; devon = glass pebble; polen = north button; sorin = thin anchor; tiren = fresh wheel; avon = purple switch. What is the meaning of polen?",
+      "template_id": "content:meaning_for_term:en"
+    },
+    {
+      "category": "least_to_most",
+      "choice_count": 5,
+      "choices": [
+        "Quin -> Sato -> Rhea",
+        "Rhea -> Quin -> Sato",
+        "Rhea -> Sato -> Quin",
+        "Quin -> Rhea -> Sato",
+        "Sato -> Quin -> Rhea"
+      ],
+      "deterministic_gold": {
+        "before_pairs": [
+          [
+            "Quin",
+            "Rhea"
+          ],
+          [
+            "Rhea",
+            "Sato"
+          ]
+        ],
+        "gold_source": "exhaustive_permutation_solver",
+        "kind": "ordering",
+        "names": [
+          "Quin",
+          "Rhea",
+          "Sato"
+        ]
+      },
+      "expected_answer": "D",
+      "generation_seed": 20260710,
+      "intended_v13_layer": "least_to_most",
+      "language": "en",
+      "qid": "cp_logic_order_029",
+      "question": "Which of the following orders is consistent? Quin is before Rhea, and Rhea is before Sato.",
+      "template_id": "logic:ordering:en"
+    }
+  ]
+}

@@ -197,10 +197,13 @@ def test_full_pipeline_artifacts_privacy_and_schema(tmp_path, monkeypatch):
     assert len(rows) == 2
     by_qid = {r["qid"]: r for r in rows}
     assert by_qid["q1"]["final_source"] == "v13" and by_qid["q1"]["final_answer"] == "C"
+    assert by_qid["q1"]["v13_layer"] == "programmatic_solver"
     assert by_qid["q2"]["final_source"] == "base" and by_qid["q2"]["router_selected"] is False
+    assert by_qid["q2"]["v13_layer"] is None
     summary = json.loads(sp.read_text())
     assert summary["total_input_records"] == 2
     assert summary["total_v13_accepted"] == 1
+    assert summary["v13_layer_counts"] == {"programmatic_solver": 1}
     for line in jp.read_text().splitlines():
         if line.strip():
             json.dumps(json.loads(line), allow_nan=False)   # finite
