@@ -40,8 +40,8 @@ class _FakePredictor:
         if self.mode == "raise":
             raise RuntimeError("synthetic scoring failure")
         labels = labels_for(len(item.get("choices") or []))
-        scores = {lab: -float(i) for i, lab in enumerate(labels)}   # top1 = 'A'
-        return compute_choice_scores(scores, labels, scoring_method="single_token")
+        scores = {lab: -float(i) for i, lab in enumerate(labels)}   # top1 = 'A' (raw logits)
+        return compute_choice_scores(scores, labels)
 
 
 _SAMPLES = [
@@ -121,3 +121,38 @@ def test_no_telemetry_file_in_default_path(tmp_path, monkeypatch):
     tpath = tmp_path / "telemetry.jsonl"
     _run(mod, monkeypatch, tmp_path, ["--telemetry-path", str(tpath)])   # flag OFF
     assert not tpath.exists()
+
+
+def test_scoring_method_recorded_in_valid_records(tmp_path, monkeypatch):
+    mod = _predict()
+    tpath = tmp_path / "telemetry.jsonl"
+    _run(mod, monkeypatch, tmp_path, ["--confidence-telemetry", "--telemetry-path", str(tpath)])
+    recs = [json.loads(l) for l in tpath.read_text().splitlines() if l.strip()]
+    assert all(r["scoring_method"] == "next_token_logits_one_forward" for r in recs)
+
+
+def test_config_disabled_skips_scoring(tmp_path, monkeypatch):
+    mod = _predict()
+    import src.local_model.confidence_config as cc
+    monkeypatch.setattr(cc, "load_choice_scoring_config",
+                        lambda *a, **k: cc.ChoiceScoringConfig(enabled=False))
+    tpath = tmp_path / "telemetry.jsonl"
+    sub, _ = _run(mod, monkeypatch, tmp_path,
+                  ["--confidence-telemetry", "--telemetry-path", str(tpath)])
+    assert sub.read_text().splitlines()[0] == "qid,answer"     # official output intact
+    recs = [json.loads(l) for l in tpath.read_text().splitlines() if l.strip()]
+    assert recs and all(r["scoring_error"] == "disabled_by_config" and not r["scoring_valid"]
+                        for r in recs)
+
+
+def test_telemetry_never_invokes_legacy_selective_pipeline(tmp_path, monkeypatch):
+    mod = _predict()
+
+    def _boom(*a, **k):
+        raise AssertionError("legacy/selective pipeline (V12B/V13) must not run in telemetry mode")
+
+    monkeypatch.setattr(mod, "_run_legacy_dynamic_full", _boom)
+    tpath = tmp_path / "telemetry.jsonl"
+    sub, _ = _run(mod, monkeypatch, tmp_path,
+                  ["--confidence-telemetry", "--telemetry-path", str(tpath)])
+    assert sub.read_text().splitlines()[1].startswith("q1,B")   # ran single-pass, not selective

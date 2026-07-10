@@ -1,13 +1,17 @@
 """Per-choice uncertainty scoring for local MCQ inference (Phase 1 — observational).
 
-This module owns the PURE math of turning per-label conditional log-probabilities
-into an uncertainty summary (top-1/top-2, log-probability margin, probability
-margin, normalized entropy). It imports no torch/transformers and never loads a
-model, so it is fully unit-testable with deterministic fake logits.
+This module owns the PURE math of turning per-label scores into an uncertainty
+summary (top-1/top-2, score margin, probability margin, normalized entropy). It
+imports no torch/transformers and never loads a model, so it is fully
+unit-testable with deterministic fake scores.
 
-The model forward that produces the raw per-label log-probabilities lives in
-``LocalQwenBackend.score_mcq_choices`` (torch, lazy). Phase 1 is telemetry only:
-nothing here changes any answer, route, or official output.
+As of the pre-Phase-2 correction (AUDIT 68/69) the scores fed in are the RAW
+next-token logits of the bare single-token labels (A, B, ...), read from ONE model
+forward over the exact generation prefix (see ``LocalQwenBackend.score_mcq_choices``).
+Therefore ``logit_margin`` is a genuine raw-logit top1-top2 difference. The math
+here is score-agnostic (it also works for log-probabilities), but the production
+scorer supplies raw logits. Phase 1 is telemetry only: nothing here changes any
+answer, route, or official output.
 """
 
 from __future__ import annotations
@@ -20,9 +24,10 @@ from dataclasses import dataclass, field
 class ChoiceScoreResult:
     """Uncertainty summary over the allowed labels of one MCQ item.
 
-    ``scores_by_label`` are raw (summed conditional) log-probabilities; higher is
-    more likely. ``probabilities_by_label`` is the softmax over ONLY the allowed
-    labels. All numeric fields are None when ``valid`` is False.
+    ``scores_by_label`` are the raw next-token logits of the bare labels (higher is
+    more likely). ``probabilities_by_label`` is the softmax over ONLY the allowed
+    labels. ``logit_margin`` is the raw top1-top2 logit difference. All numeric
+    fields are None when ``valid`` is False.
     """
 
     allowed_labels: list[str] = field(default_factory=list)
@@ -35,7 +40,7 @@ class ChoiceScoreResult:
     logit_margin: float | None = None
     probability_margin: float | None = None
     normalized_entropy: float | None = None
-    scoring_method: str = "sequence_logprob"
+    scoring_method: str = "next_token_logits_one_forward"
     valid: bool = False
     error: str | None = None
 
@@ -79,9 +84,10 @@ def _log_softmax(scores: list[float]) -> list[float]:
 
 
 def compute_choice_scores(scores_by_label, labels, *,
-                          scoring_method: str = "sequence_logprob",
+                          scoring_method: str = "next_token_logits_one_forward",
                           error: str | None = None) -> ChoiceScoreResult:
-    """Turn raw per-label log-probabilities into a ChoiceScoreResult (pure).
+    """Turn raw per-label scores (production: bare-label next-token logits) into a
+    ChoiceScoreResult (pure).
 
     ``labels`` is the ordered list of allowed labels for the item (A..). Ties are
     broken deterministically by that order. Missing/NaN/inf scores or fewer than

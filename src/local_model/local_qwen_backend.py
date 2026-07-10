@@ -305,62 +305,88 @@ class LocalQwenBackend:
         )
 
     # --- Per-choice uncertainty scoring (Phase 1: observational shadow only) ---
-    def _scoring_prompt(self, item: dict) -> str:
-        """Render the same MCQ prompt used for generation as a scoring prefix."""
+    SCORING_METHOD = "next_token_logits_one_forward"
+
+    def _generation_prefix(self, item: dict) -> str:
+        """The EXACT rendered generation prefix (chat template + add_generation_prompt).
+
+        Shared by generation and scoring so they can never diverge: ``generate_text``
+        renders the same messages the same way, and greedy generation samples its first
+        answer token from the next-token position after this prefix."""
         prompt, _labels = build_mcq_prompt(item)
         return self._render_prompt([{"role": "user", "content": prompt}])
 
-    def _default_logprob_fn(self, prompt_ids, cont_ids) -> list[float]:
-        """Teacher-forced conditional log-probabilities of ``cont_ids`` given
-        ``prompt_ids`` (one forward pass; torch imported lazily)."""
+    # Back-compat alias (older name); same exact prefix.
+    _scoring_prompt = _generation_prefix
+
+    def _bare_label_token_id(self, tokenizer, label: str) -> int | None:
+        """Token id of the BARE label (e.g. "B"), or None if it is not exactly one
+        token. Special tokens are excluded so no BOS is prepended."""
+        try:
+            ids = list(tokenizer.encode(label, add_special_tokens=False))
+        except TypeError:                                  # fake/older tokenizers without the kwarg
+            ids = list(tokenizer.encode(label))
+        return int(ids[0]) if len(ids) == 1 else None
+
+    def _default_next_token_logits_fn(self, prompt_ids, token_ids) -> list[float]:
+        """Raw next-token logits for ``token_ids`` from ONE model forward over
+        ``prompt_ids`` (torch imported lazily). Reads the same next-token position
+        greedy generation samples its first token from."""
         import torch  # noqa: E402
         if self._model is None:
             self.load()
-        full = list(prompt_ids) + list(cont_ids)
-        ids = torch.tensor([full], device=self._model.device)
+        ids = torch.tensor([list(prompt_ids)], device=self._model.device)
         with torch.no_grad():
             logits = self._model(ids).logits            # [1, seq, vocab]
-        logps = torch.log_softmax(logits[0].float(), dim=-1)
-        out = []
-        for k, tok_id in enumerate(cont_ids):
-            pos = len(prompt_ids) - 1 + k                # position predicting cont token k
-            out.append(float(logps[pos, int(tok_id)]))
-        return out
+        row = logits[0, -1].float()                     # next-token position
+        return [float(row[int(t)]) for t in token_ids]
 
-    def score_mcq_choices(self, item: dict, *, canonical_prefix: str = " ",
-                          logprob_fn=None) -> ChoiceScoreResult:
-        """Score every allowed label by its conditional log-probability and return
-        an uncertainty summary. Robust to multi-token labels; fails closed to an
-        explicit invalid result (never fabricates a label). Observational only —
-        it changes no answer, route, or official output."""
+    def score_mcq_choices(self, item: dict, *, logits_fn=None) -> ChoiceScoreResult:
+        """Per-choice uncertainty from ONE model forward over the exact generation
+        prefix: read the raw next-token logits of the BARE single-token labels
+        (A, B, ...), softmax over only those labels, and report top-1/top-2 with the
+        raw-logit margin, probability margin, and normalized entropy.
+
+        Observational only — it changes no answer, route, or official output, and it
+        fails closed to an explicit invalid result (never fabricates a label). It scores
+        bare labels (matching the token greedy generation emits), NOT a space-prefixed
+        continuation, and performs exactly one forward per item regardless of #labels."""
+        method = self.SCORING_METHOD
         choices = list(item.get("choices") or [])
         labels = labels_for(len(choices)) if choices else []
         if not labels:
-            return compute_choice_scores({}, labels, error="no_choices")
+            return compute_choice_scores({}, labels, scoring_method=method, error="no_choices")
+        if len(labels) < 2:
+            return compute_choice_scores({}, labels, scoring_method=method,
+                                         error="need_at_least_two_labels")
         try:
             if self._tokenizer is None:
                 self.load()
             tok = self._tokenizer
-            prompt_text = self._scoring_prompt(item)
-            prompt_ids = _encode_ids(tok, prompt_text)
-            cont_by_label: dict[str, list[int]] = {}
+            prompt_ids = _encode_ids(tok, self._generation_prefix(item))
+            if not prompt_ids:
+                return compute_choice_scores({}, labels, scoring_method=method, error="empty_prompt")
+            token_by_label: dict[str, int] = {}
             for lab in labels:
-                full = _encode_ids(tok, prompt_text + canonical_prefix + lab)
-                if full[:len(prompt_ids)] == list(prompt_ids) and len(full) > len(prompt_ids):
-                    cont = full[len(prompt_ids):]
-                else:                                     # boundary merge -> encode the label alone
-                    cont = _encode_ids(tok, canonical_prefix + lab) or _encode_ids(tok, lab)
-                if not cont:
-                    return compute_choice_scores({}, labels, error=f"empty_continuation:{lab}")
-                cont_by_label[lab] = cont
-            single_token = all(len(c) == 1 for c in cont_by_label.values())
-            fn = logprob_fn or self._default_logprob_fn
-            scores = {lab: float(sum(fn(prompt_ids, cont)))
-                      for lab, cont in cont_by_label.items()}
-            method = "single_token" if single_token else "sequence_logprob"
+                tid = self._bare_label_token_id(tok, lab)
+                if tid is None:
+                    return compute_choice_scores({}, labels, scoring_method=method,
+                                                 error=f"label_not_single_token:{lab}")
+                token_by_label[lab] = tid
+            if len(set(token_by_label.values())) != len(token_by_label):
+                return compute_choice_scores({}, labels, scoring_method=method,
+                                             error="duplicate_label_token_ids")
+            fn = logits_fn or self._default_next_token_logits_fn
+            token_ids = [token_by_label[lab] for lab in labels]
+            logit_vals = fn(prompt_ids, token_ids)        # exactly ONE forward per item
+            if logit_vals is None or len(logit_vals) != len(labels):
+                return compute_choice_scores({}, labels, scoring_method=method,
+                                             error="logits_shape_invalid")
+            scores = {lab: float(v) for lab, v in zip(labels, logit_vals)}
             return compute_choice_scores(scores, labels, scoring_method=method)
         except Exception as exc:                          # fail closed — telemetry must never crash a run
-            return compute_choice_scores({}, labels, error=f"{type(exc).__name__}: {exc}")
+            return compute_choice_scores({}, labels, scoring_method=method,
+                                         error=f"{type(exc).__name__}: {exc}")
 
 
 _BACKENDS: dict[tuple[str, str], LocalQwenBackend] = {}

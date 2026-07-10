@@ -112,11 +112,12 @@ def _build_predictor(args):
 _DEFAULT_TELEMETRY_PATH = "scratch/fastmcq_run/choice_score_telemetry.jsonl"
 
 
-def _score_telemetry_record(predictor, item, qid, ans) -> dict:
+def _score_telemetry_record(predictor, item, qid, ans, *, enabled=True) -> dict:
     """Phase 1 shadow scoring: numeric/categorical diagnostics for one item.
 
     Observational only — it never affects ``ans`` or the official output, and it
     fails closed (any error is recorded, never raised). No question text is stored.
+    ``enabled`` reflects the confidence config; when False, scoring is skipped.
     """
     rec = {
         "qid": qid, "generated_answer": ans,
@@ -127,6 +128,9 @@ def _score_telemetry_record(predictor, item, qid, ans) -> dict:
         "scoring_method": None, "scoring_valid": False, "scoring_error": None,
         "elapsed_sec": 0.0,
     }
+    if not enabled:
+        rec["scoring_error"] = "disabled_by_config"
+        return rec
     score_fn = getattr(predictor, "score_choices", None)
     if not callable(score_fn):
         rec["scoring_error"] = "predictor_has_no_score_choices"
@@ -226,8 +230,17 @@ def main(argv=None) -> int:
         times = [0.0] * len(rows)
     else:
         print(f"[predict] mode: offline local model ({args.model_path})")
+        score_enabled = True
         if args.confidence_telemetry:
-            print("[predict] confidence-telemetry: ON (shadow scoring; answers unchanged)")
+            try:
+                from src.local_model.confidence_config import load_choice_scoring_config
+                _cfg = load_choice_scoring_config()
+                score_enabled = bool(_cfg.enabled)
+            except Exception as e:            # bad config must not break the run
+                print(f"[predict] WARN confidence config load failed ({type(e).__name__}: {e}); "
+                      "using defaults")
+            print(f"[predict] confidence-telemetry: ON (shadow scoring={'enabled' if score_enabled else 'disabled'}; "
+                  "answers unchanged)")
         samples = load_dataset(inp)
         predictor = _build_predictor(args)
         rows, times = [], []
@@ -249,7 +262,8 @@ def main(argv=None) -> int:
             rows.append((qid, ans))
             times.append(dt)
             if telemetry is not None:             # shadow scoring, measured separately
-                telemetry.append(_score_telemetry_record(predictor, item, qid, ans))
+                telemetry.append(_score_telemetry_record(predictor, item, qid, ans,
+                                                         enabled=score_enabled))
         print(f"[predict] predicted {len(rows)} samples ({failures} fell back to deterministic)")
         if telemetry is not None:
             _write_telemetry(args.telemetry_path, telemetry)
