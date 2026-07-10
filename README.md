@@ -168,6 +168,46 @@ limitations list.
 - No provider key required: `.env` is git-ignored.
 - No vector database, no retrieval index; only the Qwen model is initialized during Docker build.
 
+## Research acknowledgements
+
+FASTMCQ-Agent builds on ideas developed by the broader language-model reasoning, uncertainty, and
+selective-prediction research communities. We gratefully acknowledge the authors of the following
+works:
+
+- **Option-order robustness:** Chujie Zheng et al., [*Large Language Models Are Not Robust Multiple
+  Choice Selectors*](https://arxiv.org/abs/2309.03882). This work motivated our attention to
+  answer-position sensitivity in MCQ systems. FASTMCQ-Agent's V12B addresses a related failure mode
+  with its own deterministic permutation-and-vote procedure and does not implement PriDe.
+- **Consistency and structured reasoning:** Xuezhi Wang et al., [*Self-Consistency Improves Chain of
+  Thought Reasoning in Language Models*](https://arxiv.org/abs/2203.11171); Jason Wei et al.,
+  [*Chain-of-Thought Prompting Elicits Reasoning in Large Language Models*](https://arxiv.org/abs/2201.11903);
+  and Denny Zhou et al., [*Least-to-Most Prompting Enables Complex Reasoning in Large Language
+  Models*](https://arxiv.org/abs/2205.10625). Their work informed the broader majority-voting,
+  structured-reasoning, and decomposition design space: V12B varies option order rather than
+  sampling multiple free-form reasoning chains, the Base prediction path does not depend on
+  free-form chain-of-thought output, and `least_to_most` takes inspiration from constraint
+  decomposition without reproducing the paper's method exactly.
+- **Program-aided reasoning:** Luyu Gao et al., [*PAL: Program-aided Language
+  Models*](https://arxiv.org/abs/2211.10435). Our `programmatic_solver` follows the general
+  principle of separating model-produced calculation specifications from deterministic computation,
+  using a narrower safe-AST implementation rather than a complete PAL system.
+- **Uncertainty and selective escalation:** Dan Hendrycks and Kevin Gimpel, [*A Baseline for
+  Detecting Misclassified and Out-of-Distribution Examples in Neural
+  Networks*](https://arxiv.org/abs/1610.02136); Saurav Kadavath et al., [*Language Models (Mostly)
+  Know What They Know*](https://arxiv.org/abs/2207.05221); and Amita Kamath, Robin Jia, and Percy
+  Liang, [*Selective Question Answering under Domain Shift*](https://arxiv.org/abs/2006.09462).
+  Their research on output-distribution uncertainty and calibration informed our decision to rely
+  on token-level confidence and entropy signals — rather than asking the model to verbally report
+  its own confidence — to selectively escalate uncertain records.
+- **Bounded cascades:** Lingjiao Chen, Matei Zaharia, and James Zou, [*FrugalGPT: How to Use Large
+  Language Models While Reducing Cost and Improving Performance*](https://arxiv.org/abs/2305.05176).
+  Their work informed the general bounded-routing and cascade perspective; FASTMCQ-Agent reuses one
+  fully local model with multiple reasoning strategies rather than routing across external LLM
+  services.
+
+> These works inspired parts of the design space; FASTMCQ-Agent does not claim to reproduce their
+> methods exactly. Any implementation differences and errors are our own.
+
 ---
 
 <div align="center">
