@@ -20,6 +20,7 @@ from __future__ import annotations
 import argparse
 import csv
 import importlib.util
+import json
 import os
 import shutil
 import sys
@@ -108,6 +109,58 @@ def _build_predictor(args):
     return p
 
 
+_DEFAULT_TELEMETRY_PATH = "scratch/fastmcq_run/choice_score_telemetry.jsonl"
+
+
+def _score_telemetry_record(predictor, item, qid, ans) -> dict:
+    """Phase 1 shadow scoring: numeric/categorical diagnostics for one item.
+
+    Observational only — it never affects ``ans`` or the official output, and it
+    fails closed (any error is recorded, never raised). No question text is stored.
+    """
+    rec = {
+        "qid": qid, "generated_answer": ans,
+        "scored_top1": None, "scored_top2": None,
+        "scores_by_label": {}, "probabilities_by_label": {},
+        "logit_margin": None, "probability_margin": None, "normalized_entropy": None,
+        "generated_vs_scored_agree": None,
+        "scoring_method": None, "scoring_valid": False, "scoring_error": None,
+        "elapsed_sec": 0.0,
+    }
+    score_fn = getattr(predictor, "score_choices", None)
+    if not callable(score_fn):
+        rec["scoring_error"] = "predictor_has_no_score_choices"
+        return rec
+    t0 = time.time()
+    try:
+        d = score_fn(item).as_dict()
+        rec.update({
+            "scored_top1": d["top1_label"], "scored_top2": d["top2_label"],
+            "scores_by_label": d["scores_by_label"],
+            "probabilities_by_label": d["probabilities_by_label"],
+            "logit_margin": d["logit_margin"], "probability_margin": d["probability_margin"],
+            "normalized_entropy": d["normalized_entropy"], "scoring_method": d["scoring_method"],
+            "scoring_valid": d["valid"], "scoring_error": d["error"],
+            "generated_vs_scored_agree": (bool(d["valid"]) and ans == d["top1_label"]),
+        })
+    except Exception as e:                       # telemetry must never break a submission
+        rec["scoring_error"] = f"{type(e).__name__}: {e}"
+    rec["elapsed_sec"] = round(time.time() - t0, 6)
+    return rec
+
+
+def _write_telemetry(path, records) -> None:
+    try:
+        p = Path(path)
+        p.parent.mkdir(parents=True, exist_ok=True)
+        with open(p, "w", encoding="utf-8") as fh:
+            for r in records:
+                fh.write(json.dumps(r, ensure_ascii=False) + "\n")
+        print(f"[predict] confidence telemetry -> {p} ({len(records)} records)")
+    except OSError as e:
+        print(f"[predict] WARN telemetry not written ({type(e).__name__}: {e})")
+
+
 def _mirror(src_csv, dest):
     if not dest:
         return None
@@ -144,6 +197,11 @@ def main(argv=None) -> int:
     ap.add_argument("--device", default="auto")
     ap.add_argument("--legacy-dynamic-full", action="store_true", default=False,
                     help="DEV ONLY: use the optional local selective pipeline")
+    ap.add_argument("--confidence-telemetry", action="store_true", default=False,
+                    help="DEV ONLY: shadow per-choice uncertainty scoring; writes a diagnostics "
+                         "JSONL and does NOT change answers or the official CSV output")
+    ap.add_argument("--telemetry-path", default=_DEFAULT_TELEMETRY_PATH,
+                    help=f"confidence-telemetry JSONL path (default {_DEFAULT_TELEMETRY_PATH})")
     args, _extra = ap.parse_known_args(argv)
 
     inp = _resolve_input(args.input)
@@ -168,9 +226,12 @@ def main(argv=None) -> int:
         times = [0.0] * len(rows)
     else:
         print(f"[predict] mode: offline local model ({args.model_path})")
+        if args.confidence_telemetry:
+            print("[predict] confidence-telemetry: ON (shadow scoring; answers unchanged)")
         samples = load_dataset(inp)
         predictor = _build_predictor(args)
         rows, times = [], []
+        telemetry = [] if args.confidence_telemetry else None
         failures = 0
         for item in samples:
             qid = item.get("qid")
@@ -184,10 +245,14 @@ def main(argv=None) -> int:
                 ans = _fallback_answer(item)
                 failures += 1
                 print(f"[predict] WARN qid={qid} fell back ({type(e).__name__}: {e})")
-            dt = time.time() - t0
+            dt = time.time() - t0                 # official per-sample time = generation only
             rows.append((qid, ans))
             times.append(dt)
+            if telemetry is not None:             # shadow scoring, measured separately
+                telemetry.append(_score_telemetry_record(predictor, item, qid, ans))
         print(f"[predict] predicted {len(rows)} samples ({failures} fell back to deterministic)")
+        if telemetry is not None:
+            _write_telemetry(args.telemetry_path, telemetry)
 
     # Write submission.csv (qid,answer) and submission_time.csv (qid,answer,time = REAL per-sample s).
     Path(submission).parent.mkdir(parents=True, exist_ok=True)

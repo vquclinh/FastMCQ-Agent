@@ -16,8 +16,18 @@ from typing import Any, Protocol, runtime_checkable
 
 from src.utils.labels import labels_for
 from src.utils.logging import log
+from src.local_model.choice_scoring import ChoiceScoreResult, compute_choice_scores
 
 DEFAULT_MODEL_PATH = "/models/qwen3-4b-instruct-2507"
+
+
+def _encode_ids(tokenizer, text: str) -> list[int]:
+    """Tokenize ``text`` to a plain list of token ids (tokenizer-agnostic)."""
+    if hasattr(tokenizer, "encode"):
+        ids = tokenizer.encode(text)
+    else:
+        ids = tokenizer(text)["input_ids"]
+    return list(ids)
 
 
 @runtime_checkable
@@ -293,6 +303,64 @@ class LocalQwenBackend:
             self.generate_text(messages, max_new_tokens=max_new_tokens),
             labels,
         )
+
+    # --- Per-choice uncertainty scoring (Phase 1: observational shadow only) ---
+    def _scoring_prompt(self, item: dict) -> str:
+        """Render the same MCQ prompt used for generation as a scoring prefix."""
+        prompt, _labels = build_mcq_prompt(item)
+        return self._render_prompt([{"role": "user", "content": prompt}])
+
+    def _default_logprob_fn(self, prompt_ids, cont_ids) -> list[float]:
+        """Teacher-forced conditional log-probabilities of ``cont_ids`` given
+        ``prompt_ids`` (one forward pass; torch imported lazily)."""
+        import torch  # noqa: E402
+        if self._model is None:
+            self.load()
+        full = list(prompt_ids) + list(cont_ids)
+        ids = torch.tensor([full], device=self._model.device)
+        with torch.no_grad():
+            logits = self._model(ids).logits            # [1, seq, vocab]
+        logps = torch.log_softmax(logits[0].float(), dim=-1)
+        out = []
+        for k, tok_id in enumerate(cont_ids):
+            pos = len(prompt_ids) - 1 + k                # position predicting cont token k
+            out.append(float(logps[pos, int(tok_id)]))
+        return out
+
+    def score_mcq_choices(self, item: dict, *, canonical_prefix: str = " ",
+                          logprob_fn=None) -> ChoiceScoreResult:
+        """Score every allowed label by its conditional log-probability and return
+        an uncertainty summary. Robust to multi-token labels; fails closed to an
+        explicit invalid result (never fabricates a label). Observational only —
+        it changes no answer, route, or official output."""
+        choices = list(item.get("choices") or [])
+        labels = labels_for(len(choices)) if choices else []
+        if not labels:
+            return compute_choice_scores({}, labels, error="no_choices")
+        try:
+            if self._tokenizer is None:
+                self.load()
+            tok = self._tokenizer
+            prompt_text = self._scoring_prompt(item)
+            prompt_ids = _encode_ids(tok, prompt_text)
+            cont_by_label: dict[str, list[int]] = {}
+            for lab in labels:
+                full = _encode_ids(tok, prompt_text + canonical_prefix + lab)
+                if full[:len(prompt_ids)] == list(prompt_ids) and len(full) > len(prompt_ids):
+                    cont = full[len(prompt_ids):]
+                else:                                     # boundary merge -> encode the label alone
+                    cont = _encode_ids(tok, canonical_prefix + lab) or _encode_ids(tok, lab)
+                if not cont:
+                    return compute_choice_scores({}, labels, error=f"empty_continuation:{lab}")
+                cont_by_label[lab] = cont
+            single_token = all(len(c) == 1 for c in cont_by_label.values())
+            fn = logprob_fn or self._default_logprob_fn
+            scores = {lab: float(sum(fn(prompt_ids, cont)))
+                      for lab, cont in cont_by_label.items()}
+            method = "single_token" if single_token else "sequence_logprob"
+            return compute_choice_scores(scores, labels, scoring_method=method)
+        except Exception as exc:                          # fail closed — telemetry must never crash a run
+            return compute_choice_scores({}, labels, error=f"{type(exc).__name__}: {exc}")
 
 
 _BACKENDS: dict[tuple[str, str], LocalQwenBackend] = {}

@@ -1,0 +1,11 @@
+# Confidence-aware selective inference — opt-in configuration.
+#
+# Phase 1 (observational) uses ONLY the `choice_scoring` block. Later phases add
+# `confidence_router`, `v12b`, `v13`, and `selector` blocks; they are intentionally
+# omitted here until their phase is implemented and approved. Nothing in this file
+# affects the no-flag BTC default or `--legacy-dynamic-full` in Phase 1.
+choice_scoring:
+  enabled: true
+  canonical_answer_prefix: " "   # continuation is "<prefix><label>", e.g. " A"
+  normalization: "softmax"       # softmax over ONLY the allowed labels
+  batch_size: 8                  # reserved: batch continuations/questions where practical

@@ -34,3 +34,8 @@ class QwenMCQPredictor:
     def predict_one(self, item: dict) -> str | None:
         """Return a single option label for ``item``; None if it could not be parsed."""
         return self._backend.predict_mcq(item, max_new_tokens=self.max_new_tokens)
+
+    def score_choices(self, item: dict):
+        """Phase 1 shadow scoring: per-choice uncertainty for ``item`` (observational,
+        never changes the predicted answer). Delegates to the shared backend."""
+        return self._backend.score_mcq_choices(item)
