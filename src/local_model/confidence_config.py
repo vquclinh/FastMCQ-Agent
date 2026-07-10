@@ -51,20 +51,72 @@ def load_choice_scoring_config(source=None) -> ChoiceScoringConfig:
     ``source`` may be a dict (already-parsed config), a path to a YAML file, or
     None. None loads the default config file if present, else safe defaults.
     """
-    if isinstance(source, dict):
-        return _validate(source.get("choice_scoring", source))
+    return _validate(_load_block(source, "choice_scoring"))
 
+
+# --- Phase 2 shadow router config (opt-in; observational only) --------------
+def _num_or_none(v):
+    if v is None:
+        return None
+    if isinstance(v, bool) or not isinstance(v, (int, float)):
+        raise ValueError("expected a number or null")
+    return float(v)
+
+
+def _validate_shadow(block: dict):
+    from src.local_model.confidence_shadow_router import ShadowRouterConfig
+    b = block or {}
+    margin = b.get("provisional_margin_threshold", 10.0)
+    if isinstance(margin, bool) or not isinstance(margin, (int, float)):
+        raise ValueError("shadow_router.provisional_margin_threshold must be a number")
+    entropy = _num_or_none(b.get("entropy_threshold", None))
+    divisor = b.get("budget_divisor", 8)
+    if isinstance(divisor, bool) or not isinstance(divisor, int) or divisor < 1:
+        raise ValueError("shadow_router.budget_divisor must be an integer >= 1")
+    override = b.get("max_targets_override", None)
+    if override is not None and (isinstance(override, bool) or not isinstance(override, int)
+                                 or override < 0):
+        raise ValueError("shadow_router.max_targets_override must be a non-negative integer or null")
+    sweeps = b.get("analysis_margin_thresholds",
+                   [5.0, 7.5, 10.0, 12.5, 15.0, 20.0])
+    if not isinstance(sweeps, (list, tuple)) or not all(
+            (not isinstance(x, bool) and isinstance(x, (int, float))) for x in sweeps):
+        raise ValueError("shadow_router.analysis_margin_thresholds must be a list of numbers")
+    return ShadowRouterConfig(
+        enabled=bool(b.get("enabled", False)),
+        provisional_margin_threshold=float(margin),
+        entropy_threshold=entropy,
+        budget_divisor=int(divisor),
+        max_targets_override=(int(override) if override is not None else None),
+        include_scoring_invalid=bool(b.get("include_scoring_invalid", True)),
+        include_parser_failure=bool(b.get("include_parser_failure", True)),
+        include_formula_disagreement=bool(b.get("include_formula_disagreement", True)),
+        analysis_margin_thresholds=tuple(float(x) for x in sweeps),
+    )
+
+
+def load_shadow_router_config(source=None):
+    """Return a validated ShadowRouterConfig (opt-in; disabled by default)."""
+    return _validate_shadow(_load_block(source, "shadow_router"))
+
+
+def _load_block(source, key) -> dict:
+    """Shared block loader: dict / path / None -> the ``key`` sub-mapping (or {}).
+
+    A dict ``source`` returns ``source[key]`` if present, else the dict itself
+    (so a caller may pass either the whole config or the block directly)."""
+    if isinstance(source, dict):
+        return source.get(key, source)
     if source is None:
         path = Path(_DEFAULT_CONFIG_PATH)
         if not path.exists():
-            return ChoiceScoringConfig()
+            return {}
     else:
         path = Path(source)
         if not path.exists():
             raise FileNotFoundError(f"confidence config not found: {path}")
-
     import yaml  # PyYAML is already a project dependency
     data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
     if not isinstance(data, dict):
         raise ValueError(f"confidence config {path} must be a mapping")
-    return _validate(data.get("choice_scoring", {}))
+    return data.get(key, {})

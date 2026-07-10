@@ -1,15 +1,37 @@
 # Confidence-aware selective inference — opt-in configuration.
 #
-# Phase 1 (observational) uses ONLY the `choice_scoring` block. Later phases add
-# `confidence_router`, `v12b`, `v13`, and `selector` blocks; they are intentionally
-# omitted here until their phase is implemented and approved. Nothing in this file
-# affects the no-flag BTC default or `--legacy-dynamic-full`.
+# Phase 1 (observational) uses the `choice_scoring` block. Phase 2 (observational)
+# adds the `shadow_router` block. Later phases add `v12b`, `v13`, and `selector`
+# blocks; they are intentionally omitted until their phase is implemented and
+# approved. Nothing in this file affects the no-flag BTC default or
+# `--legacy-dynamic-full`.
 #
 # Scoring method (AUDIT 68/69): one model forward over the exact generation prefix,
 # reading the RAW next-token logits of the BARE single-token labels (A, B, ...).
-# The old `canonical_answer_prefix` setting is DEPRECATED and IGNORED — the scorer
-# never scores a space-prefixed continuation.
+# The old `canonical_answer_prefix` setting is DEPRECATED and IGNORED.
 choice_scoring:
-  enabled: true                  # when false, telemetry records skip scoring (fail-open, observational)
+  enabled: true                  # when false, telemetry records skip scoring (observational)
+  scoring_method: next_token_logits_one_forward   # fixed; not user-selectable
   normalization: "softmax"       # softmax over ONLY the valid labels
-  batch_size: 8                  # reserved: batch questions where practical (not used in Phase 1)
+  batch_size: 1                  # reserved: one item per forward in Phase 1/2
+
+# Phase 2 confidence-aware SHADOW router (observational only; AUDIT 71/72).
+# It records which qids WOULD be selected for follow-up under a provisional threshold
+# + budget cap. It NEVER runs V12B/V13, never calls the selector, and never changes a
+# generated answer or official output. Disabled by default.
+shadow_router:
+  enabled: false
+  provisional_margin_threshold: 10.0   # SHADOW-ONLY; NOT a final production threshold
+  entropy_threshold: null              # null -> entropy does not affect selection
+  budget_divisor: 8                    # budget cap = ceil(N / budget_divisor)
+  max_targets_override: null           # null -> use ceil(N / budget_divisor)
+  include_scoring_invalid: true
+  include_parser_failure: true
+  include_formula_disagreement: true   # only used if such metadata genuinely exists (deferred here)
+  analysis_margin_thresholds:          # diagnostic sweep only; never changes primary selection
+    - 5.0
+    - 7.5
+    - 10.0
+    - 12.5
+    - 15.0
+    - 20.0

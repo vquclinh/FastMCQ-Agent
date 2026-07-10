@@ -110,47 +110,86 @@ def _build_predictor(args):
 
 
 _DEFAULT_TELEMETRY_PATH = "scratch/fastmcq_run/choice_score_telemetry.jsonl"
+_DEFAULT_SHADOW_PATH = "scratch/fastmcq_run/confidence_shadow_router.jsonl"
+_DEFAULT_SHADOW_SUMMARY_PATH = "scratch/fastmcq_run/confidence_shadow_router_summary.json"
 
 
-def _score_telemetry_record(predictor, item, qid, ans, *, enabled=True) -> dict:
-    """Phase 1 shadow scoring: numeric/categorical diagnostics for one item.
+def _compute_score(predictor, item, *, enabled=True):
+    """Compute the Phase 1 choice-score once for an item (shared by telemetry and the
+    shadow router so scoring runs exactly once per qid). Returns
+    (score_dict_or_None, scoring_error, elapsed_sec). Fails closed."""
+    if not enabled:
+        return None, "disabled_by_config", 0.0
+    score_fn = getattr(predictor, "score_choices", None)
+    if not callable(score_fn):
+        return None, "predictor_has_no_score_choices", 0.0
+    t0 = time.time()
+    try:
+        d = score_fn(item).as_dict()
+        return d, d.get("error"), round(time.time() - t0, 6)
+    except Exception as e:                       # observational scoring must never break a run
+        return None, f"{type(e).__name__}: {e}", round(time.time() - t0, 6)
 
-    Observational only — it never affects ``ans`` or the official output, and it
-    fails closed (any error is recorded, never raised). No question text is stored.
-    ``enabled`` reflects the confidence config; when False, scoring is skipped.
-    """
+
+def _telemetry_record(qid, ans, score, error, elapsed) -> dict:
+    """Phase 1 telemetry record from a precomputed score. No question text stored."""
     rec = {
         "qid": qid, "generated_answer": ans,
         "scored_top1": None, "scored_top2": None,
         "scores_by_label": {}, "probabilities_by_label": {},
         "logit_margin": None, "probability_margin": None, "normalized_entropy": None,
         "generated_vs_scored_agree": None,
-        "scoring_method": None, "scoring_valid": False, "scoring_error": None,
-        "elapsed_sec": 0.0,
+        "scoring_method": None, "scoring_valid": False, "scoring_error": error,
+        "elapsed_sec": elapsed,
     }
-    if not enabled:
-        rec["scoring_error"] = "disabled_by_config"
-        return rec
-    score_fn = getattr(predictor, "score_choices", None)
-    if not callable(score_fn):
-        rec["scoring_error"] = "predictor_has_no_score_choices"
-        return rec
-    t0 = time.time()
-    try:
-        d = score_fn(item).as_dict()
+    if score is not None:
         rec.update({
-            "scored_top1": d["top1_label"], "scored_top2": d["top2_label"],
-            "scores_by_label": d["scores_by_label"],
-            "probabilities_by_label": d["probabilities_by_label"],
-            "logit_margin": d["logit_margin"], "probability_margin": d["probability_margin"],
-            "normalized_entropy": d["normalized_entropy"], "scoring_method": d["scoring_method"],
-            "scoring_valid": d["valid"], "scoring_error": d["error"],
-            "generated_vs_scored_agree": (bool(d["valid"]) and ans == d["top1_label"]),
+            "scored_top1": score["top1_label"], "scored_top2": score["top2_label"],
+            "scores_by_label": score["scores_by_label"],
+            "probabilities_by_label": score["probabilities_by_label"],
+            "logit_margin": score["logit_margin"], "probability_margin": score["probability_margin"],
+            "normalized_entropy": score["normalized_entropy"], "scoring_method": score["scoring_method"],
+            "scoring_valid": score["valid"], "scoring_error": score["error"],
+            "generated_vs_scored_agree": (bool(score["valid"]) and ans == score["top1_label"]),
         })
-    except Exception as e:                       # telemetry must never break a submission
-        rec["scoring_error"] = f"{type(e).__name__}: {e}"
-    rec["elapsed_sec"] = round(time.time() - t0, 6)
     return rec
+
+
+def _shadow_input(qid, idx, ans, score, parser_failed):
+    """Build a ShadowRoutingInput from a precomputed score (observational).
+
+    Parser failure is genuinely available (generation returned no valid label).
+    Formula-bank source/disagreement is NOT available on the single-pass path, so it
+    is left as None (deferred) and never fabricated."""
+    from src.local_model.confidence_shadow_router import ShadowRoutingInput
+    if score is not None:
+        return ShadowRoutingInput(
+            qid=qid, input_index=idx, generated_answer=ans,
+            scoring_valid=bool(score["valid"]), scoring_error=score["error"],
+            top1=score["top1_label"], top2=score["top2_label"],
+            logit_margin=score["logit_margin"], probability_margin=score["probability_margin"],
+            normalized_entropy=score["normalized_entropy"], scoring_method=score["scoring_method"],
+            parser_failure=bool(parser_failed), formula_disagreement=None, formula_source=None)
+    return ShadowRoutingInput(
+        qid=qid, input_index=idx, generated_answer=ans, scoring_valid=False,
+        scoring_error="no_score", parser_failure=bool(parser_failed),
+        formula_disagreement=None, formula_source=None)
+
+
+def _write_shadow(jsonl_path, summary_path, decisions, summary) -> None:
+    """Write shadow decisions (JSONL) + summary (JSON). Fails closed with a warning."""
+    try:
+        p = Path(jsonl_path); p.parent.mkdir(parents=True, exist_ok=True)
+        with open(p, "w", encoding="utf-8") as fh:
+            for d in decisions:
+                fh.write(json.dumps(d.as_dict(), ensure_ascii=False, allow_nan=False) + "\n")
+        sp = Path(summary_path); sp.parent.mkdir(parents=True, exist_ok=True)
+        sp.write_text(json.dumps(summary.as_dict(), ensure_ascii=False, allow_nan=False, indent=2),
+                      encoding="utf-8")
+        print(f"[predict] shadow router -> {p} ({len(decisions)} decisions), summary -> {sp} "
+              f"(selected={summary.selected_count}/{summary.budget_cap})")
+    except (OSError, ValueError) as e:
+        print(f"[predict] WARN shadow router output not written ({type(e).__name__}: {e})")
 
 
 def _write_telemetry(path, records) -> None:
@@ -206,6 +245,13 @@ def main(argv=None) -> int:
                          "JSONL and does NOT change answers or the official CSV output")
     ap.add_argument("--telemetry-path", default=_DEFAULT_TELEMETRY_PATH,
                     help=f"confidence-telemetry JSONL path (default {_DEFAULT_TELEMETRY_PATH})")
+    ap.add_argument("--confidence-shadow-router", action="store_true", default=False,
+                    help="DEV ONLY: Phase 2 shadow router; records which qids WOULD be selected for "
+                         "follow-up (never runs V12B/V13, never changes answers or the official CSV)")
+    ap.add_argument("--shadow-router-path", default=_DEFAULT_SHADOW_PATH,
+                    help=f"shadow-router decisions JSONL (default {_DEFAULT_SHADOW_PATH})")
+    ap.add_argument("--shadow-router-summary-path", default=_DEFAULT_SHADOW_SUMMARY_PATH,
+                    help=f"shadow-router summary JSON (default {_DEFAULT_SHADOW_SUMMARY_PATH})")
     args, _extra = ap.parse_known_args(argv)
 
     inp = _resolve_input(args.input)
@@ -230,43 +276,75 @@ def main(argv=None) -> int:
         times = [0.0] * len(rows)
     else:
         print(f"[predict] mode: offline local model ({args.model_path})")
-        score_enabled = True
-        if args.confidence_telemetry:
+        # Opt-in observational modes (Phase 1 telemetry + Phase 2 shadow router).
+        score_enabled, shadow_cfg = True, None
+        want_score = bool(args.confidence_telemetry or args.confidence_shadow_router)
+        if want_score:
             try:
                 from src.local_model.confidence_config import load_choice_scoring_config
-                _cfg = load_choice_scoring_config()
-                score_enabled = bool(_cfg.enabled)
+                score_enabled = bool(load_choice_scoring_config().enabled)
             except Exception as e:            # bad config must not break the run
-                print(f"[predict] WARN confidence config load failed ({type(e).__name__}: {e}); "
+                print(f"[predict] WARN choice-scoring config load failed ({type(e).__name__}: {e}); "
                       "using defaults")
-            print(f"[predict] confidence-telemetry: ON (shadow scoring={'enabled' if score_enabled else 'disabled'}; "
+        if args.confidence_telemetry:
+            print(f"[predict] confidence-telemetry: ON (scoring={'enabled' if score_enabled else 'disabled'}; "
                   "answers unchanged)")
+        if args.confidence_shadow_router:
+            if not score_enabled:
+                print("[predict] confidence-shadow-router: SKIPPED (choice_scoring disabled)")
+            else:
+                try:
+                    from src.local_model.confidence_config import load_shadow_router_config
+                    shadow_cfg = load_shadow_router_config()
+                    print("[predict] confidence-shadow-router: ON (observational; no answer change, "
+                          "no V12B/V13)")
+                except Exception as e:        # fail closed: no shadow, official output unaffected
+                    print(f"[predict] WARN shadow-router config load failed ({type(e).__name__}: {e}); "
+                          "shadow router disabled")
         samples = load_dataset(inp)
         predictor = _build_predictor(args)
         rows, times = [], []
         telemetry = [] if args.confidence_telemetry else None
+        shadow_inputs = [] if (shadow_cfg is not None) else None
         failures = 0
-        for item in samples:
+        for idx, item in enumerate(samples):
             qid = item.get("qid")
+            parser_failed = False
             t0 = time.time()
             try:
                 raw = predictor.predict_one(item)
                 ans = _coerce_label(raw, item)
                 if raw is None or str(raw).strip().upper() != ans:
-                    failures += 1   # model gave nothing usable -> deterministic fallback
+                    failures += 1           # model gave nothing usable -> deterministic fallback
+                    parser_failed = True    # parser could not produce a valid label
             except Exception as e:  # one bad sample must not abort the run
                 ans = _fallback_answer(item)
                 failures += 1
+                parser_failed = True
                 print(f"[predict] WARN qid={qid} fell back ({type(e).__name__}: {e})")
             dt = time.time() - t0                 # official per-sample time = generation only
             rows.append((qid, ans))
             times.append(dt)
-            if telemetry is not None:             # shadow scoring, measured separately
-                telemetry.append(_score_telemetry_record(predictor, item, qid, ans,
-                                                         enabled=score_enabled))
+            # Score ONCE per item; reuse for both telemetry and the shadow router.
+            score = err = None
+            if (telemetry is not None) or (shadow_inputs is not None):
+                score, err, elapsed = _compute_score(predictor, item, enabled=score_enabled)
+                if telemetry is not None:
+                    telemetry.append(_telemetry_record(qid, ans, score, err, elapsed))
+                if shadow_inputs is not None:
+                    shadow_inputs.append(_shadow_input(qid, idx, ans, score, parser_failed))
         print(f"[predict] predicted {len(rows)} samples ({failures} fell back to deterministic)")
         if telemetry is not None:
             _write_telemetry(args.telemetry_path, telemetry)
+        if shadow_inputs is not None:
+            try:                                  # shadow routing/writing must never break output
+                from src.local_model.confidence_shadow_router import run_shadow_router
+                decisions, summary = run_shadow_router(shadow_inputs, shadow_cfg)
+                _write_shadow(args.shadow_router_path, args.shadow_router_summary_path,
+                              decisions, summary)
+            except Exception as e:
+                print(f"[predict] WARN shadow router failed ({type(e).__name__}: {e}); "
+                      "official output unaffected")
 
     # Write submission.csv (qid,answer) and submission_time.csv (qid,answer,time = REAL per-sample s).
     Path(submission).parent.mkdir(parents=True, exist_ok=True)
