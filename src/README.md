@@ -61,5 +61,14 @@ CARDS`.
 
 ## Not user-facing
 
-These modules are internal architecture, not commands. The official entrypoint is
-`bash scripts/run_full_system.sh <test_file>` → `output/pred.csv` (Docker: `/output/pred.csv`).
+These modules are internal architecture, not commands. The official Docker/BTC entrypoint is
+root `predict.py`, run via `inference.sh` (`CMD ["bash", "inference.sh"]` -> `python predict.py
+"$@"`), which by default runs the confidence-routed pipeline
+(`src/local_model/confidence_*.py`, not the `layers/`/`system/` modules above) and writes
+`/code/submission.csv` + `/code/submission_time.csv`. See
+[`../docs/FINAL_SYSTEM.md`](../docs/FINAL_SYSTEM.md) for the current architecture and
+[`../DOCKER_SUBMISSION.md`](../DOCKER_SUBMISSION.md) for run commands.
+
+`scripts/run_full_system.sh` -> `scripts/final_infer.py` -> `output/pred.csv` is a separate,
+non-Docker, legacy development runner over the `system/`/`layers/` modules above (reachable only
+via that script, not via `predict.py`); it is not the BTC submission entrypoint.

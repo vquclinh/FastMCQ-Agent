@@ -1,7 +1,14 @@
 # BTC Submission Compliance
 
 Scope: Vietnamese Student HackAIthon — Bảng C Innovator final Docker submission,
-`vquclinh/fastmcq-agent:latest`.
+`vquclinh/fastmcq-agent-final:latest`
+(<https://hub.docker.com/r/vquclinh/fastmcq-agent-final>).
+
+By default the image runs the confidence-routed pipeline (Base → confidence scoring → router →
+V12B → V13 → selector); see [`docs/FINAL_SYSTEM.md`](FINAL_SYSTEM.md) for architecture and
+[`../DOCKER_SUBMISSION.md`](../DOCKER_SUBMISSION.md) for the canonical, up-to-date run commands.
+The commands below verify Dockerfile-level compliance (base image, CUDA, offline env) and remain
+correct; treat `../DOCKER_SUBMISSION.md` as authoritative if the two ever appear to diverge.
 
 ## Dockerfile Requirements
 
@@ -53,15 +60,24 @@ Do not run these as part of static audit work; they are for the final manual GPU
 Build final image:
 
 ```bash
-docker build -t vquclinh/fastmcq-agent:latest .
+docker build -t vquclinh/fastmcq-agent-final:latest .
 ```
 
-BTC sample-compatible run using `/app/data`:
+BTC sample-compatible run using `/app/data` (no output mount, so `--rm` is not used here —
+keep the named container and copy the default `/code/submission*.csv` out with `docker cp`):
 
 ```bash
-docker run --rm --gpus all \
+docker rm -f fastmcq_app_data_test 2>/dev/null || true
+
+docker run \
+  --name fastmcq_app_data_test \
+  --gpus all \
   -v "$PWD/btc_data:/app/data:ro" \
-  vquclinh/fastmcq-agent:latest
+  vquclinh/fastmcq-agent-final:latest
+
+docker cp fastmcq_app_data_test:/code/submission.csv ./submission.csv
+docker cp fastmcq_app_data_test:/code/submission_time.csv ./submission_time.csv
+docker rm fastmcq_app_data_test
 ```
 
 Official `/code/private_test.json` reproduction with outputs preserved on host:
@@ -74,7 +90,7 @@ docker run --rm --gpus all \
   -v "$PWD/btc_output:/code/btc_output" \
   -e SUBMISSION_FILE=/code/btc_output/submission.csv \
   -e SUBMISSION_TIME_FILE=/code/btc_output/submission_time.csv \
-  vquclinh/fastmcq-agent:latest
+  vquclinh/fastmcq-agent-final:latest
 ```
 
 Offline runtime verification:
@@ -85,7 +101,7 @@ docker run --rm --gpus all --network none \
   -v "$PWD/btc_output:/code/btc_output" \
   -e SUBMISSION_FILE=/code/btc_output/submission.csv \
   -e SUBMISSION_TIME_FILE=/code/btc_output/submission_time.csv \
-  vquclinh/fastmcq-agent:latest
+  vquclinh/fastmcq-agent-final:latest
 ```
 
 Output validation:
@@ -116,5 +132,5 @@ PY
 Push after successful manual validation:
 
 ```bash
-docker push vquclinh/fastmcq-agent:latest
+docker push vquclinh/fastmcq-agent-final:latest
 ```

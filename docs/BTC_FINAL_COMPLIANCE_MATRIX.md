@@ -2,7 +2,17 @@
 
 Phase 2L.47G final static verification before Docker build.
 
-Final image target: `vquclinh/fastmcq-agent:latest`
+> **Notice (documentation sync, AUDIT 97):** this is a point-in-time static-verification snapshot.
+> The final image target below has been updated to the current submission image, but the specific
+> `README.md:NN-NN` line-number citations throughout this document were captured against an earlier
+> README structure and were **not** re-verified line-by-line during the AUDIT 97 documentation sync
+> (README.md was substantially rewritten and shortened). The architecture, flag, and Docker-flag
+> claims in this matrix remain accurate; for current, line-accurate references use
+> [`../README.md`](../README.md), [`FINAL_SYSTEM.md`](FINAL_SYSTEM.md), and
+> [`../DOCKER_SUBMISSION.md`](../DOCKER_SUBMISSION.md) directly.
+
+Final image target: `vquclinh/fastmcq-agent-final:latest`
+(<https://hub.docker.com/r/vquclinh/fastmcq-agent-final>)
 
 Final mode: offline local GPU inference with `Qwen/Qwen3-4B-Instruct-2507` through Hugging Face Transformers. No external API final path, no runtime internet, no API key, no vLLM, no `uv`, no `--torch-backend=cu128`, no `--ipc=host`, and no `--shm-size`.
 
@@ -33,7 +43,7 @@ Why this satisfies BTC:
 - The image starts from an official NVIDIA CUDA base image suitable for GPU inference rather than a team-prebuilt submission image.
 
 Remaining manual action:
-- Run `docker build -t vquclinh/fastmcq-agent:latest .` manually.
+- Run `docker build -t vquclinh/fastmcq-agent-final:latest .` manually.
 
 Requirement: Required resources such as model weights or database indexes should be downloaded or initialized during build.
 
@@ -314,7 +324,7 @@ Remaining manual action:
 1. Build the final image:
 
 ```bash
-docker build -t vquclinh/fastmcq-agent:latest .
+docker build -t vquclinh/fastmcq-agent-final:latest .
 ```
 
 2. Test official `/code/private_test.json` path and preserve outputs on host:
@@ -327,15 +337,24 @@ docker run --rm --gpus all \
   -v "$PWD/btc_output:/code/btc_output" \
   -e SUBMISSION_FILE=/code/btc_output/submission.csv \
   -e SUBMISSION_TIME_FILE=/code/btc_output/submission_time.csv \
-  vquclinh/fastmcq-agent:latest
+  vquclinh/fastmcq-agent-final:latest
 ```
 
-3. Test BTC sample-compatible `/app/data` path:
+3. Test BTC sample-compatible `/app/data` path (no output mount, so `--rm` is not used here —
+   keep the named container and copy the default `/code/submission*.csv` out with `docker cp`):
 
 ```bash
-docker run --rm --gpus all \
+docker rm -f fastmcq_app_data_test 2>/dev/null || true
+
+docker run \
+  --name fastmcq_app_data_test \
+  --gpus all \
   -v "$PWD/btc_data:/app/data:ro" \
-  vquclinh/fastmcq-agent:latest
+  vquclinh/fastmcq-agent-final:latest
+
+docker cp fastmcq_app_data_test:/code/submission.csv ./submission.csv
+docker cp fastmcq_app_data_test:/code/submission_time.csv ./submission_time.csv
+docker rm fastmcq_app_data_test
 ```
 
 4. Test offline runtime:
@@ -346,7 +365,7 @@ docker run --rm --gpus all --network none \
   -v "$PWD/btc_output:/code/btc_output" \
   -e SUBMISSION_FILE=/code/btc_output/submission.csv \
   -e SUBMISSION_TIME_FILE=/code/btc_output/submission_time.csv \
-  vquclinh/fastmcq-agent:latest
+  vquclinh/fastmcq-agent-final:latest
 ```
 
 5. Validate both CSV files:
@@ -377,7 +396,7 @@ PY
 6. Push Docker Hub image:
 
 ```bash
-docker push vquclinh/fastmcq-agent:latest
+docker push vquclinh/fastmcq-agent-final:latest
 ```
 
 7. Commit the final repository after successful validation.

@@ -4,14 +4,19 @@ These are **old** research, diagnostic, audit, and experiment scripts from the d
 history. **They are NOT part of the official submission workflow** and are kept for reference and
 reproducibility only. The production architecture lives in `src/`.
 
-**Official command (use this):**
+**Official Docker/BTC command (use this):**
 
 ```bash
-bash scripts/run_full_system.sh <test_file>     # -> output/pred.csv
+python predict.py       # run via inference.sh inside the Docker image; no flag required
 ```
 
-Docker: `/data/private_test.csv` (or `/data/public_test.csv`) → `/output/pred.csv` via
-`scripts/docker_entrypoint_v11.sh`. None of the scripts here are required for that path.
+The image's `CMD ["bash", "inference.sh"]` runs `python predict.py "$@"`, which by default runs
+the confidence-routed pipeline and writes `/code/submission.csv` + `/code/submission_time.csv`.
+See [`../../docs/FINAL_SYSTEM.md`](../../docs/FINAL_SYSTEM.md) and
+[`../../DOCKER_SUBMISSION.md`](../../DOCKER_SUBMISSION.md). None of the scripts here, nor
+`scripts/run_full_system.sh` / `scripts/docker_entrypoint_v11.sh`, are part of that official path
+— those are separate, older, non-Docker development runners over the `src/system/`/`src/layers/`
+modules, kept for reference only.
 
 ## Categories
 
