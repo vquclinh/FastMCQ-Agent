@@ -171,42 +171,25 @@ limitations list.
 ## Research acknowledgements
 
 FASTMCQ-Agent builds on ideas developed by the broader language-model reasoning, uncertainty, and
-selective-prediction research communities. We gratefully acknowledge the authors of the following
-works:
+selective-prediction research communities. We gratefully thank the authors of the following works
+for the research that helped shape this project:
 
-- **Option-order robustness:** Chujie Zheng et al., [*Large Language Models Are Not Robust Multiple
-  Choice Selectors*](https://arxiv.org/abs/2309.03882). This work motivated our attention to
-  answer-position sensitivity in MCQ systems. FASTMCQ-Agent's V12B addresses a related failure mode
-  with its own deterministic permutation-and-vote procedure and does not implement PriDe.
-- **Consistency and structured reasoning:** Xuezhi Wang et al., [*Self-Consistency Improves Chain of
-  Thought Reasoning in Language Models*](https://arxiv.org/abs/2203.11171); Jason Wei et al.,
-  [*Chain-of-Thought Prompting Elicits Reasoning in Large Language Models*](https://arxiv.org/abs/2201.11903);
-  and Denny Zhou et al., [*Least-to-Most Prompting Enables Complex Reasoning in Large Language
-  Models*](https://arxiv.org/abs/2205.10625). Their work informed the broader majority-voting,
-  structured-reasoning, and decomposition design space: V12B varies option order rather than
-  sampling multiple free-form reasoning chains, the Base prediction path does not depend on
-  free-form chain-of-thought output, and `least_to_most` takes inspiration from constraint
-  decomposition without reproducing the paper's method exactly.
-- **Program-aided reasoning:** Luyu Gao et al., [*PAL: Program-aided Language
-  Models*](https://arxiv.org/abs/2211.10435). Our `programmatic_solver` follows the general
-  principle of separating model-produced calculation specifications from deterministic computation,
-  using a narrower safe-AST implementation rather than a complete PAL system.
-- **Uncertainty and selective escalation:** Dan Hendrycks and Kevin Gimpel, [*A Baseline for
-  Detecting Misclassified and Out-of-Distribution Examples in Neural
-  Networks*](https://arxiv.org/abs/1610.02136); Saurav Kadavath et al., [*Language Models (Mostly)
-  Know What They Know*](https://arxiv.org/abs/2207.05221); and Amita Kamath, Robin Jia, and Percy
-  Liang, [*Selective Question Answering under Domain Shift*](https://arxiv.org/abs/2006.09462).
-  Their research on output-distribution uncertainty and calibration informed our decision to rely
-  on token-level confidence and entropy signals — rather than asking the model to verbally report
-  its own confidence — to selectively escalate uncertain records.
-- **Bounded cascades:** Lingjiao Chen, Matei Zaharia, and James Zou, [*FrugalGPT: How to Use Large
-  Language Models While Reducing Cost and Improving Performance*](https://arxiv.org/abs/2305.05176).
-  Their work informed the general bounded-routing and cascade perspective; FASTMCQ-Agent reuses one
-  fully local model with multiple reasoning strategies rather than routing across external LLM
-  services.
+| Paper | Authors | Venue | Link |
+|---|---|---|---|
+| Self-Consistency Improves Chain of Thought Reasoning in Language Models | Xuezhi Wang, Jason Wei, Dale Schuurmans, Quoc V. Le, Ed H. Chi, Sharan Narang, Aakanksha Chowdhery, Denny Zhou | ICLR 2023 | [arXiv:2203.11171](https://arxiv.org/abs/2203.11171) |
+| Chain-of-Thought Prompting Elicits Reasoning in Large Language Models | Jason Wei, Xuezhi Wang, Dale Schuurmans, Maarten Bosma, Brian Ichter, Fei Xia, Ed Chi, Quoc Le, Denny Zhou | NeurIPS 2022 | [arXiv:2201.11903](https://arxiv.org/abs/2201.11903) |
+| Least-to-Most Prompting Enables Complex Reasoning in Large Language Models | Denny Zhou, Nathanael Schärli, Le Hou, Jason Wei, Nathan Scales, Xuezhi Wang, Dale Schuurmans, Claire Cui, Olivier Bousquet, Quoc Le, Ed Chi | ICLR 2023 | [arXiv:2205.10625](https://arxiv.org/abs/2205.10625) |
+| Large Language Models Are Not Robust Multiple Choice Selectors | Chujie Zheng, Hao Zhou, Fandong Meng, Jie Zhou, Minlie Huang | ICLR 2024 (Spotlight) | [arXiv:2309.03882](https://arxiv.org/abs/2309.03882) |
+| A Baseline for Detecting Misclassified and Out-of-Distribution Examples in Neural Networks | Dan Hendrycks, Kevin Gimpel | ICLR 2017 | [arXiv:1610.02136](https://arxiv.org/abs/1610.02136) |
+| PAL: Program-aided Language Models | Luyu Gao, Aman Madaan, Shuyan Zhou, Uri Alon, Pengfei Liu, Yiming Yang, Jamie Callan, Graham Neubig | ICML 2023 | [arXiv:2211.10435](https://arxiv.org/abs/2211.10435) |
+| FrugalGPT: How to Use Large Language Models While Reducing Cost and Improving Performance | Lingjiao Chen, Matei Zaharia, James Zou | TMLR 2024 | [arXiv:2305.05176](https://arxiv.org/abs/2305.05176) |
+| Language Models (Mostly) Know What They Know | Saurav Kadavath et al. | arXiv preprint, 2022 | [arXiv:2207.05221](https://arxiv.org/abs/2207.05221) |
+| Selective Question Answering under Domain Shift | Amita Kamath, Robin Jia, Percy Liang | ACL 2020 | [arXiv:2006.09462](https://arxiv.org/abs/2006.09462) |
 
-> These works inspired parts of the design space; FASTMCQ-Agent does not claim to reproduce their
-> methods exactly. Any implementation differences and errors are our own.
+These works inspired parts of the design space (option-order robustness, consistency and
+structured reasoning, program-aided computation, and confidence-based selective escalation);
+FASTMCQ-Agent does not claim to reproduce any of their methods exactly. Any implementation
+differences and errors are our own.
 
 ---
 
